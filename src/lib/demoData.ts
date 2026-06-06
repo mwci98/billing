@@ -1,0 +1,311 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { Product, Customer, Supplier, Sale, Purchase, InventoryTransaction, StoreSettings } from '../types';
+
+export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'prod-1',
+    name: 'Organic Whole Wheat Bread',
+    sku: 'WHEAT-BREAD-01',
+    barcode: '400110', // Scannable or enterable
+    category: 'Bakery',
+    brand: 'Harvest Farms',
+    unit: 'Loaf (400g)',
+    purchasePrice: 1.80,
+    sellingPrice: 3.50,
+    taxRate: 5, // 5% GST
+    stock: 24,
+    lowStockAlert: 10,
+    expiryDate: '2026-07-15',
+    imageUrl: '🍞',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'prod-2',
+    name: 'Fresh Premium Whole Milk',
+    sku: 'MILK-WHOLE-02',
+    barcode: '400120',
+    category: 'Dairy',
+    brand: 'Dairy Pure',
+    unit: 'Bottle (1L)',
+    purchasePrice: 1.10,
+    sellingPrice: 2.20,
+    taxRate: 0, // 0% Tax on basic dairy
+    stock: 8, // Low stock triggers alert!
+    lowStockAlert: 15,
+    expiryDate: '2026-06-12', // Near expiry!
+    imageUrl: '🥛',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'prod-3',
+    name: 'Gluten-Free Oats Cereal',
+    sku: 'OATS-GF-03',
+    barcode: '400130',
+    category: 'Cereals',
+    brand: 'Nature Choice',
+    unit: 'Box (500g)',
+    purchasePrice: 2.90,
+    sellingPrice: 5.99,
+    taxRate: 12, // 12% GST
+    stock: 45,
+    lowStockAlert: 12,
+    expiryDate: '2027-01-20',
+    imageUrl: '🥣',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'prod-4',
+    name: 'Extra Virgin Olive Oil',
+    sku: 'EV-OLIVE-OIL-04',
+    barcode: '400140',
+    category: 'Groceries',
+    brand: 'Filippo Berio',
+    unit: 'Bottle (500ml)',
+    purchasePrice: 6.50,
+    sellingPrice: 11.99,
+    taxRate: 18, // 18% GST
+    stock: 18,
+    lowStockAlert: 5,
+    expiryDate: '2027-04-10',
+    imageUrl: '🫒',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'prod-5',
+    name: 'Alka-Seltzer Effervescent',
+    sku: 'MED-ALKA-05',
+    barcode: '400150',
+    category: 'Pharmacy',
+    brand: 'Bayer',
+    unit: 'Box (24 Tabs)',
+    purchasePrice: 3.20,
+    sellingPrice: 7.50,
+    taxRate: 12, // 12% Medical Tax
+    stock: 5, // Low stock!
+    lowStockAlert: 10,
+    expiryDate: '2026-06-08', // Fast expiring!
+    imageUrl: '💊',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'prod-6',
+    name: 'Sparkling Apple Cider',
+    sku: 'CIDER-SPARK-06',
+    barcode: '400160',
+    category: 'Beverages',
+    brand: 'Martine**s',
+    unit: 'Bottle (750ml)',
+    purchasePrice: 2.20,
+    sellingPrice: 4.50,
+    taxRate: 18, // 18% soda tax
+    stock: 35,
+    lowStockAlert: 10,
+    expiryDate: '2026-11-30',
+    imageUrl: '🍾',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_CUSTOMERS: Customer[] = [
+  {
+    id: 'cust-1',
+    name: 'John Doe',
+    phone: '9876543210',
+    email: 'john.doe@gmail.com',
+    loyaltyPoints: 120,
+    totalSpent: 350.50,
+    outstandingDue: 0,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'cust-2',
+    name: 'Priya Sharma',
+    phone: '9812345678',
+    email: 'priya05@gmail.com',
+    loyaltyPoints: 450,
+    totalSpent: 1240.00,
+    outstandingDue: 45.00, // Due for credit sale!
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'cust-3',
+    name: 'Sarah Jenkins',
+    phone: '9900112233',
+    email: 'sarah.j@hotmail.com',
+    loyaltyPoints: 15,
+    totalSpent: 45.00,
+    outstandingDue: 0,
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_SUPPLIERS: Supplier[] = [
+  {
+    id: 'supp-1',
+    name: 'Agro Farms Distributor',
+    companyName: 'Agro Farms Ltd',
+    phone: '1800123456',
+    email: 'orders@agrofarms.com',
+    outstandingBalance: 120.00,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'supp-2',
+    name: 'Bayer Wholesale Pharma',
+    companyName: 'Bayer Healthcare',
+    phone: '1800456789',
+    email: 'supply@bayerpharma.in',
+    outstandingBalance: 0,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'supp-3',
+    name: 'Beverage King Co.',
+    companyName: 'Beverage King Distributors',
+    phone: '1800987654',
+    email: 'distribution@bevking.com',
+    outstandingBalance: 320.00,
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_SETTINGS: StoreSettings = {
+  storeName: 'QuickMart Supermarket',
+  phone: '+1 (555) 019-2834',
+  email: 'support@quickmartshop.com',
+  address: '452 Retail Blvd, Suite 100, Sector 4, Silicon Valley',
+  gstNumber: '29AAAAA1111A1Z1', // Mock GSTIN
+  currency: '$',
+  receiptHeader: 'THANK YOU FOR SHOPPING WITH US!\nVISIT AGAIN FOR FANTASTIC DISCOUNTS',
+  receiptFooter: 'Receipt generated by QuickMart POS Billing.\nNo refunds on opened fresh goods.',
+  loyaltyPointsPerDollar: 10 // $1 = 10 loyalty points
+};
+
+export const INITIAL_SALES: Sale[] = [
+  {
+    id: 'sale-1001',
+    customerId: 'cust-1',
+    customerName: 'John Doe',
+    items: [
+      {
+        productId: 'prod-1',
+        name: 'Organic Whole Wheat Bread',
+        sku: 'WHEAT-BREAD-01',
+        barcode: '400110',
+        price: 3.50,
+        quantity: 2,
+        taxRate: 5,
+        taxAmount: 0.35,
+        total: 7.35
+      },
+      {
+        productId: 'prod-3',
+        name: 'Gluten-Free Oats Cereal',
+        sku: 'OATS-GF-03',
+        barcode: '400130',
+        price: 5.99,
+        quantity: 1,
+        taxRate: 12,
+        taxAmount: 0.72,
+        total: 6.71
+      }
+    ],
+    subtotal: 13.00,
+    taxAmount: 1.07,
+    discount: 1.00,
+    total: 13.07,
+    paymentMethod: 'Cash',
+    paymentDetails: {
+      cashAmount: 15.00
+    },
+    loyaltyPointsEarned: 130,
+    date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
+    authId: 'employee-1',
+    employeeName: 'Staff Member',
+    status: 'Completed'
+  },
+  {
+    id: 'sale-1002',
+    customerId: 'cust-2',
+    customerName: 'Priya Sharma',
+    items: [
+      {
+        productId: 'prod-4',
+        name: 'Extra Virgin Olive Oil',
+        sku: 'EV-OLIVE-OIL-04',
+        barcode: '400140',
+        price: 11.99,
+        quantity: 1,
+        taxRate: 18,
+        taxAmount: 2.16,
+        total: 14.15
+      }
+    ],
+    subtotal: 11.99,
+    taxAmount: 2.16,
+    discount: 0,
+    total: 14.15,
+    paymentMethod: 'UPI',
+    paymentDetails: {
+      referenceNo: 'UPI-9831730193'
+    },
+    loyaltyPointsEarned: 142,
+    date: new Date().toISOString(), // Today
+    authId: 'employee-1',
+    employeeName: 'Staff Member',
+    status: 'Completed'
+  }
+];
+
+export const INITIAL_PURCHASES: Purchase[] = [
+  {
+    id: 'pur-2001',
+    supplierId: 'supp-1',
+    supplierName: 'Agro Farms Distributor',
+    items: [
+      {
+        productId: 'prod-1',
+        name: 'Organic Whole Wheat Bread',
+        quantity: 50,
+        purchasePrice: 1.80,
+        taxRate: 5,
+        taxAmount: 4.50,
+        total: 94.50
+      }
+    ],
+    subtotal: 90.00,
+    taxAmount: 4.50,
+    total: 94.50,
+    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Received',
+    paymentStatus: 'Paid',
+    dueAmount: 0
+  }
+];
+
+export const INITIAL_TRANSACTIONS: InventoryTransaction[] = [
+  {
+    id: 'tx-301',
+    productId: 'prod-1',
+    productName: 'Organic Whole Wheat Bread',
+    sku: 'WHEAT-BREAD-01',
+    type: 'Adjustment',
+    quantity: 10,
+    previousStock: 14,
+    newStock: 24,
+    description: 'Initial inventory shelf alignment count',
+    date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    operatorId: 'admin-1',
+    operatorName: 'System Admin'
+  }
+];

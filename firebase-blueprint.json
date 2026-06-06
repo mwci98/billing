@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A retail product listing in inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "barcode": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "unit": { "type": "string" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "taxRate": { "type": "number" },
+        "stock": { "type": "number" },
+        "lowStockAlert": { "type": "number" },
+        "expiryDate": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "sku", "barcode", "sellingPrice", "stock"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A billing invoice transaction record for a sales receipt.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "discount": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "paymentDetails": { "type": "object" },
+        "loyaltyPointsEarned": { "type": "number" },
+        "date": { "type": "string" },
+        "authId": { "type": "string" },
+        "employeeName": { "type": "string" }
+      },
+      "required": ["id", "items", "subtotal", "taxAmount", "total", "paymentMethod", "date"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "A purchase record for inventory restock from suppliers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "total": { "type": "number" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "dueAmount": { "type": "number" }
+      },
+      "required": ["id", "supplierId", "items", "total", "date", "paymentStatus"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A client profile details, credit balance, and loyalty records.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "loyaltyPoints": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "outstandingDue": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Distributor or supplier company details and dues.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "outstandingBalance": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "companyName"]
+    },
+    "InventoryTransaction": {
+      "title": "InventoryTransaction",
+      "description": "An audit log trace for any manual or automatic stock changes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "sku": { "type": "string" },
+        "type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "previousStock": { "type": "number" },
+        "newStock": { "type": "number" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "operatorId": { "type": "string" },
+        "operatorName": { "type": "string" }
+      },
+      "required": ["id", "productId", "type", "quantity", "date"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "POS business setting variables.",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "gstNumber": { "type": "string" },
+        "currency": { "type": "string" },
+        "receiptHeader": { "type": "string" },
+        "receiptFooter": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["storeName", "currency"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "Store employees, managers, and administrative roles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "name", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products in store stock."
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "POS invoice transactions logs."
+    },
+    "/purchases/{purchaseId}": {
+      "schema": "Purchase",
+      "description": "Restocking invoices from vendor suppliers."
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Register of customers, analytics, loyalty levels."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "B2B suppliers and business outstanding balances."
+    },
+    "/inventory_transactions/{transactionId}": {
+      "schema": "InventoryTransaction",
+      "description": "Audit trails for stock corrections and counts."
+    },
+    "/store_settings/{settingsId}": {
+      "schema": "StoreSettings",
+      "description": "Business customized profiles and receipts headers."
+    },
+    "/staff/{staffId}": {
+      "schema": "Staff",
+      "description": "Staff account role assignments database."
+    }
+  }
+}

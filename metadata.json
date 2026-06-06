@@ -1,0 +1,6 @@
+{
+  "name": "Billing and Inventory Management System",
+  "description": "A complete enterprise-grade Billing and Inventory Management System featuring a modern retail POS billing console, multi-role user auth, standard SKU/barcode generation, inventory stock adjustments, expiry alerts, supplier tracks, and visual revenue/tax reports.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

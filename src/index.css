@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Playfair Display", Georgia, ui-serif, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Redefining Gray / Neutral colors in core theme */
+  --color-gray-950: #0A0A0B;
+  --color-gray-900: #111112;
+  --color-gray-800: #141416;
+  --color-gray-700: #1B1B1D;
+  --color-gray-600: #2C2C2E;
+}
+
+/* Custom base resets and variables */
+:root {
+  --background-hex: #0A0A0B;
+  --sidebar-hex: #111112;
+  --card-hex: #141416;
+  --border-hex: rgba(255, 255, 255, 0.05);
+}
+
+html, body {
+  background-color: #0A0A0B;
+  color: #E0E0E0;
+  font-family: "Inter", sans-serif;
+}
+
+/* Sophisticated Dark Mode Theme Force Rules */
+.dark {
+  background-color: #0A0A0B !important;
+  color: #E0E0E0 !important;
+}
+
+/* Map standard tailwind utility classes for dark mode to achieve the high fidelity Sophisticated Dark palette */
+
+/* 1. All standard background elements mapped to correct cards, sidebar, workspace */
+.dark .bg-gray-950,
+.dark .bg-slate-950,
+.dark .dark\:bg-gray-950 {
+  background-color: #141416 !important; /* Cards are #141416 */
+}
+
+/* Exceptions for overall background and sidebar wrapper */
+.dark.bg-[#0A0A0B],
+.dark .bg-[#0A0A0B],
+.dark main,
+.dark header {
+  background-color: #0A0A0B !important; /* App outer canvas and header are #0A0A0B */
+}
+
+.dark aside,
+.dark .bg-[#111112] {
+  background-color: #111112 !important; /* Sidebar background is exact #111112 */
+}
+
+/* 2. All border definitions updated to extremely fine 5% opacity lines */
+.dark .border,
+.dark .border-r,
+.dark .border-l,
+.dark .border-t,
+.dark .border-b,
+.dark .border-gray-900,
+.dark .border-gray-800,
+.dark .border-gray-700,
+.dark .border-gray-150,
+.dark .border-gray-100,
+.dark .border-neutral-900,
+.dark .border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Overriding shadow offsets for a clean flat aesthetic */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3. Button and text updates for high visual luxury contrast */
+.dark h2, 
+.dark .text-3xl {
+  font-family: "Playfair Display", Georgia, serif !important;
+}
+
+.dark select,
+.dark textarea,
+.dark input {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: #FFFFFF !important;
+}
+
+.dark selectOption {
+  background-color: #141416 !important;
+  color: #FFFFFF !important;
+}
+
+/* Make sure buttons that are styled white match exactly with high luxury look */
+.dark .bg-white.text-black {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.dark .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .text-white\/40 {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dark .text-white\/60 {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.dark .text-white\/20 {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .text-white\/30 {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Accent highlight color changes */
+.dark .text-gray-900,
+.dark .text-gray-950 {
+  color: #E2E2E2 !important;
+}
+
+.dark .text-gray-400 {
+  color: #8E8E93 !important;
+}
+
+/* Specific sub-tab and dynamic state mappings */
+.dark .bg-gray-50,
+.dark .bg-gray-55,
+.dark .bg-gray-900,
+.dark .bg-gray-900\/50,
+.dark .bg-gray-900\/40,
+.dark .bg-gray-900\/60 {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Custom gorgeous serif font specifically for main business values */
+.dark .text-2xl.font-bold,
+.dark .text-3xl.font-bold,
+.dark .text-2xl.font-extrabold,
+.dark .text-3xl,
+.dark h2 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-weight: 300 !important;
+  letter-spacing: -0.02em;
+}
+
+/* Fix table rows header hover effects */
+.dark tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+}
