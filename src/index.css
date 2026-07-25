@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: "Playfair Display", Georgia, ui-serif, serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Redefining Gray / Neutral colors in core theme */
@@ -22,10 +21,181 @@
   --border-hex: rgba(255, 255, 255, 0.05);
 }
 
+/* Custom Slim Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Firefox scrollbar support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Light mode override for scrollbars */
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+:root:not(.dark) * {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
 html, body {
-  background-color: #0A0A0B;
-  color: #E0E0E0;
-  font-family: "Inter", sans-serif;
+  background-color: #F4F5F8;
+  color: #1E293B;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------------------
+   ELEGANT LIGHT MODE DESIGN SYSTEM SYSTEM (:root:not(.dark))
+   ---------------------------------------------------- */
+:root:not(.dark),
+html:not(.dark),
+body:not(.dark) {
+  background-color: #F4F5F8;
+  color: #1E293B;
+}
+
+/* Light mode background canvas */
+:root:not(.dark) .bg-[#0A0A0B],
+:root:not(.dark) main {
+  background-color: #F4F5F8 !important;
+}
+
+/* Light Mode Cards & Panels - Subtle Elevation & Soft Borders */
+:root:not(.dark) .bg-white,
+:root:not(.dark) .bg-gray-950,
+:root:not(.dark) .bg-slate-950 {
+  background-color: #FFFFFF !important;
+  color: #1E293B;
+}
+
+:root:not(.dark) .rounded-3xl,
+:root:not(.dark) .rounded-2xl {
+  border-color: rgba(226, 232, 240, 0.9);
+}
+
+/* Subtle elevation shadow for cards in light mode */
+:root:not(.dark) .shadow-sm,
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl,
+:root:not(.dark) .shadow-2xl {
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Light Mode Sidebar & Header */
+:root:not(.dark) aside {
+  background-color: #FFFFFF !important;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+:root:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+/* Light Mode Form Elements & Input legibility */
+:root:not(.dark) input,
+:root:not(.dark) select,
+:root:not(.dark) option,
+:root:not(.dark) textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+:root:not(.dark) input::placeholder,
+:root:not(.dark) textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+:root:not(.dark) label {
+  color: #334155 !important;
+}
+
+/* Desaturate harsh / overly saturated colored texts & badges in Light Mode */
+:root:not(.dark) .text-purple-500,
+:root:not(.dark) .text-purple-600,
+:root:not(.dark) .text-indigo-500,
+:root:not(.dark) .text-indigo-600 {
+  color: #4F46E5 !important;
+}
+
+:root:not(.dark) .text-blue-500,
+:root:not(.dark) .text-blue-600 {
+  color: #2563EB !important;
+}
+
+:root:not(.dark) .text-red-500,
+:root:not(.dark) .text-red-600,
+:root:not(.dark) .text-rose-500 {
+  color: #E11D48 !important;
+}
+
+:root:not(.dark) .text-emerald-500,
+:root:not(.dark) .text-emerald-600 {
+  color: #059669 !important;
+}
+
+:root:not(.dark) .text-amber-500,
+:root:not(.dark) .text-amber-600 {
+  color: #D97706 !important;
+}
+
+/* Ensure secondary gray subtext in light mode is calm slate-500 */
+:root:not(.dark) .text-gray-400,
+:root:not(.dark) .text-gray-500 {
+  color: #64748B !important;
+}
+
+:root:not(.dark) .text-gray-600,
+:root:not(.dark) .text-gray-700 {
+  color: #334155 !important;
+}
+
+:root:not(.dark) .text-gray-900,
+:root:not(.dark) .text-gray-950 {
+  color: #0F172A !important;
+}
+
+/* Soft muted background tints for badges in light mode */
+:root:not(.dark) .bg-gray-50,
+:root:not(.dark) .bg-gray-100 {
+  background-color: #F1F5F9 !important;
+}
+
+:root:not(.dark) tbody tr:hover {
+  background-color: #F8FAFC !important;
+}
+
+/* Ensure tabular numbers for high precision numerical rendering */
+.tabular-nums, .font-mono, input[type="number"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Sophisticated Dark Mode Theme Force Rules */
@@ -34,7 +204,7 @@ html, body {
   color: #E0E0E0 !important;
 }
 
-/* Map standard tailwind utility classes for dark mode to achieve the high fidelity Sophisticated Dark palette */
+/* Map standard tailwind utility classes for dark mode to achieve high fidelity palette */
 
 /* 1. All standard background elements mapped to correct cards, sidebar, workspace */
 .dark .bg-gray-950,
@@ -56,7 +226,7 @@ html, body {
   background-color: #111112 !important; /* Sidebar background is exact #111112 */
 }
 
-/* 2. All border definitions updated to extremely fine 5% opacity lines */
+/* 2. All border definitions updated to fine 5% opacity lines */
 .dark .border,
 .dark .border-r,
 .dark .border-l,
@@ -81,23 +251,30 @@ html, body {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* 3. Button and text updates for high visual luxury contrast */
-.dark h2, 
-.dark .text-3xl {
-  font-family: "Playfair Display", Georgia, serif !important;
+/* 3. High contrast text and crisp headers */
+.dark h1, .dark h2, .dark h3, .dark h4 {
+  color: #FFFFFF !important;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif !important;
+  font-weight: 700 !important;
 }
 
 .dark select,
 .dark textarea,
 .dark input {
-  background-color: rgba(255, 255, 255, 0.02) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+  background-color: #18181B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif !important;
+}
+
+.dark option {
+  background-color: #18181B !important;
   color: #FFFFFF !important;
 }
 
-.dark selectOption {
-  background-color: #141416 !important;
-  color: #FFFFFF !important;
+/* High legibility for form labels and placeholders */
+.dark label {
+  color: #D1D5DB !important;
 }
 
 /* Make sure buttons that are styled white match exactly with high luxury look */
@@ -111,29 +288,33 @@ html, body {
 }
 
 .dark .text-white\/40 {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .dark .text-white\/60 {
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
 }
 
-.dark .text-white\/20 {
-  color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.dark .text-white\/30 {
-  color: rgba(255, 255, 255, 0.3) !important;
-}
-
-/* Accent highlight color changes */
+/* High clarity text contrast */
 .dark .text-gray-900,
 .dark .text-gray-950 {
-  color: #E2E2E2 !important;
+  color: #FFFFFF;
+}
+
+/* Explicit dark text overrides on light elements in dark mode */
+.dark .dark\:text-gray-950,
+.dark .dark\:text-gray-900,
+.dark .dark\:text-black,
+.dark .dark\:text-gray-800 {
+  color: #09090B !important;
 }
 
 .dark .text-gray-400 {
-  color: #8E8E93 !important;
+  color: #9CA3AF !important;
+}
+
+.dark .text-gray-500 {
+  color: #9CA3AF !important;
 }
 
 /* Specific sub-tab and dynamic state mappings */
@@ -146,18 +327,8 @@ html, body {
   background-color: rgba(255, 255, 255, 0.03) !important;
 }
 
-/* Custom gorgeous serif font specifically for main business values */
-.dark .text-2xl.font-bold,
-.dark .text-3xl.font-bold,
-.dark .text-2xl.font-extrabold,
-.dark .text-3xl,
-.dark h2 {
-  font-family: "Playfair Display", Georgia, serif !important;
-  font-weight: 300 !important;
-  letter-spacing: -0.02em;
-}
-
 /* Fix table rows header hover effects */
 .dark tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.015) !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
 }
+

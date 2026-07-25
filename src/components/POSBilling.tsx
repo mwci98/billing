@@ -7,12 +7,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, Barcode, Camera, Plus, Minus, Trash2, 
   ShoppingBag, CreditCard, Sparkles, UserPlus, 
-  Receipt, Landmark, ReceiptText, ChevronRight, X
+  Receipt, Landmark, ReceiptText, ChevronRight, ChevronLeft, X, Sliders, Percent
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Product, SaleItem, Customer } from '../types';
 import { CameraScanner } from './CameraScanner';
 import { BarcodeGenerator } from './BarcodeGenerator';
+import { TallyInvoiceModal } from './TallyInvoiceModal';
 
 export const POSBilling: React.FC = () => {
   const { 
@@ -55,8 +56,26 @@ export const POSBilling: React.FC = () => {
   // Receipt Modal anchor
   const [activeReceipt, setActiveReceipt] = useState<any | null>(null);
 
+  // Category slider scroll ref
+  const categorySliderRef = useRef<HTMLDivElement | null>(null);
+
   // Focus ref for barcodes
   const barcodeFieldRef = useRef<HTMLInputElement | null>(null);
+
+  // Discount percentage slider state (0 - 50%)
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
+
+  // Toggle to show/hide out-of-stock items (default: false, hide out of stock)
+  const [showOutOfStock, setShowOutOfStock] = useState<boolean>(false);
+
+  const scrollCategorySlider = (direction: 'left' | 'right') => {
+    if (categorySliderRef.current) {
+      categorySliderRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // Auto-focus barcode scanner hook
   useEffect(() => {
@@ -128,14 +147,20 @@ export const POSBilling: React.FC = () => {
     setSplitUpi('');
   };
 
-  // 4. Client Search & filters
-  const filteredProducts = products.filter((p) => {
-    const matchQuery = p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-                       p.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
-                       p.barcode.includes(productSearch);
-    const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
-    return matchQuery && matchCategory;
-  });
+  // 4. Client Search & filters (Only show products when user searches or selects a category)
+  const hasSearchActive = productSearch.trim().length > 0 || selectedCategory !== 'All';
+
+  const filteredProducts = hasSearchActive
+    ? products.filter((p) => {
+        const matchQuery = !productSearch.trim() ||
+                           p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                           p.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
+                           p.barcode.includes(productSearch);
+        const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
+        const matchStock = showOutOfStock || p.stock > 0;
+        return matchQuery && matchCategory && matchStock;
+      })
+    : [];
 
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
@@ -253,10 +278,10 @@ export const POSBilling: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-10rem)]">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 min-h-[calc(100vh-10rem)]">
       
-      {/* LEFT: Fast Product search & fast selections catalog (8 cols) */}
-      <div className="lg:col-span-7 space-y-4">
+      {/* LEFT: Fast Product search & fast selections catalog (7 cols on tablet/desktop) */}
+      <div className="md:col-span-7 space-y-4">
         
         {/* Rapid Search Bar actions */}
         <div className="flex flex-col md:flex-row gap-3 rounded-2xl bg-white dark:bg-gray-950 p-4 border border-gray-100 dark:border-gray-900 shadow-sm">
@@ -279,10 +304,10 @@ export const POSBilling: React.FC = () => {
               id="pos-camera-scanner-btn"
               type="button"
               onClick={() => setIsCameraActive(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 px-3.5 text-xs font-semibold cursor-pointer"
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3.5 py-2.5 text-xs font-bold shadow-sm shadow-emerald-600/20 transition active:scale-95 cursor-pointer shrink-0"
             >
-              <Camera className="h-4 w-4 text-emerald-500 animate-pulse" />
-              <span className="hidden md:inline">Open Camera</span>
+              <Camera className="h-4 w-4 text-white animate-pulse shrink-0" />
+              <span className="hidden md:inline text-white font-bold">Scanner</span>
             </button>
           </form>
 
@@ -299,104 +324,157 @@ export const POSBilling: React.FC = () => {
           </div>
         </div>
 
-        {/* Rapid Barcode Injection Simulation Tags */}
-        <div className="rounded-2xl bg-white dark:bg-[#141416]/90 p-4 border border-gray-100 dark:border-white/5 shadow-sm space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-white/40 font-bold flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
-              Rapid Barcode Simulation Tags
-            </span>
-            <span className="text-[9px] text-gray-400 dark:text-white/30 font-mono">Tap tag to inject simulated scan</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-            {products.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                id={`simulate-scan-${p.sku}`}
-                onClick={() => injectItemByBarcode(p.barcode)}
-                className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 hover:border-emerald-500/40 border border-gray-100 dark:border-white/5 px-2.5 py-1.5 text-[10px] font-mono transition cursor-pointer select-none text-gray-700 dark:text-gray-300 active:scale-95 shrink-0"
-                title={`Scan ${p.name}`}
-              >
-                <span>{p.imageUrl || '📦'}</span>
-                <span className="font-sans font-semibold text-gray-950 dark:text-[#F2F2F2]">{p.name}</span>
-                <span className="text-[9px] text-gray-400 dark:text-emerald-400 font-mono font-bold">[{p.barcode}]</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Dynamic Category Slider with Interactive Scroll Controls */}
+        <div className="flex items-center gap-1.5 bg-white dark:bg-gray-950 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-900 shadow-sm">
+          <button
+            type="button"
+            id="cat-slider-left-btn"
+            onClick={() => scrollCategorySlider('left')}
+            className="h-8 w-8 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+            title="Slide categories left"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
-        {/* Dynamic Category Slider badges */}
-        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
-          {categoriesList.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat || 'All')}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
-                selectedCategory === cat
-                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/10'
-                  : 'bg-white text-gray-600 dark:bg-gray-950 dark:text-gray-400 border-gray-100 dark:border-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          <div 
+            ref={categorySliderRef}
+            className="flex gap-2 overflow-x-auto py-1 scroll-smooth no-scrollbar flex-1 items-center"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {categoriesList.map((cat) => {
+              const count = cat === 'All' 
+                ? products.filter(p => showOutOfStock || p.stock > 0).length 
+                : products.filter(p => (showOutOfStock || p.stock > 0) && p.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat || 'All')}
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition cursor-pointer border flex items-center gap-1.5 active:scale-98 ${
+                    selectedCategory === cat
+                      ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                      : 'bg-gray-50 text-gray-700 dark:bg-gray-900/60 dark:text-gray-300 border-gray-200 dark:border-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-900'
+                  }`}
+                >
+                  <span>{cat}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                    selectedCategory === cat
+                      ? 'bg-white/20 text-white font-bold'
+                      : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            id="cat-slider-right-btn"
+            onClick={() => scrollCategorySlider('right')}
+            className="h-8 w-8 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+            title="Slide categories right"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+
+          {/* Toggle Out Of Stock Filter */}
+          <button
+            type="button"
+            onClick={() => setShowOutOfStock(!showOutOfStock)}
+            className={`h-8 px-2.5 rounded-xl border text-[10px] font-bold font-mono transition cursor-pointer shrink-0 flex items-center gap-1 active:scale-95 ${
+              showOutOfStock 
+                ? 'bg-amber-500/15 text-amber-500 border-amber-500/30' 
+                : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+            }`}
+            title="Toggle showing out-of-stock items in POS catalog"
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${showOutOfStock ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+            <span>{showOutOfStock ? 'Showing Out-of-Stock' : 'In Stock Only'}</span>
+          </button>
         </div>
 
         {/* Product Grid catalog */}
-        <div id="pos-product-catalog" className="grid grid-cols-2 md:grid-cols-3 gap-3.5 overflow-y-auto max-h-[35rem] pr-1.5">
-          {filteredProducts.map((p) => {
-            const outOfStock = p.stock <= 0;
-            const nearLowStock = p.stock <= p.lowStockAlert;
-            return (
-              <button
-                key={p.id}
-                disabled={outOfStock}
-                onClick={() => addToCart(p)}
-                className={`relative group flex flex-col justify-between text-left rounded-3xl bg-white dark:bg-gray-950 p-4 border border-gray-100 dark:border-gray-900 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-lg transition duration-200 active:scale-97 cursor-pointer ${
-                  outOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl">{p.imageUrl || '📦'}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+        {!hasSearchActive ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl bg-white dark:bg-[#141416]/90 border border-gray-100 dark:border-white/5 p-8 shadow-sm">
+            <div className="rounded-full bg-emerald-50 dark:bg-emerald-500/10 p-4 text-emerald-500 dark:text-emerald-400 mb-4">
+              <Search className="h-8 w-8 stroke-[1.5]" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">Search Products to Display</h4>
+            <p className="text-xs text-gray-400 dark:text-gray-450 mt-1 max-w-sm leading-relaxed px-4">
+              Type a product name, SKU, or scan a barcode above to search items in the POS catalog.
+            </p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl bg-white dark:bg-[#141416]/90 border border-gray-100 dark:border-white/5 p-8 shadow-sm">
+            <div className="rounded-full bg-gray-100 dark:bg-white/5 p-4 text-gray-400 mb-4">
+              <X className="h-8 w-8 stroke-[1.5]" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">No Product Match</h4>
+            <p className="text-xs text-gray-400 dark:text-gray-450 mt-1 max-w-sm leading-relaxed px-4">
+              No products found matching <strong className="text-emerald-500 font-semibold">{productSearch || selectedCategory}</strong>. Try choosing another category or resetting filters.
+            </p>
+          </div>
+        ) : (
+          <div id="pos-product-catalog" className="flex flex-col gap-2.5 overflow-y-auto max-h-[35rem] pr-1.5 font-sans">
+            {filteredProducts.map((p) => {
+              const outOfStock = p.stock <= 0;
+              const nearLowStock = p.stock <= p.lowStockAlert;
+              return (
+                <button
+                  key={p.id}
+                  disabled={outOfStock}
+                  onClick={() => addToCart(p)}
+                  className={`relative group flex items-center justify-between text-left rounded-2xl bg-white dark:bg-gray-950 p-3 border border-gray-100 dark:border-gray-900 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md transition duration-150 active:scale-99 cursor-pointer ${
+                    outOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <span className="text-2xl shrink-0 p-2 bg-gray-50 dark:bg-white/5 rounded-xl block">{p.imageUrl || '📦'}</span>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-100 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition truncate pr-2">
+                        {p.name}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-[9px] text-gray-400 uppercase tracking-tight">SKU: {p.sku}</span>
+                        <span className="text-gray-300 dark:text-gray-700 text-[10px]">•</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{p.brand}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0 pl-3">
+                    <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold ${
                       outOfStock 
                         ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' 
                         : nearLowStock
-                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
                         : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                     }`}>
-                      {outOfStock ? 'Out of stock' : nearLowStock ? `Low stock (${p.stock})` : `${p.stock} units`}
+                      {outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
                     </span>
-                  </div>
 
-                  <h4 className="text-xs font-bold text-gray-800 dark:text-gray-100 leading-tight group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition line-clamp-2">
-                    {p.name}
-                  </h4>
-                  <p className="font-mono text-[9px] text-gray-400 mt-1 uppercase tracking-tight truncate">SKU: {p.sku}</p>
-                </div>
+                    <div className="text-right min-w-[70px]">
+                      <p className="text-[9px] text-gray-400 font-medium">Price</p>
+                      <p className="text-xs font-black text-gray-950 dark:text-white">
+                        {settings.currency}{p.sellingPrice.toFixed(2)}
+                      </p>
+                    </div>
 
-                <div className="flex items-end justify-between mt-4 pb-0.5 pt-1.5 border-t border-gray-50 dark:border-gray-900/40 w-full">
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-medium">Retail Price</p>
-                    <p className="text-sm font-extrabold text-gray-950 dark:text-white">
-                      {settings.currency}{p.sellingPrice.toFixed(2)}
-                    </p>
+                    <div className="rounded-xl bg-emerald-500 text-white p-2 group-hover:scale-105 transition duration-155 shadow-md shadow-emerald-500/10">
+                      <Plus className="h-3.5 w-3.5 stroke-[3px]" />
+                    </div>
                   </div>
-                  
-                  <div className="rounded-lg bg-emerald-500 text-white p-1 group-hover:scale-110 transition duration-150 shadow-md shadow-emerald-500/10">
-                    <Plus className="h-4 w-4 stroke-[3px]" />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols) */}
-      <div className="lg:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-full">
+      {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols on tablet/desktop) */}
+      <div className="md:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-full">
         
         {/* Panel Cart Title */}
         <div className="border-b border-gray-100 dark:border-gray-900 p-5 bg-gray-50/50 dark:bg-gray-900/15 flex items-center justify-between">
@@ -579,18 +657,73 @@ export const POSBilling: React.FC = () => {
               <span className="font-mono text-gray-450">+{settings.currency}{taxAmount.toFixed(2)}</span>
             </div>
             
-            {/* Discount Inputs */}
-            <div className="flex items-center justify-between pt-1 font-medium">
-              <span>Flat Discount Code</span>
-              <div className="flex items-center bg-transparent border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-0.5 max-w-[80px]">
-                <span className="text-[10px] mr-1 text-gray-400 font-bold">{settings.currency}</span>
+            {/* Interactive Discount Slider & Inputs */}
+            <div className="pt-2 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                  <Sliders className="h-3.5 w-3.5 text-emerald-500" />
+                  Discount Slider ({discountPercent}%)
+                </span>
+                <div className="flex items-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-0.5 max-w-[90px]">
+                  <span className="text-[10px] mr-1 text-gray-400 font-bold">{settings.currency}</span>
+                  <input
+                    id="pos-discount-input"
+                    type="number"
+                    value={discountInput}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setDiscountInput(e.target.value);
+                      const gross = subtotal + taxAmount;
+                      if (gross > 0) {
+                        const pct = Math.min(100, Math.max(0, Math.round((val / gross) * 100)));
+                        setDiscountPercent(pct);
+                      }
+                    }}
+                    className="w-full bg-transparent text-right font-mono text-xs focus:outline-none font-bold text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Range Slider Control */}
+              <div className="flex items-center gap-2">
                 <input
-                  id="pos-discount-input"
-                  type="number"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value)}
-                  className="w-full bg-transparent text-right font-mono text-xs focus:outline-none"
+                  type="range"
+                  min="0"
+                  max="50"
+                  step="1"
+                  value={discountPercent}
+                  onChange={(e) => {
+                    const pct = parseInt(e.target.value) || 0;
+                    setDiscountPercent(pct);
+                    const gross = subtotal + taxAmount;
+                    const calculated = Math.round((gross * pct) / 100);
+                    setDiscountInput(calculated.toString());
+                  }}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
+              </div>
+
+              {/* Quick Discount Presets */}
+              <div className="flex items-center gap-1 justify-between pt-0.5">
+                {[0, 5, 10, 15, 20].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setDiscountPercent(p);
+                      const gross = subtotal + taxAmount;
+                      const calculated = Math.round((gross * p) / 100);
+                      setDiscountInput(calculated.toString());
+                    }}
+                    className={`px-2 py-0.5 text-[10px] font-bold font-mono rounded-md border transition cursor-pointer ${
+                      discountPercent === p
+                        ? 'bg-emerald-500 text-white border-emerald-500'
+                        : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {p}%
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -684,138 +817,13 @@ export const POSBilling: React.FC = () => {
         />
       )}
 
-      {/* Corporate Thermal / standard printed Invoice Receipt Dialog */}
+      {/* Official Tally A5 GST Tax Invoice Modal */}
       {activeReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
-          <div className="w-full max-w-sm rounded-3xl bg-white text-gray-900 border border-gray-100 shadow-2xl p-6 relative">
-            <button
-              onClick={() => setActiveReceipt(null)}
-              className="absolute top-4 right-4 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Print trigger helper */}
-            <div className="text-center mb-4 pb-4 border-b border-dashed border-gray-200">
-              <span className="inline-flex rounded-full bg-emerald-50 text-emerald-600 px-3 py-1 text-xs font-bold uppercase mb-2">
-                Sale Approved ✔
-              </span>
-              <h4 className="text-sm font-bold">Print Invoice Receipt</h4>
-              <p className="text-[10px] text-gray-400 mt-0.5">Dual layout thermal printer support active</p>
-            </div>
-
-            {/* Printable Frame Area */}
-            <div id="printable-pos-receipt" className="border border-gray-250 p-4 bg-gray-50/40 rounded-2xl font-mono text-center text-xs space-y-4 max-h-[24rem] overflow-y-auto">
-              
-              {/* Receipt Header details */}
-              <div>
-                <h2 className="text-base font-black tracking-tight">{settings.storeName}</h2>
-                <p className="text-[9px] text-gray-500 font-bold mt-1 max-w-[12rem] mx-auto">{settings.address}</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">Phone: {settings.phone}</p>
-                {settings.gstNumber && <p className="text-[9px] text-gray-500">GSTIN: {settings.gstNumber}</p>}
-              </div>
-
-              <div className="border-t border-dashed border-gray-300 py-1.5 text-left text-[9px] space-y-0.5">
-                <div className="flex justify-between"><span>Bill Ref:</span> <span className="font-bold">{activeReceipt.id}</span></div>
-                <div className="flex justify-between"><span>Date:</span> <span>{new Date(activeReceipt.date).toLocaleString()}</span></div>
-                <div className="flex justify-between"><span>Operator:</span> <span className="uppercase">{activeReceipt.employeeName}</span></div>
-                <div className="flex justify-between"><span>Customer:</span> <span className="uppercase">{activeReceipt.customerName}</span></div>
-              </div>
-
-              {/* Items tabular panel */}
-              <div className="border-t border-dashed border-gray-300 pt-2 text-left text-[10px]">
-                <div className="flex justify-between font-bold border-b border-dashed border-gray-300 pb-1 text-[9px]">
-                  <span className="w-2/5">ITEM</span>
-                  <span className="w-1/5 text-right">QTY</span>
-                  <span className="w-1/5 text-right">PRICE</span>
-                  <span className="w-1/5 text-right">TOTAL</span>
-                </div>
-                
-                <div className="space-y-1.5 py-1 text-[9px]">
-                  {activeReceipt.items.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between">
-                      <span className="w-2/5 truncate">{item.name}</span>
-                      <span className="w-1/5 text-right">{item.quantity}</span>
-                      <span className="w-1/5 text-right">{settings.currency}{item.price.toFixed(2)}</span>
-                      <span className="w-1/5 text-right font-bold">{settings.currency}{item.total.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Totals split */}
-              <div className="border-t border-dashed border-gray-300 pt-2 text-[10px] space-y-1">
-                <div className="flex justify-between text-[9px]">
-                  <span>Subtotal:</span>
-                  <span>{settings.currency}{activeReceipt.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[9px]">
-                  <span>Tax Amount:</span>
-                  <span>{settings.currency}{activeReceipt.taxAmount.toFixed(2)}</span>
-                </div>
-                {activeReceipt.discount > 0 && (
-                  <div className="flex justify-between text-[9px]">
-                    <span>Discount:</span>
-                    <span>-{settings.currency}{activeReceipt.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xs font-black pt-1 border-t border-dashed border-gray-200">
-                  <span>GRAND TOTAL:</span>
-                  <span>{settings.currency}{activeReceipt.total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="border-t border-dashed border-gray-300 pt-2 text-[9px]">
-                <p className="font-bold uppercase">PAY CHANNEL: {activeReceipt.paymentMethod}</p>
-                {activeReceipt.paymentDetails.cashAmount && <p>Cash Recv: {settings.currency}{activeReceipt.paymentDetails.cashAmount.toFixed(2)}</p>}
-                
-                {activeReceipt.loyaltyPointsEarned > 0 && (
-                  <p className="text-emerald-600 font-bold mt-1.5">★ Points Credited: +{activeReceipt.loyaltyPointsEarned}</p>
-                )}
-              </div>
-
-              {/* Barcode Footer receipt */}
-              <div className="border-t border-dashed border-gray-350 p-2 flex flex-col items-center">
-                <BarcodeGenerator value={activeReceipt.id} size="sm" />
-              </div>
-
-              <div className="text-[8px] text-gray-400 mt-2 whitespace-pre-line leading-relaxed">
-                {settings.receiptHeader}
-                {'\n'}
-                {settings.receiptFooter}
-              </div>
-            </div>
-
-            {/* Print execute triggers */}
-            <div className="grid grid-cols-2 gap-3 mt-5">
-              <button
-                onClick={() => {
-                  const printContents = document.getElementById('printable-pos-receipt')?.innerHTML;
-                  const originalContents = document.body.innerHTML;
-                  if (printContents) {
-                    const printWindow = window.open('', '_blank');
-                    if (printWindow) {
-                      printWindow.document.write(`<html><head><title>Thermal POS Bill Printer</title><style>body {font-family: monospace; padding: 20px; width: 300px; margin: auto; text-align: center;}</style></head><body>${printContents}</body></html>`);
-                      printWindow.document.close();
-                      printWindow.print();
-                    }
-                  }
-                }}
-                className="rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-1 py-3 text-xs font-semibold cursor-pointer"
-              >
-                <PrinterIcon className="h-4 w-4" />
-                <span>Thermal Output</span>
-              </button>
-              
-              <button
-                onClick={() => setActiveReceipt(null)}
-                className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white flex items-center justify-center gap-1 py-3 text-xs font-semibold cursor-pointer"
-              >
-                Done Checkout
-              </button>
-            </div>
-          </div>
-        </div>
+        <TallyInvoiceModal
+          activeReceipt={activeReceipt}
+          settings={settings}
+          onClose={() => setActiveReceipt(null)}
+        />
       )}
     </div>
   );

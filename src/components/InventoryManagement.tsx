@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowRightLeft, AlertTriangle, PackagePlus, Plus, Search,
-  Calendar, Users, Eye, History, FileDown, PlusCircle
+  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 
@@ -26,6 +26,7 @@ export const InventoryManagement: React.FC = () => {
 
   // Search states
   const [prodSearch, setProdSearch] = useState<string>('');
+  const [maxStockFilter, setMaxStockFilter] = useState<number>(100);
 
   // 1. Manual Adjust Form States
   const [selectedProdId, setSelectedProdId] = useState<string>('');
@@ -195,11 +196,11 @@ export const InventoryManagement: React.FC = () => {
                 required
                 value={selectedProdId}
                 onChange={(e) => setSelectedProdId(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
               >
-                <option value="">-- Choose item --</option>
+                <option value="" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">-- Choose item --</option>
                 {products.map(prod => (
-                  <option key={prod.id} value={prod.id}>
+                  <option key={prod.id} value={prod.id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
                     {prod.name} (On-Shelf: {prod.stock} {prod.unit})
                   </option>
                 ))}
@@ -213,7 +214,7 @@ export const InventoryManagement: React.FC = () => {
                   id="adjust-type-select"
                   value={adjustType}
                   onChange={(e) => setAdjustType(e.target.value as any)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                 >
                   <option value="Stock In">Stock In (+Add)</option>
                   <option value="Stock Out">Stock Out (-Deduct)</option>
@@ -229,7 +230,7 @@ export const InventoryManagement: React.FC = () => {
                   required
                   value={adjustQty}
                   onChange={(e) => setAdjustQty(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -242,14 +243,14 @@ export const InventoryManagement: React.FC = () => {
                 value={adjustDesc}
                 onChange={(e) => setAdjustDesc(e.target.value)}
                 placeholder="Write specific reasons (e.g. Broken loaf disposed, annual recount align...)"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-white"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-gray-900 dark:text-white"
               />
             </div>
 
             <button
               id="confirm-adjust-btn"
               type="submit"
-              className="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-950 p-3 text-xs font-extrabold cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition"
+              className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white p-3 text-xs font-extrabold cursor-pointer transition shadow-md shadow-emerald-600/20"
             >
               Log Stock Correction
             </button>
@@ -257,26 +258,73 @@ export const InventoryManagement: React.FC = () => {
 
           {/* Quick list of stock levels */}
           <div className="md:col-span-7 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm overflow-hidden">
-            <h3 className="text-sm font-bold text-gray-850 dark:text-white uppercase tracking-wider mb-4">Stock Shelf Quick-Gauge</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-gray-900">
+              <h3 className="text-sm font-bold text-gray-850 dark:text-white uppercase tracking-wider">Stock Shelf Quick-Gauge</h3>
+              
+              {/* Interactive Stock Range Filter Slider */}
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800">
+                <Sliders className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 font-mono whitespace-nowrap">
+                  Max Stock: {maxStockFilter}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={maxStockFilter}
+                  onChange={(e) => setMaxStockFilter(parseInt(e.target.value) || 0)}
+                  className="w-24 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  title="Slide to filter stock count limit"
+                />
+              </div>
+            </div>
+
             <div className="space-y-3 max-h-[19rem] overflow-y-auto">
-              {products.map(prod => {
-                const nearLow = prod.stock <= prod.lowStockAlert;
-                return (
+              {products.filter(p => p.stock <= maxStockFilter).length === 0 ? (
+                <div className="p-6 text-center text-xs text-gray-400 font-medium">
+                  No items found with stock ≤ {maxStockFilter} units.
+                </div>
+              ) : (
+                products.filter(p => p.stock <= maxStockFilter).map(prod => {
+                  const nearLow = prod.stock <= prod.lowStockAlert;
+                  return (
                   <div key={prod.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 bg-opacity-40 p-3 rounded-2xl border border-gray-100 dark:border-gray-900 text-xs">
                     <div className="min-w-0 pr-2">
                       <p className="font-bold text-gray-850 dark:text-gray-100">{prod.name}</p>
                       <p className="font-mono text-[10px] text-gray-400 mt-0.5">SKU: {prod.sku}</p>
                     </div>
 
-                    <div className="text-right">
-                      <p className={`font-mono font-bold ${nearLow ? 'text-amber-500' : 'text-emerald-500'}`}>
-                        {prod.stock} {prod.unit}s
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Alert limit: {prod.lowStockAlert}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <p className={`font-mono font-bold ${nearLow ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          {prod.stock} {prod.unit}s
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Alert limit: {prod.lowStockAlert}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1 pl-2 border-l border-gray-200 dark:border-gray-800">
+                        <button
+                          type="button"
+                          onClick={() => adjustStock(prod.id, Math.max(0, prod.stock - 1), 'Adjustment', 'Quick gauge stock decrease')}
+                          className="h-6 w-6 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-black text-xs cursor-pointer select-none"
+                          title="Decrease stock count by 1"
+                        >
+                          -
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => adjustStock(prod.id, prod.stock + 1, 'Adjustment', 'Quick gauge stock increase')}
+                          className="h-6 w-6 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-black text-xs cursor-pointer select-none"
+                          title="Increase stock count by 1"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
         </div>
@@ -300,7 +348,7 @@ export const InventoryManagement: React.FC = () => {
                   required
                   value={buySupplierId}
                   onChange={(e) => setBuySupplierId(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                 >
                   <option value="">-- Choose Distributor --</option>
                   {suppliers.map(s => (
@@ -315,7 +363,7 @@ export const InventoryManagement: React.FC = () => {
                   id="pur-payment-status"
                   value={payStatus}
                   onChange={(e) => setPayStatus(e.target.value as any)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                 >
                   <option value="Paid">Fully Paid (Settled)</option>
                   <option value="Unpaid">Unpaid (Post Credit)</option>

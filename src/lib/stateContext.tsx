@@ -81,7 +81,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Authenticated State (Role-based)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: UserRole } | null>(() => {
     const savedUser = localStorage.getItem('pos_active_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.name && parsed.email) return parsed;
+      } catch (e) {
+        console.warn("Invalid saved user state, resetting to default admin session");
+      }
+    }
+    const defaultAdmin = {
+      id: 'usr_admin',
+      name: 'Shop Owner (Admin)',
+      email: 'admin@shop.com',
+      role: UserRole.ADMIN
+    };
+    try {
+      localStorage.setItem('pos_active_user', JSON.stringify(defaultAdmin));
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    return defaultAdmin;
   });
 
   const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(true);
@@ -112,7 +131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearTimeout(t);
   }, [toast]);
 
-  // 1. Initial State Hydration (LocalStorage offline-first pattern)
+  // 1. Initial State Hydration (LocalStorage offline-first pattern with design-domain migration)
   useEffect(() => {
     const localProducts = localStorage.getItem('pos_products');
     const localCustomers = localStorage.getItem('pos_customers');
@@ -122,46 +141,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localTransactions = localStorage.getItem('pos_transactions');
     const localSettings = localStorage.getItem('pos_settings');
 
-    if (localProducts) setProducts(JSON.parse(localProducts));
-    else {
+    let isLegacyGrocery = false;
+
+    // Detect if legacy database contains grocery content
+    if (localProducts) {
+      try {
+        const parsed = JSON.parse(localProducts);
+        isLegacyGrocery = parsed.some((p: any) => 
+          p.name?.includes('Bread') || 
+          p.name?.includes('Milk') || 
+          p.name?.includes('Oats') || 
+          p.category === 'Bakery' || 
+          p.category === 'Dairy'
+        );
+      } catch (e) {
+        console.warn("Failed checking legacy grocery state, resetting.", e);
+        isLegacyGrocery = true;
+      }
+    }
+
+    if (isLegacyGrocery) {
+      // Prompt auto-migration to premium phone/gadget inventory
       setProducts(INITIAL_PRODUCTS);
-      localStorage.setItem('pos_products', JSON.stringify(INITIAL_PRODUCTS));
-    }
-
-    if (localCustomers) setCustomers(JSON.parse(localCustomers));
-    else {
       setCustomers(INITIAL_CUSTOMERS);
-      localStorage.setItem('pos_customers', JSON.stringify(INITIAL_CUSTOMERS));
-    }
-
-    if (localSuppliers) setSuppliers(JSON.parse(localSuppliers));
-    else {
       setSuppliers(INITIAL_SUPPLIERS);
-      localStorage.setItem('pos_suppliers', JSON.stringify(INITIAL_SUPPLIERS));
-    }
-
-    if (localSales) setSales(JSON.parse(localSales));
-    else {
       setSales(INITIAL_SALES);
-      localStorage.setItem('pos_sales', JSON.stringify(INITIAL_SALES));
-    }
-
-    if (localPurchases) setPurchases(JSON.parse(localPurchases));
-    else {
-      setPurchases(INITIAL_PURCHASES);
-      localStorage.setItem('pos_purchases', JSON.stringify(INITIAL_PURCHASES));
-    }
-
-    if (localTransactions) setTransactions(JSON.parse(localTransactions));
-    else {
-      setTransactions(INITIAL_TRANSACTIONS);
-      localStorage.setItem('pos_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
-    }
-
-    if (localSettings) setSettings(JSON.parse(localSettings));
-    else {
       setSettings(INITIAL_SETTINGS);
+      setPurchases([]);
+      setTransactions([]);
+
+      localStorage.setItem('pos_products', JSON.stringify(INITIAL_PRODUCTS));
+      localStorage.setItem('pos_customers', JSON.stringify(INITIAL_CUSTOMERS));
+      localStorage.setItem('pos_suppliers', JSON.stringify(INITIAL_SUPPLIERS));
+      localStorage.setItem('pos_sales', JSON.stringify(INITIAL_SALES));
       localStorage.setItem('pos_settings', JSON.stringify(INITIAL_SETTINGS));
+      localStorage.setItem('pos_purchases', JSON.stringify([]));
+      localStorage.setItem('pos_transactions', JSON.stringify([]));
+      
+      triggerToast("Auto-configured ElectroHub premium smartphone & gadget catalog! 📱", "success");
+    } else {
+      if (localProducts) setProducts(JSON.parse(localProducts));
+      else {
+        setProducts(INITIAL_PRODUCTS);
+        localStorage.setItem('pos_products', JSON.stringify(INITIAL_PRODUCTS));
+      }
+
+      if (localCustomers) setCustomers(JSON.parse(localCustomers));
+      else {
+        setCustomers(INITIAL_CUSTOMERS);
+        localStorage.setItem('pos_customers', JSON.stringify(INITIAL_CUSTOMERS));
+      }
+
+      if (localSuppliers) setSuppliers(JSON.parse(localSuppliers));
+      else {
+        setSuppliers(INITIAL_SUPPLIERS);
+        localStorage.setItem('pos_suppliers', JSON.stringify(INITIAL_SUPPLIERS));
+      }
+
+      if (localSales) setSales(JSON.parse(localSales));
+      else {
+        setSales(INITIAL_SALES);
+        localStorage.setItem('pos_sales', JSON.stringify(INITIAL_SALES));
+      }
+
+      if (localPurchases) setPurchases(JSON.parse(localPurchases));
+      else {
+        setPurchases(INITIAL_PURCHASES);
+        localStorage.setItem('pos_purchases', JSON.stringify(INITIAL_PURCHASES));
+      }
+
+      if (localTransactions) setTransactions(JSON.parse(localTransactions));
+      else {
+        setTransactions(INITIAL_TRANSACTIONS);
+        localStorage.setItem('pos_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
+      }
+
+      if (localSettings) {
+        const parsedSettings = JSON.parse(localSettings);
+        if (parsedSettings.currency === '$' || !parsedSettings.currency) {
+          parsedSettings.currency = '₹';
+          localStorage.setItem('pos_settings', JSON.stringify(parsedSettings));
+        }
+        setSettings(parsedSettings);
+      } else {
+        setSettings(INITIAL_SETTINGS);
+        localStorage.setItem('pos_settings', JSON.stringify(INITIAL_SETTINGS));
+      }
     }
 
     // Initialize darkmode

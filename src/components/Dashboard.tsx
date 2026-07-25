@@ -6,7 +6,7 @@
 import React from 'react';
 import { 
   TrendingUp, ShoppingCart, Users, Package, AlertTriangle, 
-  ArrowUpRight, ArrowDownRight, Calendar, Bell, DollarSign,
+  ArrowUpRight, ArrowDownRight, Calendar, Bell, IndianRupee,
   Layers, PackageMinus, RefreshCw
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
@@ -98,18 +98,12 @@ export const Dashboard: React.FC = () => {
       {/* 1. Dashboard Welcome Rail */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl bg-white dark:bg-gray-950 p-6 border border-gray-100 dark:border-gray-900 shadow-sm">
         <div>
-          <span className="text-xs font-semibold text-emerald-500 uppercase tracking-widest">
-            REALTIME BUSINESS INTELLIGENCE
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Welcome Back, {currentUser?.name}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Role: <strong className="text-gray-700 dark:text-gray-300">{currentUser?.role}</strong> • Checking health status of {settings.storeName}
-          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap sm:flex-nowrap shrink-0">
           <button
             id="dash-sync-btn"
             onClick={async () => {
@@ -120,18 +114,18 @@ export const Dashboard: React.FC = () => {
                 alert("Cloud sync connection verified! Client running in local sandbox-resilient state. ☁️");
               }
             }}
-            className="flex items-center gap-2 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-850 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 border border-gray-150 dark:border-gray-800 transition active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-850 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
           >
-            <RefreshCw className="h-4 w-4 text-emerald-500 animate-spin-slow" />
+            <RefreshCw className="h-4 w-4 text-emerald-500 animate-spin-slow shrink-0" />
             <span>Sync Cloud DB</span>
           </button>
           
           <button
             id="dash-quick-pos-btn"
             onClick={() => setActiveTab('pos')}
-            className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-500/10 transition active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-500/10 transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
           >
-            <ShoppingCart className="h-4 w-4" />
+            <ShoppingCart className="h-4 w-4 shrink-0" />
             <span>Fast Billing POS</span>
           </button>
         </div>
@@ -231,7 +225,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Est. Profit</span>
             <div className="rounded-xl bg-pink-50 dark:bg-pink-950/40 p-2 text-pink-500">
-              <DollarSign className="h-4 w-4" />
+              <IndianRupee className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
@@ -246,186 +240,12 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Business Charts & Notifications bento grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* 3a. Weekly Sales Bar Chart (Handcrafted SVGs!) */}
-        <div className="lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-900 pb-4 mb-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Store Sales Analysis</h3>
-              <p className="text-xs text-gray-400">Total invoice revenue trend over the past 7 days</p>
-            </div>
-            <span className="rounded-lg bg-gray-50 dark:bg-gray-900 px-2.5 py-1 text-xs font-mono text-gray-500">7 Days Sales Roll</span>
-          </div>
 
-          <div className="h-64 w-full pt-4">
-            {/* Visual Bar Svg */}
-            <svg viewBox="0 0 500 200" className="h-full w-full">
-              {/* Grid Lines */}
-              <line x1="40" y1="20" x2="480" y2="20" stroke="#f1f5f9" strokeDasharray="3" className="dark:stroke-gray-800" />
-              <line x1="40" y1="70" x2="480" y2="70" stroke="#f1f5f9" strokeDasharray="3" className="dark:stroke-gray-800" />
-              <line x1="40" y1="120" x2="480" y2="120" stroke="#f1f5f9" strokeDasharray="3" className="dark:stroke-gray-800" />
-              <line x1="40" y1="170" x2="480" y2="170" stroke="#94a3b8" strokeWidth="1" className="dark:stroke-gray-700" />
 
-              {/* Weekly bar columns */}
-              {weeklyChartData.map((d, index) => {
-                const colWidth = 40;
-                const gap = 20;
-                const x = 55 + index * (colWidth + gap);
-                const height = (d.value / maxWeeklyVal) * 130;
-                const y = 170 - height;
-
-                return (
-                  <g key={index} className="group cursor-pointer">
-                    {/* Hover Card Data */}
-                    <title>{`${d.label}: ${settings.currency}${d.value.toFixed(2)}`}</title>
-                    {/* Bar */}
-                    <rect
-                      x={x}
-                      y={y}
-                      width={colWidth}
-                      height={Math.max(height, 4)} // at least 4 for visual line
-                      rx="6"
-                      className="fill-emerald-500 hover:fill-emerald-600 transition"
-                    />
-                    {/* Weekday Label */}
-                    <text
-                      x={x + colWidth / 2}
-                      y="188"
-                      textAnchor="middle"
-                      className="font-mono text-[10px] fill-gray-500 dark:fill-gray-400 font-medium"
-                    >
-                      {d.label}
-                    </text>
-                    {/* Bar Value Indicator */}
-                    <text
-                      x={x + colWidth / 2}
-                      y={y - 6}
-                      textAnchor="middle"
-                      className="font-mono text-[9px] fill-emerald-600 dark:fill-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition"
-                    >
-                      {`${settings.currency}${Math.round(d.value)}`}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-        </div>
-
-        {/* 3b. Realtime System Notifications alerts */}
-        <div className="lg:col-span-4 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-900 pb-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-amber-500" />
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Live Stock & Expiry Alerts</h3>
-              </div>
-              {unreadNotifications.length > 0 && (
-                <span className="rounded-full bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 px-2 py-0.5 text-xs font-bold leading-none">
-                  {unreadNotifications.length} New
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-3.5 max-h-[19.5rem] overflow-y-auto pr-1">
-              {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="rounded-full bg-emerald-50 dark:bg-emerald-950/35 p-3 text-emerald-500 border border-emerald-100 dark:border-emerald-900/50">
-                    <TrendingUp className="h-5 w-5" />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-850 dark:text-gray-200 mt-2.5">Your catalog is 100% fine</p>
-                  <p className="text-[10px] text-gray-400 max-w-[12rem] mt-1 pr-[3px]">
-                    No low stock alarms or expiring batches are currently triggered.
-                  </p>
-                </div>
-              ) : (
-                notifications.slice(0, 5).map((n) => (
-                  <div
-                    key={n.id}
-                    className="flex gap-3 rounded-2xl bg-gray-50 dark:bg-gray-900/60 p-3.5 border border-gray-100 dark:border-gray-900 hover:border-amber-500/20 transition cursor-pointer"
-                    onClick={() => setActiveTab('products')}
-                  >
-                    <div className="mt-0.5 text-lg">
-                      {n.type === 'expiry_alert' ? '🚨' : n.type === 'out_of_stock' ? '🔥' : '⚠️'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{n.title}</p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5 leading-relaxed">
-                        {n.message}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <button
-            id="dash-notif-resolve-btn"
-            onClick={() => setActiveTab('products')}
-            className="w-full text-center text-xs font-semibold text-emerald-500 hover:text-emerald-600 border border-emerald-500/20 rounded-xl py-2 mt-4 transition"
-          >
-            Review Catalog Stock Levels
-          </button>
-        </div>
-      </div>
-
-      {/* 4. Category Volumes and Recent Live Sales */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Category Breakdown (Donut Chart representation in pure SVG) */}
-        <div className="lg:col-span-4 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Categories Volume</h3>
-          <p className="text-xs text-gray-400 mb-4">Stock density across top categories</p>
-
-          <div className="flex flex-col items-center justify-center py-4">
-            <svg className="w-36 h-36" viewBox="0 0 100 100">
-              {/* Dynamic Donut Representation */}
-              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#f1s5f9" strokeWidth="10" className="stroke-gray-100 dark:stroke-gray-800" />
-              <circle 
-                cx="50" 
-                cy="50" 
-                r="38" 
-                fill="transparent" 
-                stroke="#10b981" 
-                strokeWidth="10" 
-                strokeDasharray="238" 
-                strokeDashoffset="60" 
-                strokeLinecap="round" 
-              />
-              <circle 
-                cx="50" 
-                cy="50" 
-                r="38" 
-                fill="transparent" 
-                stroke="#3b82f6" 
-                strokeWidth="10" 
-                strokeDasharray="238" 
-                strokeDashoffset="180" 
-                strokeLinecap="round" 
-              />
-            </svg>
-
-            {/* Catalog labels */}
-            <div className="w-full grid grid-cols-2 gap-2 mt-5 text-xs text-gray-600 dark:text-gray-400 font-medium">
-              {categoryChartData.map((c, index) => {
-                const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-indigo-500', 'bg-amber-500', 'bg-pink-500'];
-                const dotColor = colors[index % colors.length];
-                return (
-                  <div key={index} className="flex items-center gap-1.5 justify-start truncate">
-                    <span className={`h-2.5 w-2.5 rounded-full ${dotColor}`} />
-                    <span className="truncate">{c.label} ({c.value})</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
+      {/* 4. Recent Live Sales */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Invoices list */}
-        <div className="lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm flex flex-col justify-between">
+        <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>

@@ -99,10 +99,10 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
       
       {/* Primary configuration column */}
-      <form onSubmit={handleSettingsSubmit} className="lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-6">
+      <form onSubmit={handleSettingsSubmit} className="md:col-span-7 lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-6">
         <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-950">
           <div>
             <h3 className="text-xl font-black text-gray-950 dark:text-white">Mart Operating Configurations</h3>
@@ -153,7 +153,7 @@ export const SettingsPage: React.FC = () => {
               required
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              placeholder="$"
+              placeholder="₹"
               className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
             />
           </div>

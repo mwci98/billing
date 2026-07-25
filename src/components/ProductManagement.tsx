@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, ArrowUpDown, Tag, Barcode,
-  Calendar, Layers, Info, Filter, ArrowRightLeft, Eye, X, Camera
+  Calendar, Layers, Info, Filter, ArrowRightLeft, Eye, X, Camera, Check, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Product } from '../types';
@@ -14,11 +14,27 @@ import { BarcodeGenerator, QRGenerator } from './BarcodeGenerator';
 import { CameraScanner } from './CameraScanner';
 
 export const ProductManagement: React.FC = () => {
-  const { products, addProduct, editProduct, deleteProduct, settings, triggerToast } = useAppState();
+  const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, triggerToast } = useAppState();
 
   // Search states
   const [search, setSearch] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  
+  // Inline Stock Edit State
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editingStockVal, setEditingStockVal] = useState<string>('');
+  
+  // Category slider ref
+  const prodCatSliderRef = React.useRef<HTMLDivElement | null>(null);
+
+  const scrollProdCatSlider = (direction: 'left' | 'right') => {
+    if (prodCatSliderRef.current) {
+      prodCatSliderRef.current.scrollBy({
+        left: direction === 'left' ? -200 : 200,
+        behavior: 'smooth'
+      });
+    }
+  };
   
   // Modal configurations
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -62,29 +78,32 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
-    // 2. Look up in Global Mock Commercial Barcode Directory
+    // 2. Look up in Global Mock Commercial Barcode Directory for smart devices
     const mockRegistry: Record<string, Partial<Product>> = {
-      "400110": { name: "Organic Whole Wheat Bread", category: "Bakery", brand: "Harvest Farms", unit: "Loaf (400g)", purchasePrice: 1.80, sellingPrice: 3.50, imageUrl: "🍞" },
-      "400120": { name: "Fresh Premium Whole Milk", category: "Dairy", brand: "Dairy Pure", unit: "Bottle (1L)", purchasePrice: 1.10, sellingPrice: 2.20, imageUrl: "🥛" },
-      "400130": { name: "Gluten-Free Oats Cereal", category: "Cereals", brand: "Nature Choice", unit: "Box (500g)", purchasePrice: 2.90, sellingPrice: 5.99, imageUrl: "🥣" },
-      "400140": { name: "Extra Virgin Olive Oil", category: "Groceries", brand: "Filippo Berio", unit: "Bottle (500ml)", purchasePrice: 6.50, sellingPrice: 11.99, imageUrl: "🫒" },
-      "400150": { name: "Alka-Seltzer Effervescent", category: "Pharmacy", brand: "Bayer", unit: "Box (24 Tabs)", purchasePrice: 3.20, sellingPrice: 7.50, imageUrl: "💊" },
-      "5449000000996": { name: "Coca-Cola Classic Slim Can", category: "Beverages", brand: "Coca-Cola Co.", unit: "Can (330ml)", purchasePrice: 0.65, sellingPrice: 1.25, imageUrl: "🍾" },
-      "012000042456": { name: "Pepsi Cola Classic Sweetener", category: "Beverages", brand: "PepsiCo", unit: "Can (355ml)", purchasePrice: 0.60, sellingPrice: 1.20, imageUrl: "🍾" },
-      "7622300443431": { name: "Oreo Original Chocolate Creme", category: "Snacks", brand: "Mondelēz", unit: "Pack (120g)", purchasePrice: 0.95, sellingPrice: 1.99, imageUrl: "🍫" },
-      "028400070560": { name: "Lays Classic Salted Chips", category: "Snacks", brand: "Frito-Lay", unit: "Bag (150g)", purchasePrice: 1.20, sellingPrice: 2.49, imageUrl: "🍿" },
-      "400160": { name: "Sponge Cake Sweet Slices", category: "Bakery", brand: "Sunblest", unit: "Pack (250g)", purchasePrice: 2.00, sellingPrice: 3.99, imageUrl: "🍰" },
-      "400170": { name: "Greek Style Strawberry Yogurt", category: "Dairy", brand: "Fage", unit: "Tub (450g)", purchasePrice: 1.40, sellingPrice: 2.75, imageUrl: "🥛" },
-      "400180": { name: "Premium Arabica Coffee Ground", category: "Cereals", brand: "Lavazza", unit: "Bag (250g)", purchasePrice: 4.50, sellingPrice: 8.99, imageUrl: "☕" },
-      "400190": { name: "Double Action Toothpaste Mint", category: "Pharmacy", brand: "Colgate", unit: "Tube (100g)", purchasePrice: 1.10, sellingPrice: 2.50, imageUrl: "🪥" }
+      "194253846200": { name: "iPhone 15 Pro Max (256GB - Natural Titanium)", category: "Smartphones", brand: "Apple", unit: "Unit", purchasePrice: 110000.00, sellingPrice: 134900.00, imageUrl: "📱" },
+      "8806095304624": { name: "Samsung Galaxy S24 Ultra (512GB - Titanium Gray)", category: "Smartphones", brand: "Samsung", unit: "Unit", purchasePrice: 105000.00, sellingPrice: 129900.00, imageUrl: "📱" },
+      "840244705353": { name: "Google Pixel 8 Pro (128GB - Obsidian)", category: "Smartphones", brand: "Google", unit: "Unit", purchasePrice: 72000.00, sellingPrice: 89990.00, imageUrl: "📱" },
+      "195949052412": { name: "Apple AirPods Pro (2nd Generation - USB-C)", category: "Accessories", brand: "Apple", unit: "Unit", purchasePrice: 18000.00, sellingPrice: 24900.00, imageUrl: "🎧" },
+      "848061066524": { name: "Anker Prime 20,000mAh Power Bank (200W)", category: "Powerbanks", brand: "Anker", unit: "Unit", purchasePrice: 6500.00, sellingPrice: 9999.00, imageUrl: "🔋" },
+      "194252156935": { name: "Apple 20W USB-C Power Adapter", category: "Accessories", brand: "Apple", unit: "Unit", purchasePrice: 1100.00, sellingPrice: 1900.00, imageUrl: "🔌" },
+      "6971639626354": { name: "OnePlus 12 (256GB - Emerald Green)", category: "Smartphones", brand: "OnePlus", unit: "Unit", purchasePrice: 52000.00, sellingPrice: 64999.00, imageUrl: "📱" },
+      "190199268345": { name: "Apple iPad Air (M1 - 64GB - Space Gray)", category: "Tablets", brand: "Apple", unit: "Unit", purchasePrice: 42000.00, sellingPrice: 54900.00, imageUrl: "💻" },
+      "194252818222": { name: "Apple Watch Series 9 (45mm GPS - Midnight)", category: "Smartwatches", brand: "Apple", unit: "Unit", purchasePrice: 28000.00, sellingPrice: 38900.00, imageUrl: "⌚" },
+      "194253381023": { name: "Apple MacBook Air 13-inch (M3 - 8GB - 256GB)", category: "Laptops", brand: "Apple", unit: "Unit", purchasePrice: 88000.00, sellingPrice: 104900.00, imageUrl: "💻" },
+      "400110": { name: "Apple iPhone 15 (128GB - Black)", category: "Smartphones", brand: "Apple", unit: "Unit", purchasePrice: 58000.00, sellingPrice: 71900.00, imageUrl: "📱" },
+      "400120": { name: "Samsung Galaxy A55 5G (128GB - Awesome Navy)", category: "Smartphones", brand: "Samsung", unit: "Unit", purchasePrice: 29000.00, sellingPrice: 36999.00, imageUrl: "📱" },
+      "400130": { name: "Sony WH-1000XM5 Noise Canceling Headphones", category: "Accessories", brand: "Sony", unit: "Unit", purchasePrice: 22000.00, sellingPrice: 29990.00, imageUrl: "🎧" },
+      "400140": { name: "Belkin BoostCharge 3-in-1 Wireless MagSafe Dock", category: "Chargers", brand: "Belkin", unit: "Unit", purchasePrice: 6500.00, sellingPrice: 11900.00, imageUrl: "🔌" },
+      "400150": { name: "Garmin Venu 3 Smartwatch (Slate Stainless Steel)", category: "Smartwatches", brand: "Garmin", unit: "Unit", purchasePrice: 28000.00, sellingPrice: 44900.00, imageUrl: "⌚" },
+      "400160": { name: "SanDisk Extreme 1TB Portable External SSD", category: "Storage", brand: "SanDisk", unit: "Unit", purchasePrice: 7500.00, sellingPrice: 11990.00, imageUrl: "💾" }
     };
 
     const matchedSim = mockRegistry[barcodeToLookup];
     if (matchedSim) {
       setName(matchedSim.name || "");
-      setCategory(matchedSim.category || "Groceries");
-      setBrand(matchedSim.brand || "Commercial");
-      setUnit(matchedSim.unit || "Piece");
+      setCategory(matchedSim.category || "Smartphones");
+      setBrand(matchedSim.brand || "Premium");
+      setUnit(matchedSim.unit || "Unit");
       setPurchasePrice((matchedSim.purchasePrice || 0).toString());
       setSellingPrice((matchedSim.sellingPrice || 0).toString());
       setImageUrl(matchedSim.imageUrl || "📦");
@@ -92,62 +111,62 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
-    // 3. Fallback: Intelligent auto-generator
+    // 3. Fallback: Intelligent auto-generator for new electronics
     const codeVal = parseInt(barcodeToLookup.replace(/\D/g, '')) || 0;
     if (codeVal > 0) {
-      const isBeverage = codeVal % 5 === 0;
-      const isSnack = codeVal % 3 === 0;
-      const isPharma = codeVal % 7 === 0;
-      const isBakery = codeVal % 4 === 0;
+      const isPhone = codeVal % 4 === 0;
+      const isAccessory = codeVal % 3 === 0;
+      const isSmartwatch = codeVal % 5 === 0;
+      const isTablet = codeVal % 7 === 0;
       
       let generatedName = "Commercial Retail Item";
-      let genCategory = "Groceries";
+      let genCategory = "Smartphones";
       let genBrand = "Universal Brands";
-      let genUnit = "Piece";
-      let genEmoji = "📦";
-      let genCost = 2.50;
-      let genSell = 4.99;
+      let genUnit = "Unit";
+      let genEmoji = "📱";
+      let genCost = 450.00;
+      let genSell = 599.00;
 
-      if (isBeverage) {
-        generatedName = `Carbonated Cola Fusion ${codeVal % 1000}`;
-        genCategory = "Beverages";
-        genBrand = "AquaFresh Co.";
-        genUnit = "Bottle (500ml)";
-        genEmoji = "🍾";
-        genCost = 0.85;
-        genSell = 1.75;
-      } else if (isSnack) {
-        generatedName = `Salty Crisps Mix Vol ${(codeVal % 12) + 1}`;
-        genCategory = "Snacks";
-        genBrand = "CrunchyBites";
-        genUnit = "Bag (120g)";
-        genEmoji = "🍿";
-        genCost = 1.10;
-        genSell = 2.25;
-      } else if (isPharma) {
-        generatedName = `Active Echinacea Daily Tabs`;
-        genCategory = "Pharmacy";
-        genBrand = "MediPure Labs";
-        genUnit = "Pack (30 Tabs)";
-        genEmoji = "💊";
-        genCost = 5.20;
-        genSell = 9.99;
-      } else if (isBakery) {
-        generatedName = `Sweet Glazed Brioche Loaf`;
-        genCategory = "Bakery";
-        genBrand = "Flourist Bakeries";
-        genUnit = "Bag (500g)";
-        genEmoji = "🍞";
-        genCost = 1.60;
-        genSell = 3.20;
+      if (isPhone) {
+        generatedName = `Nova 5G Smart Handset (SKU-${codeVal % 1000})`;
+        genCategory = "Smartphones";
+        genBrand = "Nova Ltd";
+        genUnit = "Unit";
+        genEmoji = "📱";
+        genCost = 350.00;
+        genSell = 499.00;
+      } else if (isAccessory) {
+        generatedName = `TrueWireless Earbuds Neo Edition`;
+        genCategory = "Accessories";
+        genBrand = "SoundFlow";
+        genUnit = "Unit";
+        genEmoji = "🎧";
+        genCost = 45.00;
+        genSell = 89.00;
+      } else if (isSmartwatch) {
+        generatedName = `Chronos Outdoor Sport Smartwatch`;
+        genCategory = "Smartwatches";
+        genBrand = "ActiveLink";
+        genUnit = "Unit";
+        genEmoji = "⌚";
+        genCost = 120.00;
+        genSell = 229.00;
+      } else if (isTablet) {
+        generatedName = `SlateTab 10-inch IPS Display`;
+        genCategory = "Tablets";
+        genBrand = "TabTech";
+        genUnit = "Unit";
+        genEmoji = "💻";
+        genCost = 180.00;
+        genSell = 299.00;
       } else {
-        generatedName = `Premium Brand SKU ${codeVal % 1000}`;
-        genCategory = "Groceries";
-        genBrand = "Imperial Group";
-        genUnit = "Unit Pack";
-        genEmoji = "📦";
-        genCost = 4.25;
-        genSell = 8.50;
+        generatedName = `MagSafe Multi-Port Power Brick 65W`;
+        genCategory = "Chargers";
+        genBrand = "VoltCharge";
+        genUnit = "Unit";
+        genEmoji = "🔌";
+        genCost = 15.00;
+        genSell = 29.99;
       }
 
       setName(generatedName);
@@ -157,7 +176,7 @@ export const ProductManagement: React.FC = () => {
       setPurchasePrice(genCost.toFixed(2));
       setSellingPrice(genSell.toFixed(2));
       setImageUrl(genEmoji);
-      triggerToast(`Auto-decoded metadata! Pulled plausible definition: "${generatedName}"`, "info");
+      triggerToast(`Auto-decoded electronics barcode! Decoded plausibly: "${generatedName}"`, "info");
     } else {
       triggerToast(`No auto-decodable data found. Fill in definitions manually or use numeric codes.`, "warning");
     }
@@ -282,23 +301,57 @@ export const ProductManagement: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2.5 w-full md:w-auto">
-            <Filter className="h-4 w-4 text-gray-400 shrink-0" />
-            <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-[20rem] sm:max-w-none">
-              {categoriesList.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition border cursor-pointer ${
-                    categoryFilter === cat
-                      ? 'bg-emerald-500 border-emerald-500 text-white'
-                      : 'bg-gray-50 text-gray-505 dark:bg-gray-900 dark:text-gray-400 border-gray-100 hover:bg-gray-100 dark:border-gray-800'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+          <div className="flex items-center gap-1.5 w-full md:w-auto bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={() => scrollProdCatSlider('left')}
+              className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+              title="Slide categories left"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+
+            <div 
+              ref={prodCatSliderRef}
+              className="flex gap-1.5 overflow-x-auto py-0.5 scroll-smooth max-w-[18rem] sm:max-w-xs md:max-w-sm items-center"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {categoriesList.map((cat) => {
+                const count = cat === 'All' 
+                  ? products.length 
+                  : products.filter(p => p.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap transition border flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                      categoryFilter === cat
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                        : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                      categoryFilter === cat
+                        ? 'bg-white/20 text-white font-bold'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+
+            <button
+              type="button"
+              onClick={() => scrollProdCatSlider('right')}
+              className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+              title="Slide categories right"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
@@ -347,8 +400,99 @@ export const ProductManagement: React.FC = () => {
                     </td>
                     <td className="py-3">
                       <div className="flex items-center gap-1.5">
-                        <span className={`h-2.5 w-2.5 rounded-full ${nearLowStock ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
-                        <span>{p.stock} units</span>
+                        <button
+                          type="button"
+                          id={`stock-dec-${p.id}`}
+                          onClick={() => {
+                            if (p.stock > 0) {
+                              adjustStock(p.id, p.stock - 1, 'Adjustment', 'Quick stock decrease');
+                              triggerToast(`Updated ${p.name} stock to ${p.stock - 1}`, 'info');
+                            }
+                          }}
+                          disabled={p.stock <= 0}
+                          className="h-6 w-6 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center font-black text-xs cursor-pointer disabled:opacity-30 shrink-0 select-none active:scale-95"
+                          title="Decrease stock count"
+                        >
+                          -
+                        </button>
+
+                        {editingStockId === p.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editingStockVal}
+                              onChange={(e) => setEditingStockVal(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = parseInt(editingStockVal);
+                                  if (!isNaN(val) && val >= 0) {
+                                    adjustStock(p.id, val, 'Adjustment', 'Direct manual stock count update');
+                                    triggerToast(`Updated ${p.name} stock in hand to ${val}`, 'success');
+                                  }
+                                  setEditingStockId(null);
+                                } else if (e.key === 'Escape') {
+                                  setEditingStockId(null);
+                                }
+                              }}
+                              className="w-16 rounded-md border border-emerald-500 bg-white dark:bg-gray-900 px-1.5 py-1 text-xs font-bold font-mono text-gray-950 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = parseInt(editingStockVal);
+                                if (!isNaN(val) && val >= 0) {
+                                  adjustStock(p.id, val, 'Adjustment', 'Direct manual stock count update');
+                                  triggerToast(`Updated ${p.name} stock in hand to ${val}`, 'success');
+                                }
+                                setEditingStockId(null);
+                              }}
+                              className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer"
+                              title="Save new stock"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingStockId(null)}
+                              className="p-1 rounded bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-300 cursor-pointer"
+                              title="Cancel"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            id={`stock-val-btn-${p.id}`}
+                            onClick={() => {
+                              setEditingStockId(p.id);
+                              setEditingStockVal(p.stock.toString());
+                            }}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer transition"
+                            title="Click to edit stock in hand directly"
+                          >
+                            <span className={`h-2 w-2 rounded-full shrink-0 ${nearLowStock ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                            <span className="font-extrabold font-mono text-xs text-gray-950 dark:text-white">
+                              {p.stock}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-medium">{p.unit}s</span>
+                            <Edit2 className="h-3 w-3 text-emerald-500 opacity-60 hover:opacity-100 ml-0.5" />
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          id={`stock-inc-${p.id}`}
+                          onClick={() => {
+                            adjustStock(p.id, p.stock + 1, 'Adjustment', 'Quick stock increase');
+                            triggerToast(`Updated ${p.name} stock to ${p.stock + 1}`, 'info');
+                          }}
+                          className="h-6 w-6 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center font-black text-xs cursor-pointer select-none active:scale-95 shrink-0"
+                          title="Increase stock count"
+                        >
+                          +
+                        </button>
                       </div>
                     </td>
                     <td className="py-3 text-right">
@@ -416,7 +560,7 @@ export const ProductManagement: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Organic Whole Wheat Bread..."
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -428,7 +572,7 @@ export const ProductManagement: React.FC = () => {
                     required
                     value={sku}
                     onChange={(e) => setSku(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -445,7 +589,7 @@ export const ProductManagement: React.FC = () => {
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
                       placeholder="e.g. 101010"
-                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 pr-10 text-xs font-mono text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 pr-10 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                     />
                     <button
                       type="button"
@@ -480,7 +624,7 @@ export const ProductManagement: React.FC = () => {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     placeholder="Bakery, Dairy, Groceries..."
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -492,7 +636,7 @@ export const ProductManagement: React.FC = () => {
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     placeholder="Harvest Farms..."
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -504,7 +648,7 @@ export const ProductManagement: React.FC = () => {
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
                     placeholder="Loaf (400g), Bottle (1L)..."
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -516,7 +660,7 @@ export const ProductManagement: React.FC = () => {
                     disabled={!!editingItem} // Use inventory stock in/out panel to adjust active accounts
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white disabled:opacity-50"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white disabled:opacity-50"
                   />
                 </div>
 
@@ -528,7 +672,7 @@ export const ProductManagement: React.FC = () => {
                     step="0.01"
                     value={purchasePrice}
                     onChange={(e) => setPurchasePrice(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -541,7 +685,7 @@ export const ProductManagement: React.FC = () => {
                     required
                     value={sellingPrice}
                     onChange={(e) => setSellingPrice(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -551,7 +695,7 @@ export const ProductManagement: React.FC = () => {
                     id="form-prod-tax-rate"
                     value={taxRate}
                     onChange={(e) => setTaxRate(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   >
                     <option value="0">0% Exempt</option>
                     <option value="5">5% Basic</option>
@@ -568,7 +712,7 @@ export const ProductManagement: React.FC = () => {
                     type="number"
                     value={lowStockAlert}
                     onChange={(e) => setLowStockAlert(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -579,7 +723,7 @@ export const ProductManagement: React.FC = () => {
                     type="date"
                     value={expiryDate}
                     onChange={(e) => setExpiryDate(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white font-mono"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-mono"
                   />
                 </div>
 
