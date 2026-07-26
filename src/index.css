@@ -80,7 +80,7 @@ body:not(.dark) {
 }
 
 /* Light mode background canvas */
-:root:not(.dark) .bg-[#0A0A0B],
+:root:not(.dark) .app-shell,
 :root:not(.dark) main {
   background-color: #F4F5F8 !important;
 }
@@ -214,15 +214,13 @@ body:not(.dark) {
 }
 
 /* Exceptions for overall background and sidebar wrapper */
-.dark.bg-[#0A0A0B],
-.dark .bg-[#0A0A0B],
+.dark .app-shell,
 .dark main,
 .dark header {
   background-color: #0A0A0B !important; /* App outer canvas and header are #0A0A0B */
 }
 
-.dark aside,
-.dark .bg-[#111112] {
+.dark aside {
   background-color: #111112 !important; /* Sidebar background is exact #111112 */
 }
 
@@ -332,3 +330,40 @@ body:not(.dark) {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
+/* Printable barcode/QR preview is intentionally a light, ink-on-paper surface. */
+.dark .light-preview {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+}
+
+.dark .light-preview h3,
+.dark .light-preview h4 {
+  color: #111827 !important;
+}
+
+.dark .light-preview .bg-white {
+  background-color: #FFFFFF !important;
+}
+
+.dark .light-preview .bg-gray-50,
+.dark .light-preview .bg-gray-50\/40 {
+  background-color: #F9FAFB !important;
+}
+
+.dark .light-preview .bg-black {
+  background-color: #000000 !important;
+}
+
+.dark .light-preview .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+.dark .light-preview .text-gray-900,
+.dark .light-preview .text-gray-800 {
+  color: #111827 !important;
+}
+
+.dark .light-preview .text-gray-400,
+.dark .light-preview .text-gray-450 {
+  color: #6B7280 !important;
+}

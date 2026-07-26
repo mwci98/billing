@@ -25,6 +25,9 @@ export const Dashboard: React.FC = () => {
     syncWithCloud
   } = useAppState();
 
+  const formatWholeCurrency = (value: number) =>
+    `${settings.currency}${Math.round(value).toLocaleString('en-IN')}`;
+
   // 1. KPI Calculations
   const totalProducts = products.length;
   
@@ -142,8 +145,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {settings.currency}{todayRevenue.toFixed(2)}
+            <h3 className="whitespace-nowrap text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+              {formatWholeCurrency(todayRevenue)}
             </h3>
             <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-500">
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -161,8 +164,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {settings.currency}{totalSalesRevenue.toFixed(2)}
+            <h3 className="whitespace-nowrap text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+              {formatWholeCurrency(totalSalesRevenue)}
             </h3>
             <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-blue-500">
               <span>{sales.length} Invoices</span>
@@ -195,7 +198,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
               {lowStockProducts.length} <span className="text-sm font-medium text-gray-400">Items</span>
             </h3>
             <p className={`mt-1 text-[11px] font-semibold ${lowStockProducts.length > 0 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -229,8 +232,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {settings.currency}{estimatedProfit.toFixed(2)}
+            <h3 className="whitespace-nowrap text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+              {formatWholeCurrency(estimatedProfit)}
             </h3>
             <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-pink-500">
               <ArrowUpRight className="h-3 w-3" />
@@ -283,7 +286,7 @@ export const Dashboard: React.FC = () => {
                           {s.paymentMethod}
                         </span>
                       </td>
-                      <td className="py-3 font-bold">{settings.currency}{s.total.toFixed(2)}</td>
+                      <td className="py-3 font-bold">{formatWholeCurrency(s.total)}</td>
                       <td className="py-3 text-gray-400 font-mono text-[10px]">
                         {new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </td>

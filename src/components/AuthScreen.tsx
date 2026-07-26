@@ -72,8 +72,8 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div id="auth-panel" className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 px-4 py-12 transition-colors duration-150">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-100/30 via-transparent to-transparent dark:from-emerald-950/20 pointer-events-none" />
+    <div id="auth-panel" className="dark relative flex min-h-screen w-full items-center justify-center bg-[#0A0A0B] px-4 py-12 text-[#E0E0E0] transition-colors duration-150">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/25 via-transparent to-transparent pointer-events-none" />
 
       <div className="w-full max-w-md space-y-6">
         {/* Header Branding */}
@@ -81,16 +81,16 @@ export const AuthScreen: React.FC = () => {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
             <Store className="h-7 w-7" />
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white">
             QuickMart Retail POS
           </h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-400">
             Realtime Billing & Inventory Management System
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-800 p-8 space-y-6">
+        <div className="overflow-hidden rounded-3xl bg-[#141416] shadow-xl border border-white/5 p-8 space-y-6">
           <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 p-3.5 text-emerald-800 dark:text-emerald-300">
             <Sparkles className="h-5 w-5 shrink-0" />
             <p className="text-xs">

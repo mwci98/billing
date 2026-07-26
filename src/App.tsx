@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
@@ -43,11 +43,17 @@ const AppContent: React.FC = () => {
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
   const [isSaaSModalOpen, setIsSaaSModalOpen] = useState<boolean>(false);
 
+  // Keep global theme selectors aligned with application state.
+  // The authentication screen is intentionally always dark.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', currentUser ? isDarkMode : true);
+  }, [currentUser, isDarkMode]);
+
   // Unauthenticated screen guard gate
   if (!currentUser) {
     return (
-      <div className={isDarkMode ? 'dark bg-[#0A0A0B] min-h-screen' : 'bg-gray-50 min-h-screen'}>
-        <div className="bg-gray-50 dark:bg-[#0A0A0B] min-h-screen text-gray-900 dark:text-[#E0E0E0] font-sans flex items-center justify-center p-4">
+      <div className="dark bg-[#0A0A0B] min-h-screen">
+        <div className="bg-[#0A0A0B] min-h-screen text-[#E0E0E0] font-sans flex items-center justify-center p-4">
           <AuthScreen />
         </div>
       </div>
@@ -100,7 +106,7 @@ const AppContent: React.FC = () => {
   const activeTabTitle = currentTabItem ? currentTabItem.name : 'ElectroHub POS';
 
   return (
-    <div className={isDarkMode ? 'dark bg-[#0A0A0B] text-[#E0E0E0] min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'bg-gray-50 text-gray-900 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
+    <div className={isDarkMode ? 'app-shell dark bg-[#0A0A0B] text-[#E0E0E0] min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell bg-gray-50 text-gray-900 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
       {/* Toast notification banner */}
       {toast && (
         <div id="visual-toast" className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 rounded-2xl bg-[#141416]/95 border border-white/10 backdrop-blur-xl px-5 py-3 shadow-2xl text-xs max-w-md w-[92%] md:w-auto transition-all duration-300 font-sans">

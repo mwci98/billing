@@ -291,7 +291,7 @@ export const POSBilling: React.FC = () => {
     }
 
     const saleRecord = addSale({
-      customerId: attachedCustomer?.id || undefined,
+      ...(attachedCustomer?.id ? { customerId: attachedCustomer.id } : {}),
       customerName: attachedCustomer?.name || 'Walk-in Customer',
       items: saleItems,
       subtotal,

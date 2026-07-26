@@ -937,7 +937,7 @@ export const ProductManagement: React.FC = () => {
       {/* MODAL: Printable Labels Barcodes QR Overlay */}
       {activeLabels && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white text-gray-900 border border-gray-100 shadow-2xl p-6 relative">
+          <div className="light-preview w-full max-w-sm rounded-3xl bg-white text-gray-900 border border-gray-100 shadow-2xl p-6 relative">
             <button
               onClick={() => setActiveLabels(null)}
               className="absolute top-4 right-4 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
