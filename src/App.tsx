@@ -297,7 +297,11 @@ const AppContent: React.FC = () => {
                 <Building2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="max-w-[120px] truncate hidden md:inline">{activeStore.name}</span>
                 <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider">
-                  {settings.planTier || 'Pro'}
+                  {settings.subscriptionStatus === 'active'
+                    ? 'Pro'
+                    : settings.subscriptionStatus === 'trialing'
+                      ? 'Trial'
+                      : 'Expired'}
                 </span>
               </button>
 

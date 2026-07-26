@@ -53,14 +53,14 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  SaaS Enterprise Workspace Manager
+                  SaaS Workspace & Subscription
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {currentPlanTier} Tier
+                  {settings.subscriptionStatus === 'active' ? 'Pro' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-white/60 mt-0.5">
-                Multi-tenant store branches & Firebase Firestore cloud persistence
+                Your isolated store workspace, trial, and Pro subscription
               </p>
             </div>
           </div>
@@ -83,7 +83,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
             }`}
           >
             <Building2 className="h-4 w-4" />
-            Store Branches ({saasStores.length})
+            Store Workspace
           </button>
           <button
             onClick={() => setActiveTab('plans')}
@@ -117,13 +117,13 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Active Store Locations</h3>
-                  <p className="text-xs text-gray-500 dark:text-white/50">Switch seamlessly between your multi-branch POS outlets</p>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Primary Store Workspace</h3>
+                  <p className="text-xs text-gray-500 dark:text-white/50">This workspace belongs to the signed-in tenant and is shared with authorised staff.</p>
                 </div>
-                <span className="text-xs text-gray-400 font-mono">Tenant ID: {settings.tenantId || 'tenant-main-01'}</span>
+                <span className="text-xs text-gray-400 font-mono">Tenant ID: {settings.tenantId || currentUser?.tenantId || 'Loading…'}</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 max-w-lg gap-4">
                 {saasStores.map((store) => {
                   const isActive = store.id === activeStore.id;
                   return (
@@ -150,7 +150,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                           <p className="text-[10px] text-gray-500 dark:text-white/50 mt-0.5">{store.city} • Code: {store.branchCode}</p>
                           <div className="mt-3 flex items-center justify-between text-[10px]">
                             <span className={`font-semibold ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`}>
-                              {isActive ? 'Active Workspace' : 'Click to Switch'}
+                              {isActive ? 'Active Workspace' : 'Workspace'}
                             </span>
                             <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 text-gray-500 font-mono">
                               {store.status}
@@ -166,9 +166,9 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
               <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
                 <div className="flex items-center gap-2.5">
                   <Globe className="h-4 w-4 text-blue-500" />
-                  <span>Cross-branch inventory sync is enabled across all registered store locations.</span>
+                  <span>Products, sales, purchases, and staff access are isolated inside this tenant workspace.</span>
                 </div>
-                <span className="font-bold uppercase tracking-wider text-[10px]">Live Sync Active</span>
+                <span className="font-bold uppercase tracking-wider text-[10px]">{isFirebaseConnected ? 'Cloud Connected' : 'Local Mode'}</span>
               </div>
             </div>
           )}
@@ -177,8 +177,8 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
           {activeTab === 'plans' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Choose Your SaaS Tier</h3>
-                <p className="text-xs text-gray-500 dark:text-white/50">Scale catalog limits, multi-location branches, and cloud backups</p>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Pro Subscription</h3>
+                <p className="text-xs text-gray-500 dark:text-white/50">Five-day free trial followed by ₹5,500 monthly recurring billing through Razorpay.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -323,9 +323,9 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
               <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-3 text-xs text-emerald-700 dark:text-emerald-300">
                 <Shield className="h-5 w-5 text-emerald-500 shrink-0" />
                 <div>
-                  <span className="font-bold">Firestore Security Rules Enforced:</span>
+                  <span className="font-bold">Tenant Data Scope:</span>
                   <p className="text-gray-500 dark:text-white/60 text-[11px] mt-0.5">
-                    Data isolation enabled for authenticated user email <span className="font-mono text-emerald-500 font-semibold">{currentUser?.email}</span>.
+                    Application data is stored under tenant <span className="font-mono text-emerald-500 font-semibold">{settings.tenantId || currentUser?.tenantId}</span> for <span className="font-mono text-emerald-500 font-semibold">{currentUser?.email}</span>.
                   </p>
                 </div>
               </div>

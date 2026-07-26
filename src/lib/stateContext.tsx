@@ -18,9 +18,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc } from 'firebase/firestore';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
-  { id: 'store-1', name: 'ElectroHub - Flagship Store', branchCode: 'HYD-01', city: 'Hyderabad', status: 'Active' },
-  { id: 'store-2', name: 'ElectroHub - Airport Outlet', branchCode: 'AIR-02', city: 'Delhi', status: 'Active' },
-  { id: 'store-3', name: 'ElectroHub - E-Commerce Hub', branchCode: 'BLR-03', city: 'Bengaluru', status: 'Active' }
+  { id: 'primary-store', name: 'Primary Store', branchCode: 'MAIN', city: 'Primary location', status: 'Active' }
 ];
 
 const DEFAULT_SAAS_PLANS: SaaSPlan[] = [
@@ -124,7 +122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   // SaaS Workspace & Store Branch State
-  const [saasStores] = useState<SaaSStore[]>(DEFAULT_SAAS_STORES);
+  const [saasStores, setSaaSStores] = useState<SaaSStore[]>(DEFAULT_SAAS_STORES);
   const [activeStore, setActiveStore] = useState<SaaSStore>(DEFAULT_SAAS_STORES[0]);
 
   // Authenticated State (Role-based)
@@ -164,6 +162,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
   const [notifications, setNotifications] = useState<POSNotification[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+
+  useEffect(() => {
+    const tenantId = settings.tenantId || getUserScope(currentUser);
+    const primaryStore: SaaSStore = {
+      id: tenantId,
+      name: settings.storeName || 'Primary Store',
+      branchCode: settings.storeBranch || 'MAIN',
+      city: settings.address || 'Primary location',
+      status: 'Active'
+    };
+    setSaaSStores([primaryStore]);
+    setActiveStore(primaryStore);
+  }, [currentUser, settings.address, settings.storeBranch, settings.storeName, settings.tenantId]);
 
   // Toast notifier state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
