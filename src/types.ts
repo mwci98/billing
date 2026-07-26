@@ -183,6 +183,8 @@ export interface StoreSettings {
   ownerName?: string;
   businessType?: string;
   website?: string;
+  storeBranches?: SaaSStore[];
+  activeStoreId?: string;
 }
 
 export interface SaaSStore {

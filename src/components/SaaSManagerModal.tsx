@@ -1,9 +1,30 @@
 import React, { useState } from 'react';
 import { 
   Building2, CheckCircle2, Zap,
-  Layers, Check, X, Sparkles, Globe, MapPin, CreditCard
+  Layers, Check, X, Sparkles, Globe, MapPin, CreditCard, Plus, Loader2
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+
+async function loadRazorpayCheckout() {
+  if (window.Razorpay) return true;
+  return new Promise<boolean>(resolve => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
+
+async function readApiResponse(response: Response) {
+  const body = await response.text();
+  if (!body) return {};
+  try {
+    return JSON.parse(body) as Record<string, any>;
+  } catch {
+    throw new Error('The payment server returned an invalid response.');
+  }
+}
 
 interface SaaSManagerModalProps {
   isOpen: boolean;
@@ -16,15 +37,97 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
     saasStores, 
     saasPlans, 
     switchStoreBranch, 
+    addStoreBranch,
     upgradeSaaSPlan, 
     settings, 
     currentUser,
-    isFirebaseConnected
+    isFirebaseConnected,
+    triggerToast
   } = useAppState();
 
   const [activeTab, setActiveTab] = useState<'branches' | 'plans'>('branches');
+  const [isBuyingStore, setIsBuyingStore] = useState(false);
+  const [showStoreForm, setShowStoreForm] = useState(false);
+  const [storeName, setStoreName] = useState('');
+  const [branchCode, setBranchCode] = useState('');
+  const [storeCity, setStoreCity] = useState('');
 
   if (!isOpen) return null;
+
+  const purchaseStoreAddon = async () => {
+    if (!currentUser || isBuyingStore) return;
+    setIsBuyingStore(true);
+    try {
+      const checkoutLoaded = await loadRazorpayCheckout();
+      if (!checkoutLoaded || !window.Razorpay) {
+        throw new Error('Razorpay Checkout could not be loaded.');
+      }
+
+      const orderResponse = await fetch('/api/razorpay/create-addon-order', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          tenantId: currentUser.tenantId || settings.tenantId,
+          email: currentUser.email,
+        }),
+      });
+      const order = await readApiResponse(orderResponse);
+      if (!orderResponse.ok) throw new Error(order.error || 'Unable to start the add-on payment.');
+
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: settings.storeName || 'QuickMart Retail POS',
+        description: 'Additional store add-on · one-time ₹500',
+        prefill: {name: currentUser.name, email: currentUser.email},
+        theme: {color: '#10B981'},
+        handler: async (payment: any) => {
+          const verificationResponse = await fetch('/api/razorpay/verify-addon-payment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              razorpayOrderId: payment.razorpay_order_id,
+              razorpayPaymentId: payment.razorpay_payment_id,
+              razorpaySignature: payment.razorpay_signature,
+            }),
+          });
+          const verification = await readApiResponse(verificationResponse);
+          if (!verificationResponse.ok || !verification.verified) {
+            triggerToast(verification.error || 'Add-on payment verification failed.', 'error');
+            setIsBuyingStore(false);
+            return;
+          }
+          setShowStoreForm(true);
+          setIsBuyingStore(false);
+          triggerToast('Payment verified. Enter the new store details.', 'success');
+        },
+        modal: {ondismiss: () => setIsBuyingStore(false)},
+      });
+      checkout.open();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Unable to buy the store add-on.', 'error');
+      setIsBuyingStore(false);
+    }
+  };
+
+  const submitStore = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!storeName.trim() || !branchCode.trim() || !storeCity.trim()) {
+      triggerToast('Enter the store name, branch code, and city.', 'warning');
+      return;
+    }
+    addStoreBranch({
+      name: storeName.trim(),
+      branchCode: branchCode.trim(),
+      city: storeCity.trim(),
+    });
+    setStoreName('');
+    setBranchCode('');
+    setStoreCity('');
+    setShowStoreForm(false);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
@@ -90,22 +193,65 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
           {/* TAB 1: STORE BRANCHES */}
           {activeTab === 'branches' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Primary Store Workspace</h3>
-                  <p className="text-xs text-gray-500 dark:text-white/50">This workspace belongs to the signed-in tenant and is shared with authorised staff.</p>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Store Workspaces</h3>
+                  <p className="text-xs text-gray-500 dark:text-white/50">Select a store to switch the active workspace.</p>
                 </div>
-                <span className="text-xs text-gray-400 font-mono">Tenant ID: {settings.tenantId || currentUser?.tenantId || 'Loading…'}</span>
+                <button
+                  type="button"
+                  onClick={purchaseStoreAddon}
+                  disabled={isBuyingStore}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-600 disabled:opacity-50"
+                >
+                  {isBuyingStore ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Add Store · ₹500 once
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 max-w-lg gap-4">
+              {showStoreForm && (
+                <form onSubmit={submitStore} className="grid grid-cols-1 gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:grid-cols-3">
+                  <input
+                    value={storeName}
+                    onChange={event => setStoreName(event.target.value)}
+                    placeholder="Store name"
+                    aria-label="Store name"
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs dark:border-white/10 dark:bg-[#18181B]"
+                  />
+                  <input
+                    value={branchCode}
+                    onChange={event => setBranchCode(event.target.value)}
+                    placeholder="Branch code"
+                    aria-label="Branch code"
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs uppercase dark:border-white/10 dark:bg-[#18181B]"
+                  />
+                  <input
+                    value={storeCity}
+                    onChange={event => setStoreCity(event.target.value)}
+                    placeholder="City / location"
+                    aria-label="City or location"
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs dark:border-white/10 dark:bg-[#18181B]"
+                  />
+                  <div className="flex gap-2 sm:col-span-3 sm:justify-end">
+                    <button type="button" onClick={() => setShowStoreForm(false)} className="rounded-xl px-4 py-2 text-xs font-bold text-gray-500">
+                      Cancel
+                    </button>
+                    <button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-white">
+                      Create & Switch Store
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {saasStores.map((store) => {
                   const isActive = store.id === activeStore.id;
                   return (
-                    <div 
+                    <button
+                      type="button"
                       key={store.id}
                       onClick={() => switchStoreBranch(store.id)}
-                      className={`p-5 rounded-2xl border transition-all cursor-pointer relative ${
+                      className={`w-full p-5 rounded-2xl border text-left transition-all cursor-pointer relative ${
                         isActive 
                           ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-500/50 shadow-lg shadow-emerald-500/5' 
                           : 'bg-gray-50 dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20'
@@ -133,7 +279,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

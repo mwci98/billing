@@ -57,6 +57,7 @@ interface AppContextType {
   saasStores: SaaSStore[];
   saasPlans: SaaSPlan[];
   switchStoreBranch: (storeId: string) => void;
+  addStoreBranch: (store: Pick<SaaSStore, 'name' | 'branchCode' | 'city'>) => void;
   upgradeSaaSPlan: (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => void;
 
   // Business Data Store
@@ -150,9 +151,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       city: settings.address || 'Primary location',
       status: 'Active'
     };
-    setSaaSStores([primaryStore]);
-    setActiveStore(primaryStore);
-  }, [currentUser, settings.address, settings.storeBranch, settings.storeName, settings.tenantId]);
+    const branches = settings.storeBranches?.length
+      ? settings.storeBranches
+      : [primaryStore];
+    const selected = branches.find(store => store.id === settings.activeStoreId)
+      || branches.find(store => store.id === activeStore.id)
+      || branches[0];
+    setSaaSStores(branches);
+    setActiveStore(selected);
+  }, [
+    currentUser,
+    settings.activeStoreId,
+    settings.address,
+    settings.storeBranch,
+    settings.storeBranches,
+    settings.storeName,
+    settings.tenantId
+  ]);
 
   // Toast notifier state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
@@ -1224,8 +1239,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = saasStores.find(s => s.id === storeId);
     if (target) {
       setActiveStore(target);
+      updateSettings({...settings, activeStoreId: target.id});
       triggerToast(`Switched workspace branch to ${target.name}`, 'info');
     }
+  };
+
+  const addStoreBranch = (store: Pick<SaaSStore, 'name' | 'branchCode' | 'city'>) => {
+    const primaryStore: SaaSStore = {
+      id: settings.tenantId || getUserScope(currentUser),
+      name: settings.storeName || 'Primary Store',
+      branchCode: settings.storeBranch || 'MAIN',
+      city: settings.address || 'Primary location',
+      status: 'Active'
+    };
+    const existingBranches = settings.storeBranches?.length
+      ? settings.storeBranches
+      : [primaryStore];
+    const newStore: SaaSStore = {
+      ...store,
+      id: `branch-${Date.now()}`,
+      branchCode: store.branchCode.trim().toUpperCase(),
+      status: 'Active'
+    };
+    const storeBranches = [...existingBranches, newStore];
+    setSaaSStores(storeBranches);
+    setActiveStore(newStore);
+    updateSettings({
+      ...settings,
+      storeBranches,
+      activeStoreId: newStore.id
+    });
+    triggerToast(`${newStore.name} added and activated.`, 'success');
   };
 
   const upgradeSaaSPlan = (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => {
@@ -1246,6 +1290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saasStores,
         saasPlans: DEFAULT_SAAS_PLANS,
         switchStoreBranch,
+        addStoreBranch,
         upgradeSaaSPlan,
 
         products,
