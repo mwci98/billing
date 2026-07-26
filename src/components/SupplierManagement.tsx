@@ -9,9 +9,10 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Supplier } from '../types';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const SupplierManagement: React.FC = () => {
-  const { suppliers, addSupplier, editSupplier, deleteSupplier, purchases, settings } = useAppState();
+  const { suppliers, addSupplier, editSupplier, deleteSupplier, purchases, settings, triggerToast } = useAppState();
 
   const [search, setSearch] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -22,7 +23,14 @@ export const SupplierManagement: React.FC = () => {
   const [companyName, setCompanyName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [gstNumber, setGstNumber] = useState<string>('');
+  const [address, setAddress] = useState<string>('');
   const [outstandingBalance, setOutstandingBalance] = useState<string>('0');
+
+  // Modal states
+  const [suppToDelete, setSuppToDelete] = useState<Supplier | null>(null);
+  const [suppToSettle, setSuppToSettle] = useState<Supplier | null>(null);
+  const [settleAmountInput, setSettleAmountInput] = useState<string>('');
 
   // Supplier purchase history pop toggle
   const [historyViewerSupplier, setHistoryViewerSupplier] = useState<Supplier | null>(null);
@@ -33,6 +41,8 @@ export const SupplierManagement: React.FC = () => {
     setCompanyName('');
     setPhone('');
     setEmail('');
+    setGstNumber('');
+    setAddress('');
     setOutstandingBalance('0');
     setIsFormOpen(true);
   };
@@ -43,6 +53,8 @@ export const SupplierManagement: React.FC = () => {
     setCompanyName(s.companyName);
     setPhone(s.phone);
     setEmail(s.email || '');
+    setGstNumber(s.gstNumber || '');
+    setAddress(s.address || '');
     setOutstandingBalance(s.outstandingBalance.toString());
     setIsFormOpen(true);
   };
@@ -50,7 +62,7 @@ export const SupplierManagement: React.FC = () => {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !companyName || !phone) {
-      alert("Name, company, and phone are essential supplier definitions!");
+      triggerToast("Name, company, and phone are essential supplier definitions!", "warning");
       return;
     }
 
@@ -59,34 +71,45 @@ export const SupplierManagement: React.FC = () => {
       companyName,
       phone,
       email: email || undefined,
+      gstNumber: gstNumber || undefined,
+      address: address || undefined,
       outstandingBalance: parseFloat(outstandingBalance) || 0
     };
 
     if (editingItem) {
       editSupplier(editingItem.id, payload);
+      triggerToast(`Supplier "${companyName}" details updated!`, 'success');
     } else {
       addSupplier(payload);
+      triggerToast(`Supplier "${companyName}" added successfully!`, 'success');
     }
     setIsFormOpen(false);
   };
 
-  const handleSettlePayments = (supp: Supplier) => {
-    const settleAmt = prompt(`Pay Supplier. Outstanding Balance due to "${supp.companyName}" is ${settings.currency}${supp.outstandingBalance.toFixed(2)}.\nEnter payment payout amount:`);
-    if (settleAmt === null) return;
-    const payVal = parseFloat(settleAmt) || 0;
+  const openSettleModal = (supp: Supplier) => {
+    setSuppToSettle(supp);
+    setSettleAmountInput(supp.outstandingBalance.toString());
+  };
+
+  const processSettlePayment = () => {
+    if (!suppToSettle) return;
+    const payVal = parseFloat(settleAmountInput) || 0;
     if (payVal <= 0) {
-      alert("Enter a valid positive payout amount!");
+      triggerToast("Enter a valid positive payout amount!", "warning");
       return;
     }
-    const nextBal = Math.max(0, supp.outstandingBalance - payVal);
-    editSupplier(supp.id, { outstandingBalance: nextBal });
-    alert(`Vendor checkout payout of ${settings.currency}{payVal.toFixed(2)} settled. Balance left: ${settings.currency}${nextBal.toFixed(2)}! ✔`);
+    const nextBal = Math.max(0, suppToSettle.outstandingBalance - payVal);
+    editSupplier(suppToSettle.id, { outstandingBalance: nextBal });
+    triggerToast(`Payout of ${settings.currency}${payVal.toFixed(2)} to ${suppToSettle.companyName} settled. Balance left: ${settings.currency}${nextBal.toFixed(2)}! ✔`, 'success');
+    setSuppToSettle(null);
   };
 
   const filtered = suppliers.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.companyName.toLowerCase().includes(search.toLowerCase()) ||
-    s.phone.includes(search)
+    s.phone.includes(search) ||
+    (s.gstNumber && s.gstNumber.toLowerCase().includes(search.toLowerCase())) ||
+    (s.address && s.address.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -96,7 +119,7 @@ export const SupplierManagement: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-950 p-6 rounded-3xl border border-gray-100 dark:border-gray-900 shadow-sm">
         <div>
           <h2 className="text-2xl font-black text-gray-950 dark:text-white">Wholesalers & suppliers ledger</h2>
-          <p className="text-xs text-gray-400">Track company contacts, restocking invoices total balances, and cash outstanding tallies</p>
+          <p className="text-xs text-gray-400">Track company contacts, GST numbers, addresses, restocking invoices, and outstanding tallies</p>
         </div>
 
         <button
@@ -119,7 +142,7 @@ export const SupplierManagement: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search partners by company name, numeric phone..."
+            placeholder="Search partners by company, GST, phone, address..."
             className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-2.5 pl-10 text-xs focus:border-emerald-500 focus:outline-none"
           />
         </div>
@@ -128,10 +151,11 @@ export const SupplierManagement: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-gray-105 text-gray-400 uppercase tracking-widest text-[9px] font-bold">
-                <th className="py-2.5">Supplier Details</th>
-                <th className="py-2.5">Distributor phone</th>
-                <th className="py-2.5">Company contact</th>
-                <th className="py-2.5 font-mono">Outstanding Account balance</th>
+                <th className="py-2.5">Supplier / Company</th>
+                <th className="py-2.5">GSTIN / Address</th>
+                <th className="py-2.5">Distributor Phone</th>
+                <th className="py-2.5">Contact Person</th>
+                <th className="py-2.5 font-mono">Outstanding Balance</th>
                 <th className="py-2.5 text-right">Actions</th>
               </tr>
             </thead>
@@ -142,10 +166,22 @@ export const SupplierManagement: React.FC = () => {
                   <tr key={s.id} className="text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50/20">
                     <td className="py-3">
                       <p className="font-bold text-gray-950 dark:text-white">{s.companyName}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{s.email || 'No email register'}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{s.email || 'No email registered'}</p>
+                    </td>
+                    <td className="py-3 max-w-[200px]">
+                      {s.gstNumber && (
+                        <p className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md inline-block mb-1">
+                          GST: {s.gstNumber}
+                        </p>
+                      )}
+                      {s.address ? (
+                        <p className="text-[10px] text-gray-400 line-clamp-2">{s.address}</p>
+                      ) : (
+                        !s.gstNumber && <span className="text-[10px] text-gray-400 italic">No GST/Address</span>
+                      )}
                     </td>
                     <td className="py-3 font-mono">{s.phone}</td>
-                    <td className="py-3">{s.name} (Manager)</td>
+                    <td className="py-3">{s.name}</td>
                     <td className="py-3 font-mono">
                       {hasBalance ? (
                         <div className="flex items-center gap-2">
@@ -154,8 +190,8 @@ export const SupplierManagement: React.FC = () => {
                           </span>
                           <button
                             id={`supp-settle-btn-${s.id}`}
-                            onClick={() => handleSettlePayments(s)}
-                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase"
+                            onClick={() => openSettleModal(s)}
+                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-lg px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase cursor-pointer"
                           >
                             Pay Payout
                           </button>
@@ -185,11 +221,7 @@ export const SupplierManagement: React.FC = () => {
 
                         <button
                           id={`supp-delete-btn-${s.id}`}
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to remove supplier company "${s.companyName}"?`)) {
-                              deleteSupplier(s.id);
-                            }
-                          }}
+                          onClick={() => setSuppToDelete(s)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -271,6 +303,30 @@ export const SupplierManagement: React.FC = () => {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold mb-1">GST Number (GSTIN)</label>
+                <input
+                  id="form-supp-gst"
+                  type="text"
+                  value={gstNumber}
+                  onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                  placeholder="e.g. 27AAAAA0000A1Z5"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">Business / Registered Address</label>
+                <textarea
+                  id="form-supp-address"
+                  rows={2}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="e.g. Plot 42, Industrial Area, Sector 5..."
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold mb-1">Outstanding account balance ({settings.currency})</label>
                 <input
                   id="form-supp-balance"
@@ -340,6 +396,69 @@ export const SupplierManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* OVERLAY: Supplier Balance Settle Modal */}
+      {suppToSettle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-gray-950 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-6 relative space-y-4">
+            <button
+              onClick={() => setSuppToSettle(null)}
+              className="absolute top-4 right-4 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div>
+              <h3 className="text-base font-bold">Settle Supplier Balance</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{suppToSettle.companyName} • Balance Due: <strong className="text-red-500 font-mono">{settings.currency}{suppToSettle.outstandingBalance.toFixed(2)}</strong></p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-gray-500">Payout Amount Paid ({settings.currency})</label>
+              <input
+                type="number"
+                value={settleAmountInput}
+                onChange={(e) => setSettleAmountInput(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono font-bold text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSuppToSettle(null)}
+                className="px-4 py-2 text-xs font-semibold text-gray-500 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={processSettlePayment}
+                className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-md cursor-pointer"
+              >
+                Confirm Payout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Supplier Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!suppToDelete}
+        title="Remove Supplier Company"
+        message={`Are you sure you want to remove supplier company "${suppToDelete?.companyName}" from the store register?`}
+        itemName={suppToDelete?.companyName}
+        onConfirm={() => {
+          if (suppToDelete) {
+            deleteSupplier(suppToDelete.id);
+            triggerToast(`Supplier company "${suppToDelete.companyName}" deleted! ✔`, 'success');
+            setSuppToDelete(null);
+          }
+        }}
+        onClose={() => setSuppToDelete(null)}
+      />
     </div>
   );
 };

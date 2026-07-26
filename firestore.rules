@@ -1,69 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Global Default Deny Gateway
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Helper Primitives
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isUserEmail(email) {
-      return isSignedIn() && request.auth.token.email == email;
-    }
-
-    // Checking if user is the bootstrapped admin
-    function isAdminUser() {
-      return isSignedIn() && (
-        request.auth.token.email == 'jiv.dasgupta09@gmail.com' || 
-        request.auth.token.email == 'admin@shop.com'
-      );
-    }
-
-    // 1. Products collection
-    match /products/{productId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn(); // Allow staff/admin is sufficient for active retail client operations
-    }
-
-    // 2. Sales collection
-    match /sales/{saleId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // 3. Purchases collection
-    match /purchases/{purchaseId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // 4. Customers collection
-    match /customers/{customerId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // 5. Suppliers collection
-    match /suppliers/{supplierId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // 6. Inventory Transactions collection
-    match /inventory_transactions/{transactionId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // 7. Store Settings collection
-    match /store_settings/{settingsId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
-    // 8. Staff collection
-    match /staff/{staffId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

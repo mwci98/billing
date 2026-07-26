@@ -31,6 +31,10 @@ export interface Product {
   lowStockAlert: number;
   expiryDate?: string; // YYYY-MM-DD
   imageUrl?: string;
+  sourcingType?: 'Purchased' | 'Manufactured' | 'Both'; // Origin of product
+  manufacturingCost?: number; // Direct production/raw material cost per unit
+  batchNo?: string; // Production batch number
+  productionNotes?: string; // Assembly or recipe notes
   createdAt: string;
   updatedAt: string;
 }
@@ -92,6 +96,9 @@ export interface Purchase {
   status: 'Received' | 'Ordered' | 'Pending';
   paymentStatus: 'Paid' | 'Partially Paid' | 'Unpaid';
   dueAmount: number;
+  entryType?: 'Supplier Purchase' | 'In-House Production';
+  batchNo?: string;
+  productionNotes?: string;
 }
 
 export interface Customer {
@@ -111,6 +118,8 @@ export interface Supplier {
   companyName: string;
   phone: string;
   email?: string;
+  gstNumber?: string;
+  address?: string;
   outstandingBalance: number;
   createdAt: string;
 }
@@ -120,7 +129,7 @@ export interface InventoryTransaction {
   productId: string;
   productName: string;
   sku: string;
-  type: 'Stock In' | 'Stock Out' | 'Sale' | 'Purchase Entry' | 'Adjustment';
+  type: 'Stock In' | 'Stock Out' | 'Sale' | 'Purchase Entry' | 'Adjustment' | 'In-House Production';
   quantity: number;
   previousStock: number;
   newStock: number;
@@ -140,6 +149,28 @@ export interface StoreSettings {
   receiptHeader: string;
   receiptFooter: string;
   loyaltyPointsPerDollar: number; // conversion rate
+  planTier?: 'Free' | 'Pro' | 'Enterprise';
+  tenantId?: string;
+  storeBranch?: string;
+}
+
+export interface SaaSStore {
+  id: string;
+  name: string;
+  branchCode: string;
+  city: string;
+  status: 'Active' | 'Inactive';
+}
+
+export interface SaaSPlan {
+  name: 'Free' | 'Pro' | 'Enterprise';
+  priceMonthly: number;
+  maxProducts: number;
+  maxMonthlySales: number;
+  multiBranch: boolean;
+  cloudBackup: boolean;
+  customBranding: boolean;
+  features: string[];
 }
 
 export interface POSNotification {

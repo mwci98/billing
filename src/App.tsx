@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Wifi
+  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -20,6 +20,7 @@ import { CustomerManagement } from './components/CustomerManagement';
 import { SupplierManagement } from './components/SupplierManagement';
 import { ReportsView } from './components/ReportsView';
 import { SettingsPage } from './components/SettingsPage';
+import { SaaSManagerModal } from './components/SaaSManagerModal';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -34,11 +35,13 @@ const AppContent: React.FC = () => {
     markNotificationRead,
     isFirebaseConnected,
     settings,
+    activeStore,
     toast
   } = useAppState();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
+  const [isSaaSModalOpen, setIsSaaSModalOpen] = useState<boolean>(false);
 
   // Unauthenticated screen guard gate
   if (!currentUser) {
@@ -243,7 +246,7 @@ const AppContent: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[10px] font-mono text-gray-400 mt-0.5 hidden sm:block">
-                  {settings.storeName} • Terminal #1
+                  <span className="text-emerald-500 font-bold">{currentUser.email}</span> • {settings.storeName || 'Isolated Business SaaS'}
                 </p>
               </div>
             </div>
@@ -251,6 +254,19 @@ const AppContent: React.FC = () => {
             {/* Top header status tools & notifications bell */}
             <div className="flex items-center gap-2 text-xs font-semibold">
               
+              {/* SaaS Multi-Branch Selector Button */}
+              <button
+                onClick={() => setIsSaaSModalOpen(true)}
+                className="rounded-xl px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 font-bold transition-all active:scale-95 cursor-pointer"
+                title="Manage SaaS Store Branches & Subscription Plans"
+              >
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="max-w-[120px] truncate hidden md:inline">{activeStore.name}</span>
+                <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider">
+                  {settings.planTier || 'Pro'}
+                </span>
+              </button>
+
               {/* Online connection status badge */}
               <div className="rounded-xl px-2.5 py-1.5 bg-gray-100 dark:bg-gray-900 flex items-center gap-1.5 text-gray-600 dark:text-gray-300 font-mono text-[10px]">
                 <Wifi className="h-3.5 w-3.5 text-emerald-500 animate-pulse shrink-0" />
@@ -383,6 +399,12 @@ const AppContent: React.FC = () => {
           <span className="text-[10px] mt-1 font-semibold">More</span>
         </button>
       </nav>
+
+      {/* SaaS Multi-Branch & Subscription Manager Modal */}
+      <SaaSManagerModal 
+        isOpen={isSaaSModalOpen} 
+        onClose={() => setIsSaaSModalOpen(false)} 
+      />
     </div>
   );
 };

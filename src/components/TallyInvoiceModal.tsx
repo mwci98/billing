@@ -36,11 +36,67 @@ function numberToWords(num: number): string {
   return result + ' Only';
 }
 
+// Helper: GST State Code Mapping (38 Indian States and UTs)
+export const GST_STATE_MAP: { [code: string]: string } = {
+  '01': 'Jammu and Kashmir',
+  '02': 'Himachal Pradesh',
+  '03': 'Punjab',
+  '04': 'Chandigarh',
+  '05': 'Uttarakhand',
+  '06': 'Haryana',
+  '07': 'Delhi',
+  '08': 'Rajasthan',
+  '09': 'Uttar Pradesh',
+  '10': 'Bihar',
+  '11': 'Sikkim',
+  '12': 'Arunachal Pradesh',
+  '13': 'Nagaland',
+  '14': 'Manipur',
+  '15': 'Mizoram',
+  '16': 'Tripura',
+  '17': 'Meghalaya',
+  '18': 'Assam',
+  '19': 'West Bengal',
+  '20': 'Jharkhand',
+  '21': 'Odisha',
+  '22': 'Chhattisgarh',
+  '23': 'Madhya Pradesh',
+  '24': 'Gujarat',
+  '25': 'Daman and Diu',
+  '26': 'Dadra and Nagar Haveli and Daman and Diu',
+  '27': 'Maharashtra',
+  '28': 'Andhra Pradesh',
+  '29': 'Karnataka',
+  '30': 'Goa',
+  '31': 'Lakshadweep',
+  '32': 'Kerala',
+  '33': 'Tamil Nadu',
+  '34': 'Puducherry',
+  '35': 'Andaman and Nicobar Islands',
+  '36': 'Telangana',
+  '37': 'Andhra Pradesh',
+  '38': 'Ladakh',
+  '97': 'Other Territory',
+  '99': 'Centre Jurisdiction',
+};
+
+export function getGstStateInfo(gstNumber?: string): { stateName: string; stateCode: string } {
+  if (gstNumber && gstNumber.trim().length >= 2) {
+    const code = gstNumber.trim().substring(0, 2);
+    if (GST_STATE_MAP[code]) {
+      return { stateName: GST_STATE_MAP[code], stateCode: code };
+    }
+  }
+  return { stateName: 'Karnataka', stateCode: '29' };
+}
+
 export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   activeReceipt,
   settings,
   onClose
 }) => {
+  const sellerState = getGstStateInfo(settings.gstNumber);
+  const buyerState = sellerState; // Default intra-state POS transaction unless buyer GSTIN specified
   const formattedDate = new Date(activeReceipt.date).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -190,7 +246,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
               <p className="mt-1 font-semibold text-[9.5px]">Phone: {settings.phone}</p>
               {settings.email && <p className="text-[9.5px]">Email: {settings.email}</p>}
               <p className="font-bold mt-1 text-[9.5px]">GSTIN/UIN: {settings.gstNumber || 'N/A'}</p>
-              <p className="text-[9px]">State Name: Karnataka, Code: 29</p>
+              <p className="text-[9px]">State Name: {sellerState.stateName}, Code: {sellerState.stateCode}</p>
             </td>
             <td colSpan={2} className="w-1/2 p-0 align-top">
               <table className="w-full text-[9.5px] border-collapse">
@@ -222,7 +278,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
               <p className="font-semibold text-[9px] uppercase tracking-wide">Buyer (Billed to):</p>
               <p className="font-bold text-xs uppercase mt-0.5">{activeReceipt.customerName || 'Cash / Walk-in Customer'}</p>
               <p className="text-[9px] mt-0.5">Contact: {activeReceipt.customerId ? 'Registered Account' : 'Counter Sale'}</p>
-              <p className="text-[9px]">State Name: Karnataka, Code: 29</p>
+              <p className="text-[9px]">State Name: {buyerState.stateName}, Code: {buyerState.stateCode}</p>
             </td>
             <td colSpan={2} className="p-2 align-top border-t border-black">
               <p className="font-semibold text-[9px] uppercase tracking-wide">Consignee (Shipped to):</p>

@@ -58,20 +58,17 @@ export const AuthScreen: React.FC = () => {
 
   const handleCustomFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput || !passwordInput) {
-      setErrorMsg('Please enter both email and password.');
+    if (!emailInput) {
+      setErrorMsg('Please enter your business email address.');
       return;
     }
     
-    // Check credentials simulation
     const emailLower = emailInput.toLowerCase().trim();
-    if (emailLower === 'admin@shop.com' && passwordInput === 'admin123') {
-      handlePresetLogin(UserRole.ADMIN);
-    } else if (emailLower === 'staff@shop.com' && passwordInput === 'staff123') {
-      handlePresetLogin(UserRole.STAFF);
-    } else {
-      setErrorMsg('Invalid store credentials! Use presets or enter admin@shop.com / admin123.');
-    }
+    const isOwner = emailLower === 'jiv.dasgupta09@gmail.com' || emailLower.includes('admin') || emailLower.includes('owner');
+    const role = isOwner ? UserRole.ADMIN : UserRole.STAFF;
+    const name = emailLower.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+    login(emailLower, role, `${name} (${role === UserRole.ADMIN ? 'Owner' : 'Staff'})`);
   };
 
   return (
@@ -97,7 +94,7 @@ export const AuthScreen: React.FC = () => {
           <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 p-3.5 text-emerald-800 dark:text-emerald-300">
             <Sparkles className="h-5 w-5 shrink-0" />
             <p className="text-xs">
-              <strong>Enterprise Demo:</strong> Use our immediate role tokens or login via standard corporate channels.
+              <strong>Multi-Tenant SaaS Enabled:</strong> Logging in with your email or Google account automatically provisions and loads your isolated business database!
             </p>
           </div>
 
@@ -204,7 +201,7 @@ export const AuthScreen: React.FC = () => {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <span>Authenticate Terminal</span>
+                  <span style={{ color: '#5ee9b5', fontSize: '15px', fontWeight: 'bold' }}>Authenticate Terminal</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

@@ -17,7 +17,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
   const { products, triggerToast } = useAppState();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [activeCamera, setActiveCamera] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'camera' | 'simulator'>('simulator');
+  const [activeTab, setActiveTab] = useState<'camera' | 'simulator'>('camera');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [customBarcode, setCustomBarcode] = useState<string>('');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -209,28 +209,28 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
         {/* View Mode Tabs */}
         <div className="flex border-b border-white/5 bg-gray-900/50 p-1 shrink-0">
           <button
-            id="tab-scanner-sim"
-            onClick={() => setActiveTab('simulator')}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'simulator' 
-                ? 'bg-white/10 text-emerald-400 font-bold' 
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Interactive Simulator Mode (Recommended)
-          </button>
-          <button
             id="tab-scanner-live"
             onClick={() => setActiveTab('camera')}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'camera' 
                 ? 'bg-white/10 text-emerald-400 font-bold' 
                 : 'text-gray-400 hover:text-white'
             }`}
           >
             <Camera className="h-3.5 w-3.5" />
-            Live Device Webcam
+            Live Device Camera
+          </button>
+          <button
+            id="tab-scanner-sim"
+            onClick={() => setActiveTab('simulator')}
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'simulator' 
+                ? 'bg-white/10 text-emerald-400 font-bold' 
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Search className="h-3.5 w-3.5" />
+            Catalog Barcode Search
           </button>
         </div>
 

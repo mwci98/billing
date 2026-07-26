@@ -6,12 +6,13 @@
 import React, { useState } from 'react';
 import { 
   Building2, PhoneCall, Receipt, Landmark, Award, ShieldCheck, 
-  HelpCircle, Settings, Save, DownloadCloud, UploadCloud, Info
+  HelpCircle, Settings, Save, DownloadCloud, UploadCloud, Info, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions } = useAppState();
+  const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions, triggerToast, deleteAllMockupData } = useAppState();
+  const [showConfirmDelete, setShowConfirmDelete] = useState<boolean>(false);
 
   // Form states initialized with setting configs
   const [storeName, setStoreName] = useState<string>(settings.storeName);
@@ -76,7 +77,7 @@ export const SettingsPage: React.FC = () => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (!parsed.settings || !parsed.products || !parsed.customers) {
-          alert("Invalid backup configuration format! Core tables are missing inside the imported JSON.");
+          triggerToast("Invalid backup configuration format! Core tables are missing inside the imported JSON.", "error");
           return;
         }
 
@@ -89,10 +90,12 @@ export const SettingsPage: React.FC = () => {
         if (parsed.purchases) localStorage.setItem('martpos_purchases', JSON.stringify(parsed.purchases));
         if (parsed.transactions) localStorage.setItem('martpos_transactions', JSON.stringify(parsed.transactions));
 
-        alert("Database backup imported successfully! Page will now reload to synchronize values.");
-        window.location.reload();
+        triggerToast("Database backup imported successfully! Reloading application...", "success");
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
       } catch (err) {
-        alert("Verification failed: JSON parse error in imported backup file!");
+        triggerToast("Verification failed: JSON parse error in imported backup file!", "error");
       }
     };
     reader.readAsText(file);
@@ -281,7 +284,59 @@ export const SettingsPage: React.FC = () => {
               />
             </label>
           </div>
+
+          {/* Delete All Mockup Data trigger */}
+          <button
+            id="delete-all-mockup-btn"
+            type="button"
+            onClick={() => setShowConfirmDelete(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 py-3.5 text-xs font-bold cursor-pointer transition active:scale-95 mt-4"
+          >
+            <Trash2 className="h-4.5 w-4.5 text-rose-500" />
+            <span>Delete All Mockup & Demo Data</span>
+          </button>
         </div>
+
+        {/* Confirmation Modal for deleting mockup */}
+        {showConfirmDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-3xl bg-white dark:bg-gray-950 p-6 border border-gray-100 dark:border-gray-900 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3 text-rose-500">
+                <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-100 dark:border-rose-900/60">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-gray-900 dark:text-white">Delete All Mockup Data?</h4>
+                  <p className="text-xs text-gray-400">This action cannot be undone.</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                This will permanently delete all demo products, mockup transactions, sample customers, suppliers, sales, and inventory logs from your workspace database.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-900">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmDelete(false)}
+                  className="rounded-xl bg-gray-100 dark:bg-gray-900 px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await deleteAllMockupData();
+                    setShowConfirmDelete(false);
+                  }}
+                  className="rounded-xl bg-rose-500 hover:bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition cursor-pointer"
+                >
+                  Confirm Delete All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 bg-gray-50 dark:bg-gray-900 bg-opacity-40 rounded-2xl text-[10px] font-medium text-gray-400 space-y-2.5">
           <p className="font-bold flex items-center gap-1 text-gray-600 dark:text-gray-300">

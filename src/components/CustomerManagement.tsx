@@ -9,9 +9,10 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Customer } from '../types';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const CustomerManagement: React.FC = () => {
-  const { customers, addCustomer, editCustomer, deleteCustomer, sales, settings } = useAppState();
+  const { customers, addCustomer, editCustomer, deleteCustomer, sales, settings, triggerToast } = useAppState();
 
   const [search, setSearch] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -23,6 +24,11 @@ export const CustomerManagement: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [loyaltyPoints, setLoyaltyPoints] = useState<string>('0');
   const [outstandingDue, setOutstandingDue] = useState<string>('0');
+
+  // Delete & Settle modal states
+  const [custToDelete, setCustToDelete] = useState<Customer | null>(null);
+  const [custToSettle, setCustToSettle] = useState<Customer | null>(null);
+  const [settleAmountInput, setSettleAmountInput] = useState<string>('');
 
   // Customer transactions history viewer
   const [historyViewerCustomer, setHistoryViewerCustomer] = useState<Customer | null>(null);
@@ -50,7 +56,7 @@ export const CustomerManagement: React.FC = () => {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) {
-      alert("Name and phone numbers are required!");
+      triggerToast("Name and phone number are required!", "warning");
       return;
     }
 
@@ -64,23 +70,30 @@ export const CustomerManagement: React.FC = () => {
 
     if (editingItem) {
       editCustomer(editingItem.id, payload);
+      triggerToast(`Customer "${name}" profile updated!`, 'success');
     } else {
       addCustomer(payload);
+      triggerToast(`Customer "${name}" registered successfully!`, 'success');
     }
     setIsFormOpen(false);
   };
 
-  const handleSettleDue = (cust: Customer) => {
-    const settleAmt = prompt(`Credit settle. Customer "${cust.name}" has outstanding due of ${settings.currency}${cust.outstandingDue.toFixed(2)}.\nEnter amount to pay:`);
-    if (settleAmt === null) return;
-    const payValue = parseFloat(settleAmt) || 0;
+  const openSettleModal = (cust: Customer) => {
+    setCustToSettle(cust);
+    setSettleAmountInput(cust.outstandingDue.toString());
+  };
+
+  const processSettleDue = () => {
+    if (!custToSettle) return;
+    const payValue = parseFloat(settleAmountInput) || 0;
     if (payValue <= 0) {
-      alert("Please enter a valid positive payment amount!");
+      triggerToast("Please enter a valid positive payment amount!", "warning");
       return;
     }
-    const nextDue = Math.max(0, cust.outstandingDue - payValue);
-    editCustomer(cust.id, { outstandingDue: nextDue });
-    alert(`Settled payment of ${settings.currency}${payValue.toFixed(2)}. Remaining due: ${settings.currency}${nextDue.toFixed(2)}! ✔`);
+    const nextDue = Math.max(0, custToSettle.outstandingDue - payValue);
+    editCustomer(custToSettle.id, { outstandingDue: nextDue });
+    triggerToast(`Settled payment of ${settings.currency}${payValue.toFixed(2)} for ${custToSettle.name}. Remaining due: ${settings.currency}${nextDue.toFixed(2)}! ✔`, 'success');
+    setCustToSettle(null);
   };
 
   const filtered = customers.filter(c =>
@@ -163,8 +176,8 @@ export const CustomerManagement: React.FC = () => {
                           </span>
                           <button
                             id={`cust-settle-btn-${c.id}`}
-                            onClick={() => handleSettleDue(c)}
-                            className="bg-red-50 text-red-600 hover:bg-red-100 rounded-lg px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase"
+                            onClick={() => openSettleModal(c)}
+                            className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 rounded-lg px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase cursor-pointer"
                           >
                             Pay settle
                           </button>
@@ -194,11 +207,7 @@ export const CustomerManagement: React.FC = () => {
 
                         <button
                           id={`cust-delete-btn-${c.id}`}
-                          onClick={() => {
-                            if (confirm(`Remove Customer profile "${c.name}" from regular store register?`)) {
-                              deleteCustomer(c.id);
-                            }
-                          }}
+                          onClick={() => setCustToDelete(c)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -349,6 +358,69 @@ export const CustomerManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* OVERLAY: Customer Credit Settle Modal */}
+      {custToSettle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-gray-950 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-6 relative space-y-4">
+            <button
+              onClick={() => setCustToSettle(null)}
+              className="absolute top-4 right-4 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div>
+              <h3 className="text-base font-bold">Settle Customer Credit Due</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{custToSettle.name} • Total Due: <strong className="text-red-500 font-mono">{settings.currency}{custToSettle.outstandingDue.toFixed(2)}</strong></p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-gray-500">Payment Amount Received ({settings.currency})</label>
+              <input
+                type="number"
+                value={settleAmountInput}
+                onChange={(e) => setSettleAmountInput(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono font-bold text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCustToSettle(null)}
+                className="px-4 py-2 text-xs font-semibold text-gray-500 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={processSettleDue}
+                className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-md cursor-pointer"
+              >
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Customer Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!custToDelete}
+        title="Remove Customer Profile"
+        message={`Are you sure you want to remove customer profile "${custToDelete?.name}" from the store register?`}
+        itemName={custToDelete?.name}
+        onConfirm={() => {
+          if (custToDelete) {
+            deleteCustomer(custToDelete.id);
+            triggerToast(`Customer "${custToDelete.name}" profile deleted! ✔`, 'success');
+            setCustToDelete(null);
+          }
+        }}
+        onClose={() => setCustToDelete(null)}
+      />
     </div>
   );
 };

@@ -148,37 +148,37 @@
     }
   },
   "firestore": {
-    "/products/{productId}": {
+    "/users/{userId}/products/{productId}": {
       "schema": "Product",
-      "description": "Collection of products in store stock."
+      "description": "User tenant collection of products in store stock."
     },
-    "/sales/{saleId}": {
+    "/users/{userId}/sales/{saleId}": {
       "schema": "Sale",
-      "description": "POS invoice transactions logs."
+      "description": "User tenant POS invoice transactions logs."
     },
-    "/purchases/{purchaseId}": {
+    "/users/{userId}/purchases/{purchaseId}": {
       "schema": "Purchase",
-      "description": "Restocking invoices from vendor suppliers."
+      "description": "User tenant restocking invoices from vendor suppliers."
     },
-    "/customers/{customerId}": {
+    "/users/{userId}/customers/{customerId}": {
       "schema": "Customer",
-      "description": "Register of customers, analytics, loyalty levels."
+      "description": "User tenant register of customers, analytics, loyalty levels."
     },
-    "/suppliers/{supplierId}": {
+    "/users/{userId}/suppliers/{supplierId}": {
       "schema": "Supplier",
-      "description": "B2B suppliers and business outstanding balances."
+      "description": "User tenant B2B suppliers and business outstanding balances."
     },
-    "/inventory_transactions/{transactionId}": {
+    "/users/{userId}/inventory_transactions/{transactionId}": {
       "schema": "InventoryTransaction",
-      "description": "Audit trails for stock corrections and counts."
+      "description": "User tenant audit trails for stock corrections and counts."
     },
-    "/store_settings/{settingsId}": {
+    "/users/{userId}/store_settings/{settingsId}": {
       "schema": "StoreSettings",
-      "description": "Business customized profiles and receipts headers."
+      "description": "User tenant business customized profiles and receipts headers."
     },
-    "/staff/{staffId}": {
+    "/users/{userId}/staff/{staffId}": {
       "schema": "Staff",
-      "description": "Staff account role assignments database."
+      "description": "User tenant staff account role assignments database."
     }
   }
 }

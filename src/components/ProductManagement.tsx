@@ -12,13 +12,15 @@ import { useAppState } from '../lib/stateContext';
 import { Product } from '../types';
 import { BarcodeGenerator, QRGenerator } from './BarcodeGenerator';
 import { CameraScanner } from './CameraScanner';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const ProductManagement: React.FC = () => {
   const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, triggerToast } = useAppState();
 
-  // Search states
+  // Search & Filter states
   const [search, setSearch] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [sourcingFilter, setSourcingFilter] = useState<'All' | 'Purchased' | 'Manufactured' | 'Both'>('All');
   
   // Inline Stock Edit State
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export const ProductManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [activeLabels, setActiveLabels] = useState<Product | null>(null);
   const [isBarcodeCameraOpen, setIsBarcodeCameraOpen] = useState<boolean>(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Form inputs
   const [name, setName] = useState<string>('');
@@ -56,6 +59,10 @@ export const ProductManagement: React.FC = () => {
   const [lowStockAlert, setLowStockAlert] = useState<string>('5');
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('📦');
+  const [sourcingType, setSourcingType] = useState<'Purchased' | 'Manufactured' | 'Both'>('Purchased');
+  const [manufacturingCost, setManufacturingCost] = useState<string>('');
+  const [batchNo, setBatchNo] = useState<string>('');
+  const [productionNotes, setProductionNotes] = useState<string>('');
 
   const handlePullBarcodeInfo = (barcodeToLookup: string) => {
     if (!barcodeToLookup) {
@@ -199,6 +206,10 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert('5');
     setExpiryDate('');
     setImageUrl('📦');
+    setSourcingType('Purchased');
+    setManufacturingCost('');
+    setBatchNo('');
+    setProductionNotes('');
     setIsFormOpen(true);
   };
 
@@ -217,13 +228,17 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert(p.lowStockAlert.toString());
     setExpiryDate(p.expiryDate || '');
     setImageUrl(p.imageUrl || '📦');
+    setSourcingType(p.sourcingType || 'Purchased');
+    setManufacturingCost(p.manufacturingCost ? p.manufacturingCost.toString() : '');
+    setBatchNo(p.batchNo || '');
+    setProductionNotes(p.productionNotes || '');
     setIsFormOpen(true);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !sku || !barcode || !sellingPrice) {
-      alert("Please fill in all core fields!");
+      triggerToast("Please fill in all core fields!", "warning");
       return;
     }
 
@@ -240,7 +255,11 @@ export const ProductManagement: React.FC = () => {
       stock: parseInt(stock) || 0,
       lowStockAlert: parseInt(lowStockAlert) || 0,
       expiryDate: expiryDate || undefined,
-      imageUrl
+      imageUrl,
+      sourcingType,
+      manufacturingCost: manufacturingCost ? parseFloat(manufacturingCost) : undefined,
+      batchNo: batchNo || undefined,
+      productionNotes: productionNotes || undefined
     };
 
     if (editingItem) {
@@ -262,7 +281,9 @@ export const ProductManagement: React.FC = () => {
                           p.sku.toLowerCase().includes(search.toLowerCase()) ||
                           p.barcode.includes(search);
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const itemSourcing = p.sourcingType || 'Purchased';
+    const matchesSourcing = sourcingFilter === 'All' || itemSourcing === sourcingFilter;
+    return matchesSearch && matchesCategory && matchesSourcing;
   });
 
   return (
@@ -288,8 +309,8 @@ export const ProductManagement: React.FC = () => {
       {/* 2. Filters & List display */}
       <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden p-6 space-y-4">
         
-        <div className="flex flex-col md:flex-row gap-3.5 items-center justify-between">
-          <div className="relative w-full md:w-80">
+        <div className="flex flex-col lg:flex-row gap-3.5 items-center justify-between">
+          <div className="relative w-full lg:w-72">
             <Search className="absolute left-3.5 top-1/2 -track-y-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               id="prod-list-search"
@@ -301,57 +322,97 @@ export const ProductManagement: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 w-full md:w-auto bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800">
-            <button
-              type="button"
-              onClick={() => scrollProdCatSlider('left')}
-              className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
-              title="Slide categories left"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-
-            <div 
-              ref={prodCatSliderRef}
-              className="flex gap-1.5 overflow-x-auto py-0.5 scroll-smooth max-w-[18rem] sm:max-w-xs md:max-w-sm items-center"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {categoriesList.map((cat) => {
-                const count = cat === 'All' 
-                  ? products.length 
-                  : products.filter(p => p.category === cat).length;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCategoryFilter(cat)}
-                    className={`rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap transition border flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                      categoryFilter === cat
-                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                        : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
-                      categoryFilter === cat
-                        ? 'bg-white/20 text-white font-bold'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full lg:w-auto">
+            {/* Origin/Sourcing Filter */}
+            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSourcingFilter('All')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${
+                  sourcingFilter === 'All'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                All Origins
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourcingFilter('Purchased')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition flex items-center gap-1 ${
+                  sourcingFilter === 'Purchased'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <span>🛒 Purchased</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourcingFilter('Manufactured')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition flex items-center gap-1 ${
+                  sourcingFilter === 'Manufactured'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <span>🏭 In-House</span>
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => scrollProdCatSlider('right')}
-              className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
-              title="Slide categories right"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            {/* Category Slider */}
+            <div className="flex items-center gap-1.5 w-full lg:w-auto bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => scrollProdCatSlider('left')}
+                className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+                title="Slide categories left"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+
+              <div 
+                ref={prodCatSliderRef}
+                className="flex gap-1.5 overflow-x-auto py-0.5 scroll-smooth max-w-[14rem] sm:max-w-xs items-center"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {categoriesList.map((cat) => {
+                  const count = cat === 'All' 
+                    ? products.length 
+                    : products.filter(p => p.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap transition border flex items-center gap-1 cursor-pointer active:scale-95 ${
+                        categoryFilter === cat
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                          : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                        categoryFilter === cat
+                          ? 'bg-white/20 text-white font-bold'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => scrollProdCatSlider('right')}
+                className="h-7 w-7 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shrink-0 shadow-xs cursor-pointer active:scale-95 transition"
+                title="Slide categories right"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -363,8 +424,9 @@ export const ProductManagement: React.FC = () => {
                 <th className="py-3 px-2">Preview</th>
                 <th className="py-3">Details</th>
                 <th className="py-3">SKU & BAR</th>
+                <th className="py-3">Origin</th>
                 <th className="py-3">Category</th>
-                <th className="py-3 font-mono">Buy Price</th>
+                <th className="py-3 font-mono">Cost / Raw Cost</th>
                 <th className="py-3 font-mono">Sell Price (Tax)</th>
                 <th className="py-3">Stock count</th>
                 <th className="py-3 text-right">Actions</th>
@@ -373,6 +435,7 @@ export const ProductManagement: React.FC = () => {
             <tbody className="divide-y divide-gray-50 dark:divide-gray-900/35">
               {filtered.map((p) => {
                 const nearLowStock = p.stock <= p.lowStockAlert;
+                const src = p.sourcingType || 'Purchased';
                 return (
                   <tr key={p.id} className="text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
                     <td className="py-3 px-2 text-2xl">{p.imageUrl || '📦'}</td>
@@ -387,12 +450,30 @@ export const ProductManagement: React.FC = () => {
                       </p>
                     </td>
                     <td className="py-3">
+                      {src === 'Manufactured' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                          🏭 In-House
+                        </span>
+                      ) : src === 'Both' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-900/60 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-400">
+                          ⚙️ Hybrid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-400">
+                          🛒 Purchased
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3">
                       <span className="rounded-md bg-gray-50 dark:bg-gray-900 px-2 py-0.5 text-[10px]">
                         {p.category}
                       </span>
                     </td>
                     <td className="py-3 font-mono text-gray-400">
                       {settings.currency}{p.purchasePrice.toFixed(2)}
+                      {p.sourcingType === 'Manufactured' && p.manufacturingCost && (
+                        <span className="block text-[9px] text-amber-500 font-bold">Mat: {settings.currency}{p.manufacturingCost.toFixed(2)}</span>
+                      )}
                     </td>
                     <td className="py-3 font-mono">
                       <p className="font-bold">{settings.currency}{p.sellingPrice.toFixed(2)}</p>
@@ -516,11 +597,7 @@ export const ProductManagement: React.FC = () => {
 
                         <button
                           id={`prod-delete-btn-${p.id}`}
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete Product "${p.name}"?`)) {
-                              deleteProduct(p.id);
-                            }
-                          }}
+                          onClick={() => setProductToDelete(p)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -551,6 +628,53 @@ export const ProductManagement: React.FC = () => {
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                {/* Sourcing / Origin Selection */}
+                <div className="col-span-2 p-3.5 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                  <label className="block text-xs font-bold text-gray-900 dark:text-white">Product Origin & Sourcing Mode</label>
+                  <p className="text-[11px] text-gray-400">Specify whether this item is purchased from external B2B suppliers or produced/assembled in-house.</p>
+                  
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setSourcingType('Purchased')}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        sourcingType === 'Purchased'
+                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 ring-1 ring-blue-500'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100'
+                      }`}
+                    >
+                      <p className="text-xs font-bold flex items-center gap-1">🛒 Purchased</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5">Sourced from vendor/supplier</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSourcingType('Manufactured')}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        sourcingType === 'Manufactured'
+                          ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 ring-1 ring-amber-500'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100'
+                      }`}
+                    >
+                      <p className="text-xs font-bold flex items-center gap-1">🏭 Self-Manufactured</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5">Produced/Assembled in-house</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSourcingType('Both')}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        sourcingType === 'Both'
+                          ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-950/40 text-purple-900 dark:text-purple-100 ring-1 ring-purple-500'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100'
+                      }`}
+                    >
+                      <p className="text-xs font-bold flex items-center gap-1">⚙️ Hybrid / Both</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5">Purchased & produced locally</p>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold mb-1">Product Title</label>
                   <input
@@ -665,7 +789,9 @@ export const ProductManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Purchase Cost ({settings.currency})</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    {sourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price (${settings.currency})`}
+                  </label>
                   <input
                     id="form-prod-purchase-price"
                     type="number"
@@ -675,6 +801,47 @@ export const ProductManagement: React.FC = () => {
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
+
+                {(sourcingType === 'Manufactured' || sourcingType === 'Both') && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-amber-600 dark:text-amber-400">Raw Material Cost / Unit ({settings.currency})</label>
+                      <input
+                        id="form-prod-mfg-cost"
+                        type="number"
+                        step="0.01"
+                        value={manufacturingCost}
+                        onChange={(e) => setManufacturingCost(e.target.value)}
+                        placeholder="Direct production cost..."
+                        className="w-full rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-amber-600 dark:text-amber-400">Production Batch Code</label>
+                      <input
+                        id="form-prod-batch-no"
+                        type="text"
+                        value={batchNo}
+                        onChange={(e) => setBatchNo(e.target.value)}
+                        placeholder="e.g. BATCH-2026-001"
+                        className="w-full rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold mb-1 text-amber-600 dark:text-amber-400">Manufacturing / Assembly Notes & Recipe</label>
+                      <input
+                        id="form-prod-notes"
+                        type="text"
+                        value={productionNotes}
+                        onChange={(e) => setProductionNotes(e.target.value)}
+                        placeholder="e.g. Assembled in Workshop A using Component X + Component Y..."
+                        className="w-full rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20 p-2.5 text-xs text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">POS Selling Price ({settings.currency})</label>
@@ -843,6 +1010,22 @@ export const ProductManagement: React.FC = () => {
           onClose={() => setIsBarcodeCameraOpen(false)}
         />
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!productToDelete}
+        title="Delete Product"
+        message={`Are you sure you want to permanently delete product "${productToDelete?.name}"?`}
+        itemName={productToDelete?.name}
+        onConfirm={() => {
+          if (productToDelete) {
+            deleteProduct(productToDelete.id);
+            triggerToast(`Product "${productToDelete.name}" deleted successfully! ✔`, 'success');
+            setProductToDelete(null);
+          }
+        }}
+        onClose={() => setProductToDelete(null)}
+      />
     </div>
   );
 };

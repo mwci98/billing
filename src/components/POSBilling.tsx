@@ -40,7 +40,7 @@ export const POSBilling: React.FC = () => {
   const [newCustPhone, setNewCustPhone] = useState<string>('');
 
   // Cart Active State
-  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ product: Product; quantity: number; customPrice?: number }[]>([]);
   const [discountInput, setDiscountInput] = useState<string>('0');
   const [paymentOption, setPaymentOption] = useState<'Cash' | 'UPI' | 'Card' | 'Split'>('Cash');
 
@@ -109,18 +109,51 @@ export const POSBilling: React.FC = () => {
   // 2. Active category list
   const categoriesList = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
+  // Helper to get active item unit price (custom price override or default catalog selling price)
+  const getItemPrice = (item: { product: Product; customPrice?: number }) => {
+    return item.customPrice !== undefined ? item.customPrice : item.product.sellingPrice;
+  };
+
+  const updateCartItemPrice = (productId: string, newPrice: number) => {
+    setCart(cart.map(item => item.product.id === productId ? { ...item, customPrice: Math.max(0, newPrice) } : item));
+  };
+
   // 3. Cart Mutators
   const addToCart = (product: Product) => {
-    const existing = cart.find(item => item.product.id === product.id);
+    const currentProduct = products.find(p => p.id === product.id) || product;
+    if (currentProduct.stock <= 0) {
+      triggerToast(`Product "${currentProduct.name}" is completely out of stock!`, 'error');
+      return;
+    }
+
+    const existing = cart.find(item => item.product.id === currentProduct.id);
     if (existing) {
-      if (existing.quantity >= product.stock) {
-        triggerToast(`Cannot add more. Restocking threshold reached. Stock Left: ${product.stock}`, 'warning');
+      if (existing.quantity >= currentProduct.stock) {
+        triggerToast(`Cannot add more. Max stock available: ${currentProduct.stock}`, 'warning');
         return;
       }
-      setCart(cart.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+      setCart(cart.map(item => item.product.id === currentProduct.id ? { ...item, product: currentProduct, quantity: item.quantity + 1 } : item));
     } else {
-      setCart([...cart, { product, quantity: 1 }]);
+      setCart([...cart, { product: currentProduct, quantity: 1, customPrice: currentProduct.sellingPrice }]);
     }
+  };
+
+  const updateCartQuantity = (productId: string, newQty: number) => {
+    const currentProduct = products.find(p => p.id === productId);
+    const maxStock = currentProduct ? currentProduct.stock : 99999;
+
+    if (newQty <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    if (newQty > maxStock) {
+      triggerToast(`Quantity capped at max stock available: ${maxStock}`, 'warning');
+      setCart(cart.map(item => item.product.id === productId ? { ...item, quantity: maxStock } : item));
+      return;
+    }
+
+    setCart(cart.map(item => item.product.id === productId ? { ...item, quantity: newQty } : item));
   };
 
   const deductFromCart = (productId: string) => {
@@ -169,12 +202,13 @@ export const POSBilling: React.FC = () => {
 
   // 5. Total calculations
   const calculateCartSubtotal = () => {
-    return cart.reduce((sum, item) => sum + (item.product.sellingPrice * item.quantity), 0);
+    return cart.reduce((sum, item) => sum + (getItemPrice(item) * item.quantity), 0);
   };
 
   const calculateCartTax = () => {
     return cart.reduce((sum, item) => {
-      const itemSubtotal = item.product.sellingPrice * item.quantity;
+      const price = getItemPrice(item);
+      const itemSubtotal = price * item.quantity;
       const taxPart = itemSubtotal * (item.product.taxRate / 100);
       return sum + taxPart;
     }, 0);
@@ -212,7 +246,7 @@ export const POSBilling: React.FC = () => {
 
     // Prepare sale structures
     const saleItems: SaleItem[] = cart.map((item) => {
-      const rawPrice = item.product.sellingPrice;
+      const rawPrice = getItemPrice(item);
       const rate = item.product.taxRate;
       const tAmount = rawPrice * item.quantity * (rate / 100);
       const totalCost = (rawPrice * item.quantity) + tAmount;
@@ -504,39 +538,78 @@ export const POSBilling: React.FC = () => {
               </p>
             </div>
           ) : (
-            cart.map((item) => (
-              <div key={item.product.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/35 p-3 rounded-2xl border border-gray-100 dark:border-gray-900">
-                <div className="min-w-0 flex-1 pr-2">
-                  <h5 className="text-xs font-semibold tracking-tight text-gray-800 dark:text-gray-100 truncate">{item.product.name}</h5>
-                  <p className="font-mono text-[9px] text-gray-400 mt-0.5">
-                    {settings.currency}{item.product.sellingPrice.toFixed(2)} + {item.product.taxRate}% GST
-                  </p>
-                </div>
+            cart.map((item) => {
+              const currentPrice = getItemPrice(item);
+              const isPriceOverridden = item.customPrice !== undefined && item.customPrice !== item.product.sellingPrice;
+              return (
+                <div key={item.product.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 dark:bg-gray-900/35 p-3 rounded-2xl border border-gray-100 dark:border-gray-900 gap-2">
+                  <div className="min-w-0 flex-1 pr-1">
+                    <h5 className="text-xs font-semibold tracking-tight text-gray-800 dark:text-gray-100 truncate">{item.product.name}</h5>
+                    
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <div className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-0.5 shadow-2xs">
+                        <span className="text-[10px] text-gray-400 font-bold mr-1">{settings.currency}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={currentPrice}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            updateCartItemPrice(item.product.id, isNaN(val) ? 0 : val);
+                          }}
+                          className="w-20 text-xs font-mono font-bold bg-transparent text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                          title="Click to edit unit selling price for this item"
+                        />
+                      </div>
+                      <span className="text-[9px] text-gray-400 font-mono">+ {item.product.taxRate}% GST</span>
+                      {isPriceOverridden && (
+                        <button
+                          type="button"
+                          onClick={() => updateCartItemPrice(item.product.id, item.product.sellingPrice)}
+                          className="text-[9px] text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-mono underline cursor-pointer"
+                          title="Reset to catalog original price"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => deductFromCart(item.product.id)}
-                    className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 active:scale-90 transition"
-                  >
-                    <Minus className="h-3 w-3 stroke-[2.5px]" />
-                  </button>
-                  <span className="font-mono text-xs font-bold text-gray-900 dark:text-white px-1">{item.quantity}</span>
-                  <button
-                    onClick={() => addToCart(item.product.id === item.product.id ? item.product : item.product)}
-                    className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 active:scale-90 transition"
-                  >
-                    <Plus className="h-3 w-3 stroke-[2.5px]" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={() => deductFromCart(item.product.id)}
+                      className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 transition cursor-pointer"
+                      title="Decrease quantity"
+                    >
+                      <Minus className="h-3 w-3 stroke-[2.5px]" />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={products.find(p => p.id === item.product.id)?.stock || 99999}
+                      value={item.quantity}
+                      onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 0)}
+                      className="w-12 text-center font-mono text-xs font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-0.5 focus:border-emerald-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => addToCart(item.product)}
+                      className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 transition cursor-pointer"
+                      title="Increase quantity"
+                    >
+                      <Plus className="h-3 w-3 stroke-[2.5px]" />
+                    </button>
 
-                  <button
-                    onClick={() => removeFromCart(item.product.id)}
-                    className="rounded-lg p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition ml-1"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="rounded-lg p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition ml-1 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
