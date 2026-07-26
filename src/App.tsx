@@ -24,6 +24,7 @@ import { SaaSManagerModal } from './components/SaaSManagerModal';
 import { UserManagement } from './components/UserManagement';
 import { StaffPermissions } from './types';
 import { SubscriptionGate } from './components/SubscriptionGate';
+import { BusinessOnboarding } from './components/BusinessOnboarding';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -62,6 +63,14 @@ const AppContent: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (
+    currentUser.role === UserRole.ADMIN &&
+    settings.tenantId &&
+    settings.onboardingCompleted !== true
+  ) {
+    return <BusinessOnboarding />;
   }
 
   // Check role authorization flags

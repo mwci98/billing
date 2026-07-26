@@ -179,6 +179,10 @@ export interface StoreSettings {
   trialEndsAt?: string;
   razorpaySubscriptionId?: string;
   subscriptionCurrentEnd?: string;
+  onboardingCompleted?: boolean;
+  ownerName?: string;
+  businessType?: string;
+  website?: string;
 }
 
 export interface SaaSStore {

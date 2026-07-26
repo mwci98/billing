@@ -265,6 +265,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (localSettings) {
       const parsed = JSON.parse(localSettings);
+      parsed.tenantId = parsed.tenantId || scope;
+      parsed.onboardingCompleted = parsed.onboardingCompleted ?? false;
       if (!parsed.trialStartedAt && parsed.subscriptionStatus !== 'active') {
         const trialStartedAt = new Date();
         parsed.trialStartedAt = trialStartedAt.toISOString();
@@ -285,6 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         subscriptionStatus: 'trialing',
         trialStartedAt: trialStartedAt.toISOString(),
         trialEndsAt: new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString(),
+        onboardingCompleted: false,
         storeName: currentUser?.name ? `${currentUser.name}'s ElectroHub POS` : INITIAL_SETTINGS.storeName,
         email: currentUser?.email || INITIAL_SETTINGS.email,
         currency: '₹'
@@ -294,9 +297,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getDoc(doc(db, 'users', scope, 'store_settings', 'active'))
         .then(existing => {
           if (existing.exists()) {
-            const remoteSettings = existing.data() as StoreSettings;
+            const remote = existing.data() as StoreSettings;
+            const remoteSettings: StoreSettings = {
+              ...remote,
+              tenantId: remote.tenantId || scope,
+              onboardingCompleted: remote.onboardingCompleted ?? false
+            };
             setSettings(remoteSettings);
             localStorage.setItem(scopeKey('settings'), JSON.stringify(remoteSettings));
+            if (!remote.tenantId || remote.onboardingCompleted === undefined) {
+              setDoc(doc(db, 'users', scope, 'store_settings', 'active'), remoteSettings, {merge: true});
+            }
           } else {
             setDoc(doc(db, 'users', scope, 'store_settings', 'active'), userCustomSettings);
           }
@@ -365,9 +376,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!snapshot.empty) {
           const sDoc = snapshot.docs.find(d => d.id === 'active');
           if (sDoc) {
-            const data = sDoc.data() as StoreSettings;
+            const remote = sDoc.data() as StoreSettings;
+            const data: StoreSettings = {
+              ...remote,
+              tenantId: remote.tenantId || scope,
+              onboardingCompleted: remote.onboardingCompleted ?? false
+            };
             setSettings(data);
             localStorage.setItem(scopeKey('settings'), JSON.stringify(data));
+            if (!remote.tenantId || remote.onboardingCompleted === undefined) {
+              setDoc(doc(db, 'users', scope, 'store_settings', 'active'), data, {merge: true});
+            }
           }
         }
       },
@@ -399,7 +418,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setIsFirebaseConnected(true);
-        const isOwner = firebaseUser.email?.toLowerCase() === 'jiv.dasgupta09@gmail.com' || firebaseUser.email?.includes('admin');
         const firebaseEmail = firebaseUser.email?.toLowerCase() || 'operator@shop.com';
         let directoryStaff: Staff | undefined;
         try {
@@ -411,7 +429,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: firebaseUser.uid,
           name: directoryStaff?.name || firebaseUser.displayName || firebaseEmail.split('@')[0] || 'Store Operator',
           email: firebaseEmail,
-          role: isOwner ? UserRole.ADMIN : UserRole.STAFF,
+          role: directoryStaff ? UserRole.STAFF : UserRole.ADMIN,
           tenantId: directoryStaff?.tenantId || firebaseEmail.replace(/[^a-zA-Z0-9]/g, '_'),
           permissions: directoryStaff?.permissions
         };
@@ -549,7 +567,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const formattedEmail = normalizeEmail(email);
     let staffAccount = readLocalStaffDirectory()[formattedEmail];
 
-    if (!staffAccount && role === UserRole.STAFF) {
+    if (!staffAccount) {
       try {
         const directoryDoc = await getDoc(doc(db, 'staff_directory', directoryIdForEmail(formattedEmail)));
         if (directoryDoc.exists()) {

@@ -42,12 +42,10 @@ export const AuthScreen: React.FC = () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      // By default, let's treat the owner email or any employee as Admin, rest as Staff
+      // A new Google account owns a new tenant. Existing staff emails are
+      // resolved by the staff directory inside the login action.
       const email = result.user.email || 'operator@shop.com';
-      const isOwner = email.toLowerCase() === 'jiv.dasgupta09@gmail.com' || email.includes('admin');
-      const role = isOwner ? UserRole.ADMIN : UserRole.STAFF;
-      
-      await login(email, role, result.user.displayName || 'Google Employee');
+      await login(email, UserRole.ADMIN, result.user.displayName || 'Business Owner');
     } catch (e: any) {
       console.warn("Google Sign-In blocked/cancelled. Using simulation standard fallback.", e);
       setErrorMsg('Google Sign-In was cancelled or popup was blocked in sandbox iframe.');
