@@ -52,7 +52,7 @@ export default async function handler(request: any, response: any) {
   const subscriptionStatus = statusByEvent[event.event];
   if (subscriptionStatus) {
     await updateTenantSubscription(tenantId, {
-      planTier: 'Pro',
+      planTier: 'Basic',
       subscriptionStatus,
       razorpaySubscriptionId: subscription.id,
       subscriptionCurrentEnd: subscription.current_end

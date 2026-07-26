@@ -81,7 +81,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
         key: subscription.keyId,
         subscription_id: subscription.subscriptionId,
         name: settings.storeName || 'ElectroHub Smart POS',
-        description: 'Pro Plan · ₹5,500 per month',
+        description: 'Basic Plan · ₹6,000 per year',
         prefill: {name: currentUser.name, email: currentUser.email},
         theme: {color: '#10B981'},
         handler: async (payment: any) => {
@@ -102,11 +102,11 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
           }
           updateSettings({
             ...settings,
-            planTier: 'Pro',
+            planTier: 'Basic',
             subscriptionStatus: 'active',
             razorpaySubscriptionId: verification.razorpaySubscriptionId,
           });
-          triggerToast('Pro subscription activated successfully.', 'success');
+          triggerToast('Basic subscription activated successfully.', 'success');
         },
         modal: {ondismiss: () => setLoading(false)},
       });
@@ -132,7 +132,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
         <div className="fixed top-16 right-4 z-40 rounded-xl border border-amber-500/20 bg-amber-500/10 backdrop-blur-xl px-3 py-2 text-[10px] font-bold text-amber-500 shadow-lg">
           <span className="flex items-center gap-1.5">
             <Clock3 className="h-3.5 w-3.5" />
-            Pro trial · {remainingDays} {remainingDays === 1 ? 'day' : 'days'} remaining
+            Basic trial · {remainingDays} {remainingDays === 1 ? 'day' : 'days'} remaining
           </span>
         </div>
       )}
@@ -148,14 +148,14 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
             <h2 className="mt-5 text-2xl font-black text-white">Your 5-day trial has ended</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
               {isOwner
-                ? 'Subscribe to the Pro plan to restore access for your store and all staff accounts.'
+                ? 'Subscribe to the Basic plan to restore access for your store and all staff accounts.'
                 : 'The store owner must activate a subscription before staff can continue working.'}
             </p>
 
             <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-left">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white">ElectroHub Pro</span>
-                <span className="font-mono text-lg font-black text-emerald-400">₹5,500/mo</span>
+                <span className="font-bold text-white">Basic Plan</span>
+                <span className="font-mono text-lg font-black text-emerald-400">₹6,000/year</span>
               </div>
               <p className="mt-2 flex items-center gap-2 text-xs text-gray-400">
                 <ShieldCheck className="h-4 w-4 text-emerald-500" />

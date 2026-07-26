@@ -58,7 +58,7 @@ export const BusinessOnboarding: React.FC = () => {
             Complete these details once to prepare your isolated POS workspace.
           </p>
           <span className="mt-3 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            Your 5-day Pro trial starts now
+            Your 5-day Basic trial starts now
           </span>
         </div>
 

@@ -23,8 +23,8 @@ const DEFAULT_SAAS_STORES: SaaSStore[] = [
 
 const DEFAULT_SAAS_PLANS: SaaSPlan[] = [
   {
-    name: 'Pro',
-    priceMonthly: 5500,
+    name: 'Basic',
+    priceYearly: 6000,
     maxProducts: 1000,
     maxMonthlySales: 5000,
     multiBranch: true,
@@ -57,7 +57,7 @@ interface AppContextType {
   saasStores: SaaSStore[];
   saasPlans: SaaSPlan[];
   switchStoreBranch: (storeId: string) => void;
-  upgradeSaaSPlan: (planName: 'Free' | 'Pro' | 'Enterprise') => void;
+  upgradeSaaSPlan: (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => void;
 
   // Business Data Store
   products: Product[];
@@ -272,7 +272,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         parsed.trialStartedAt = trialStartedAt.toISOString();
         parsed.trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString();
         parsed.subscriptionStatus = 'trialing';
-        parsed.planTier = 'Pro';
+        parsed.planTier = 'Basic';
         setDoc(doc(db, 'users', scope, 'store_settings', 'active'), parsed, {merge: true})
           .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${scope}/store_settings`));
       }
@@ -283,7 +283,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const userCustomSettings: StoreSettings = {
         ...INITIAL_SETTINGS,
         tenantId: scope,
-        planTier: 'Pro',
+        planTier: 'Basic',
         subscriptionStatus: 'trialing',
         trialStartedAt: trialStartedAt.toISOString(),
         trialEndsAt: new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString(),
@@ -1241,7 +1241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const upgradeSaaSPlan = (planName: 'Free' | 'Pro' | 'Enterprise') => {
+  const upgradeSaaSPlan = (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => {
     const updated = { ...settings, planTier: planName };
     updateSettings(updated);
     triggerToast(`SaaS Workspace upgraded to ${planName} Plan! 🚀`, 'success');

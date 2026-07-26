@@ -307,7 +307,7 @@ const AppContent: React.FC = () => {
                 <span className="max-w-[120px] truncate hidden md:inline">{activeStore.name}</span>
                 <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider">
                   {settings.subscriptionStatus === 'active'
-                    ? 'Pro'
+                    ? 'Basic'
                     : settings.subscriptionStatus === 'trialing'
                       ? 'Trial'
                       : 'Expired'}

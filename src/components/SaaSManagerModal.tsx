@@ -26,8 +26,6 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const currentPlanTier = settings.planTier || 'Pro';
-
   return (
     <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-[#111112] border border-gray-200 dark:border-white/10 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-900 dark:text-[#E0E0E0] font-sans">
@@ -44,11 +42,11 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                   SaaS Workspace & Subscription
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {settings.subscriptionStatus === 'active' ? 'Pro' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
+                  {settings.subscriptionStatus === 'active' ? 'Basic' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-white/60 mt-0.5">
-                Your isolated store workspace, trial, and Pro subscription
+                Your isolated store workspace, trial, and Basic subscription
               </p>
             </div>
           </div>
@@ -154,15 +152,15 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
           {activeTab === 'plans' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Pro Subscription</h3>
-                <p className="text-xs text-gray-500 dark:text-white/50">Five-day free trial followed by ₹5,500 monthly recurring billing through Razorpay.</p>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Basic Subscription</h3>
+                <p className="text-xs text-gray-500 dark:text-white/50">Five-day free trial followed by ₹6,000 yearly recurring billing through Razorpay.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {saasPlans.map((plan) => {
-                  const isCurrent = currentPlanTier === plan.name;
-                  const isSubscribed = isCurrent && settings.subscriptionStatus === 'active';
-                  const canUpgradeTrial = isCurrent && settings.subscriptionStatus !== 'active';
+                  const isCurrent = true;
+                  const isSubscribed = settings.subscriptionStatus === 'active';
+                  const canUpgradeTrial = !isSubscribed;
                   return (
                     <div 
                       key={plan.name}
@@ -182,8 +180,8 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                           )}
                         </div>
                         <div className="mt-3 flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-gray-900 dark:text-white">₹{plan.priceMonthly.toLocaleString('en-IN')}</span>
-                          <span className="text-xs text-gray-500 dark:text-white/50">/month</span>
+                          <span className="text-2xl font-black text-gray-900 dark:text-white">₹{plan.priceYearly.toLocaleString('en-IN')}</span>
+                          <span className="text-xs text-gray-500 dark:text-white/50">/year</span>
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/5 space-y-2 text-xs">
@@ -219,7 +217,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                         ) : canUpgradeTrial ? (
                           <>
                             <CreditCard className="h-4 w-4" />
-                            Upgrade to Pro
+                            Upgrade to Basic
                           </>
                         ) : (
                           <>

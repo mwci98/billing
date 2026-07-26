@@ -1,4 +1,4 @@
-const RAZORPAY_PLAN_ID = 'plan_S4rdqJaOfxXHcD';
+const RAZORPAY_PLAN_ID = 'plan_TIA4ucA1UJe67v';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {
@@ -34,7 +34,7 @@ export default async function handler(request: any, response: any) {
         tenantId,
         ownerEmail: email,
         ownerName: name || '',
-        planTier: 'Pro',
+        planTier: 'Basic',
       },
     }),
   });

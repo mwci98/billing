@@ -33,7 +33,7 @@ export default async function handler(request: any, response: any) {
 
   const activatedAt = new Date().toISOString();
   await updateTenantSubscription(tenantId, {
-    planTier: 'Pro',
+    planTier: 'Basic',
     subscriptionStatus: 'active',
     razorpaySubscriptionId,
     subscriptionActivatedAt: activatedAt,

@@ -171,7 +171,7 @@ export interface StoreSettings {
   receiptHeader: string;
   receiptFooter: string;
   loyaltyPointsPerDollar: number; // conversion rate
-  planTier?: 'Free' | 'Pro' | 'Enterprise';
+  planTier?: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
   tenantId?: string;
   storeBranch?: string;
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
@@ -194,8 +194,8 @@ export interface SaaSStore {
 }
 
 export interface SaaSPlan {
-  name: 'Free' | 'Pro' | 'Enterprise';
-  priceMonthly: number;
+  name: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
+  priceYearly: number;
   maxProducts: number;
   maxMonthlySales: number;
   multiBranch: boolean;
