@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Clock3, CreditCard, Loader2, LockKeyhole, LogOut, ShieldCheck} from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {UserRole} from '../types';
@@ -34,7 +34,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
   const isBlocked = !isActive && (!isTrialing || remainingMs <= 0);
   const isOwner = currentUser.role === UserRole.ADMIN;
 
-  const startSubscription = async () => {
+  const startSubscription = useCallback(async () => {
     if (!isOwner || loading) return;
     setLoading(true);
     try {
@@ -93,7 +93,16 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
       triggerToast(error instanceof Error ? error.message : 'Unable to start subscription.', 'error');
       setLoading(false);
     }
-  };
+  }, [currentUser, isOwner, loading, settings, triggerToast, updateSettings]);
+
+  useEffect(() => {
+    const handleSubscriptionRequest = () => {
+      void startSubscription();
+    };
+
+    window.addEventListener('start-pro-subscription', handleSubscriptionRequest);
+    return () => window.removeEventListener('start-pro-subscription', handleSubscriptionRequest);
+  }, [startSubscription]);
 
   return (
     <>

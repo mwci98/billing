@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Building2, CheckCircle2, Shield, Zap, Database, 
-  Layers, ArrowUpRight, Check, X, Sparkles, Globe, MapPin, Server
+  Layers, ArrowUpRight, Check, X, Sparkles, Globe, MapPin, Server, CreditCard
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 
@@ -184,6 +184,8 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {saasPlans.map((plan) => {
                   const isCurrent = currentPlanTier === plan.name;
+                  const isSubscribed = isCurrent && settings.subscriptionStatus === 'active';
+                  const canUpgradeTrial = isCurrent && settings.subscriptionStatus !== 'active';
                   return (
                     <div 
                       key={plan.name}
@@ -218,18 +220,29 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                       </div>
 
                       <button
-                        disabled={isCurrent}
-                        onClick={() => upgradeSaaSPlan(plan.name as any)}
+                        disabled={isSubscribed}
+                        onClick={() => {
+                          if (canUpgradeTrial) {
+                            window.dispatchEvent(new Event('start-pro-subscription'));
+                            return;
+                          }
+                          upgradeSaaSPlan(plan.name as any);
+                        }}
                         className={`mt-6 w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
-                          isCurrent 
+                          isSubscribed
                             ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-default' 
                             : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 active:scale-[0.98]'
                         }`}
                       >
-                        {isCurrent ? (
+                        {isSubscribed ? (
                           <>
                             <Check className="h-4 w-4" />
                             Current Tier
+                          </>
+                        ) : canUpgradeTrial ? (
+                          <>
+                            <CreditCard className="h-4 w-4" />
+                            Upgrade to Pro
                           </>
                         ) : (
                           <>
