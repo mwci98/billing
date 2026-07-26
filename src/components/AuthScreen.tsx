@@ -5,8 +5,7 @@
 
 import React, { useState } from 'react';
 import { 
-  Lock, Mail, Sparkles, User, BadgeAlert, KeyRound, 
-  Store, Loader2, ArrowRight
+  Lock, Mail, BadgeAlert, Store, Loader2, ArrowRight
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { UserRole } from '../types';
@@ -19,21 +18,6 @@ export const AuthScreen: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Quick preset login handler
-  const handlePresetLogin = async (role: UserRole) => {
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const email = role === UserRole.ADMIN ? 'admin@shop.com' : 'staff@shop.com';
-      const name = role === UserRole.ADMIN ? 'Shop Owner (Admin)' : 'Checkout Operator (Staff)';
-      await login(email, role, name);
-    } catch (e) {
-      setErrorMsg('Preset sign-in failure. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Google Login Auth method (Live Cloud Integration)
   const handleGoogleLogin = async () => {
@@ -100,61 +84,12 @@ export const AuthScreen: React.FC = () => {
 
         {/* Auth Card */}
         <div className="overflow-hidden rounded-3xl bg-[#141416] shadow-xl border border-white/5 p-8 space-y-6">
-          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 p-3.5 text-emerald-800 dark:text-emerald-300">
-            <Sparkles className="h-5 w-5 shrink-0" />
-            <p className="text-xs">
-              <strong>Multi-Tenant SaaS Enabled:</strong> Logging in with your email or Google account automatically provisions and loads your isolated business database!
-            </p>
-          </div>
-
           {errorMsg && (
             <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/40 p-3.5 text-red-800 dark:text-red-300 text-xs">
               <BadgeAlert className="h-4 w-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
-
-          {/* Preset Instant Authorization Buttons */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold tracking-wider text-gray-400 uppercase">
-              Instant Access Tokens
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                id="login-preset-admin-btn"
-                type="button"
-                disabled={loading}
-                onClick={() => handlePresetLogin(UserRole.ADMIN)}
-                className="group relative flex flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-950/10 p-4 text-center hover:border-emerald-500 dark:hover:border-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition duration-150 active:scale-95 cursor-pointer"
-              >
-                <div className="rounded-full bg-emerald-100 dark:bg-emerald-900/50 p-2 text-emerald-600 dark:text-emerald-400">
-                  <KeyRound className="h-5 w-5" />
-                </div>
-                <span className="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Owner Terminal</span>
-                <span className="text-[10px] text-gray-400">Full Administrator Admin</span>
-              </button>
-
-              <button
-                id="login-preset-staff-btn"
-                type="button"
-                disabled={loading}
-                onClick={() => handlePresetLogin(UserRole.STAFF)}
-                className="group relative flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 dark:border-gray-800 bg-blue-50/10 dark:bg-blue-950/10 p-4 text-center hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 transition duration-150 active:scale-95 cursor-pointer"
-              >
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-2 text-blue-600 dark:text-blue-400">
-                  <User className="h-5 w-5" />
-                </div>
-                <span className="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Staff Terminal</span>
-                <span className="text-[10px] text-gray-400">Billing POS Checkout Role</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
-            <span className="flex-shrink mx-4 text-xs font-mono text-gray-400">or billing credentials</span>
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
-          </div>
 
           {/* Credentials Form */}
           <form onSubmit={handleCustomFormSubmit} className="space-y-4">

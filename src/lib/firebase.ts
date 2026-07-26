@@ -4,13 +4,14 @@
  */
 
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, inMemoryPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json'; // resolve from src/lib/firebase.ts
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth();
+export const authPersistenceReady = setPersistence(auth, inMemoryPersistence);
 
 import { doc, getDocFromServer } from 'firebase/firestore';
 

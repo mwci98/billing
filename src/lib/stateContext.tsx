@@ -13,7 +13,7 @@ import {
   INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_SUPPLIERS, 
   INITIAL_SETTINGS, INITIAL_SALES, INITIAL_PURCHASES, INITIAL_TRANSACTIONS 
 } from './demoData';
-import { db, auth, handleFirestoreError, OperationType } from './firebase';
+import { db, auth, authPersistenceReady, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc } from 'firebase/firestore';
 
@@ -126,29 +126,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeStore, setActiveStore] = useState<SaaSStore>(DEFAULT_SAAS_STORES[0]);
 
   // Authenticated State (Role-based)
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
-    const savedUser = localStorage.getItem('pos_active_user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.name && parsed.email) return parsed;
-      } catch (e) {
-        console.warn("Invalid saved user state, resetting to default admin session");
-      }
-    }
-    const defaultAdmin = {
-      id: 'usr_admin',
-      name: 'Shop Owner (Admin)',
-      email: 'admin@shop.com',
-      role: UserRole.ADMIN
-    };
-    try {
-      localStorage.setItem('pos_active_user', JSON.stringify(defaultAdmin));
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-    return defaultAdmin;
-  });
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(true);
 
@@ -415,8 +393,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Firebase Auth state listener
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
+    let unsubAuth = () => {};
+    let disposed = false;
+
+    const initialiseAuth = async () => {
+      await authPersistenceReady;
+      await signOut(auth).catch(() => undefined);
+      localStorage.removeItem('pos_active_user');
+      if (disposed) return;
+
+      unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+        if (!firebaseUser) return;
         setIsFirebaseConnected(true);
         const firebaseEmail = firebaseUser.email?.toLowerCase() || 'operator@shop.com';
         let directoryStaff: Staff | undefined;
@@ -434,14 +421,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           permissions: directoryStaff?.permissions
         };
         setCurrentUser(session);
-        try {
-          localStorage.setItem('pos_active_user', JSON.stringify(session));
-        } catch (e) {
-          // ignore localStorage error
-        }
-      }
-    });
-    return () => unsubAuth();
+      });
+    };
+
+    void initialiseAuth();
+    return () => {
+      disposed = true;
+      unsubAuth();
+    };
   }, []);
 
   // Sync state mutations helper
