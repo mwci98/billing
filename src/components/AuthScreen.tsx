@@ -75,7 +75,7 @@ export const AuthScreen: React.FC = () => {
             <Store className="h-7 w-7" />
           </div>
           <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white">
-            QuickMart Retail POS
+            Quick POS
           </h2>
           <p className="mt-2 text-sm text-gray-400">
             Realtime Billing & Inventory Management System

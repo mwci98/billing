@@ -79,7 +79,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
         order_id: order.orderId,
         amount: order.amount,
         currency: order.currency,
-        name: settings.storeName || 'QuickMart Retail POS',
+        name: settings.storeName || 'Quick POS',
         description: 'Additional store add-on · one-time ₹500',
         prefill: {name: currentUser.name, email: currentUser.email},
         theme: {color: '#10B981'},
