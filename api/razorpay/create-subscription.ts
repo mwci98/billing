@@ -27,7 +27,7 @@ export default async function handler(request: any, response: any) {
     },
     body: JSON.stringify({
       plan_id: RAZORPAY_PLAN_ID,
-      total_count: 120,
+      total_count: 10,
       quantity: 1,
       customer_notify: 1,
       notes: {
