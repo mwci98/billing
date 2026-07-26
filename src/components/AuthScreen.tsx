@@ -95,7 +95,7 @@ export const AuthScreen: React.FC = () => {
           <form onSubmit={handleCustomFormSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Store Email (admin@shop.com / staff@shop.com)
+                Store Email
               </label>
               <div className="relative rounded-xl shadow-sm">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
@@ -116,7 +116,7 @@ export const AuthScreen: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                  Secure Password (admin123 / staff123)
+                  Secure Password
                 </label>
               </div>
               <div className="relative rounded-xl shadow-sm">
