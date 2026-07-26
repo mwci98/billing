@@ -198,12 +198,12 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                           <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{plan.name} Plan</h4>
                           {isCurrent && (
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500 text-white uppercase tracking-wider">
-                              Active
+                              {settings.subscriptionStatus === 'active' ? 'Active' : 'Trial'}
                             </span>
                           )}
                         </div>
                         <div className="mt-3 flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-gray-900 dark:text-white">${plan.priceMonthly}</span>
+                          <span className="text-2xl font-black text-gray-900 dark:text-white">₹{plan.priceMonthly.toLocaleString('en-IN')}</span>
                           <span className="text-xs text-gray-500 dark:text-white/50">/month</span>
                         </div>
 

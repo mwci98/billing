@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap
+  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -21,6 +21,9 @@ import { SupplierManagement } from './components/SupplierManagement';
 import { ReportsView } from './components/ReportsView';
 import { SettingsPage } from './components/SettingsPage';
 import { SaaSManagerModal } from './components/SaaSManagerModal';
+import { UserManagement } from './components/UserManagement';
+import { StaffPermissions } from './types';
+import { SubscriptionGate } from './components/SubscriptionGate';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -36,7 +39,8 @@ const AppContent: React.FC = () => {
     isFirebaseConnected,
     settings,
     activeStore,
-    toast
+    toast,
+    hasPermission
   } = useAppState();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -64,35 +68,58 @@ const AppContent: React.FC = () => {
   const isAdmin = currentUser.role === UserRole.ADMIN;
 
   // Custom Sidebar navigation list
-  const sidebarItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, minRole: UserRole.STAFF },
-    { id: 'pos', name: 'POS Billing', icon: ShoppingCart, minRole: UserRole.STAFF },
-    { id: 'products', name: 'SKU Products', icon: ListChecks, minRole: UserRole.STAFF },
-    { id: 'inventory', name: 'Restock Inventory', icon: Package, minRole: UserRole.STAFF },
-    { id: 'customers', name: 'Customers Loyalty', icon: Users, minRole: UserRole.STAFF },
-    { id: 'suppliers', name: 'B2B Suppliers', icon: Truck, minRole: UserRole.STAFF },
-    { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, minRole: UserRole.ADMIN },
-    { id: 'settings', name: 'Store Config', icon: Settings, minRole: UserRole.ADMIN },
+  const sidebarItems: Array<{
+    id: string;
+    name: string;
+    icon: React.ComponentType<{className?: string}>;
+    permission?: keyof StaffPermissions;
+    adminOnly?: boolean;
+  }> = [
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
+    { id: 'pos', name: 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
+    { id: 'products', name: 'SKU Products', icon: ListChecks, permission: 'canManageProducts' },
+    { id: 'inventory', name: 'Restock Inventory', icon: Package, permission: 'canPurchase' },
+    { id: 'customers', name: 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
+    { id: 'suppliers', name: 'B2B Suppliers', icon: Truck, permission: 'canManageCustomers' },
+    { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
+    { id: 'staff', name: 'Staff Access', icon: UserCog, adminOnly: true },
+    { id: 'settings', name: 'Store Config', icon: Settings, adminOnly: true },
   ];
+
+  const canAccessTab = (tab: string) => {
+    const item = sidebarItems.find(entry => entry.id === tab);
+    if (!item) return false;
+    if (item.adminOnly) return isAdmin;
+    return item.permission ? hasPermission(item.permission) : true;
+  };
 
   // Map Active View/Tab panel
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'dashboard':
+        if (!canAccessTab('dashboard')) return <SecurityBarrier />;
         return <Dashboard />;
       case 'pos':
+        if (!canAccessTab('pos')) return <SecurityBarrier />;
         return <POSBilling />;
       case 'products':
+        if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
       case 'inventory':
+        if (!canAccessTab('inventory')) return <SecurityBarrier />;
         return <InventoryManagement />;
       case 'customers':
+        if (!canAccessTab('customers')) return <SecurityBarrier />;
         return <CustomerManagement />;
       case 'suppliers':
+        if (!canAccessTab('suppliers')) return <SecurityBarrier />;
         return <SupplierManagement />;
       case 'reports':
-        if (!isAdmin) return <SecurityBarrier />;
+        if (!canAccessTab('reports')) return <SecurityBarrier />;
         return <ReportsView />;
+      case 'staff':
+        if (!isAdmin) return <SecurityBarrier />;
+        return <UserManagement />;
       case 'settings':
         if (!isAdmin) return <SecurityBarrier />;
         return <SettingsPage />;
@@ -106,6 +133,7 @@ const AppContent: React.FC = () => {
   const activeTabTitle = currentTabItem ? currentTabItem.name : 'ElectroHub POS';
 
   return (
+    <SubscriptionGate>
     <div className={isDarkMode ? 'app-shell dark bg-[#0A0A0B] text-[#E0E0E0] min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell bg-gray-50 text-gray-900 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
       {/* Toast notification banner */}
       {toast && (
@@ -176,7 +204,7 @@ const AppContent: React.FC = () => {
             {/* Sidebar menus */}
             <nav className="space-y-1">
               {sidebarItems.map((item) => {
-                const hasPerm = currentUser.role === UserRole.ADMIN || item.minRole === UserRole.STAFF;
+                const hasPerm = item.adminOnly ? isAdmin : !item.permission || hasPermission(item.permission);
                 if (!hasPerm) return null;
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -349,6 +377,7 @@ const AppContent: React.FC = () => {
 
       {/* NATIVE APP BOTTOM NAVIGATION DOCK (VISIBLE ON MOBILE & TABLET) */}
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#111112]/95 backdrop-blur-lg border-t border-gray-200/80 dark:border-white/10 px-2 py-1.5 flex items-center justify-around lg:hidden shadow-2xl">
+        {canAccessTab('pos') && (
         <button
           onClick={() => setActiveTab('pos')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
@@ -360,7 +389,9 @@ const AppContent: React.FC = () => {
           <ShoppingCart className="h-5 w-5 stroke-[2.2]" />
           <span className="text-[10px] mt-1 font-semibold">POS Billing</span>
         </button>
+        )}
 
+        {canAccessTab('products') && (
         <button
           onClick={() => setActiveTab('products')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
@@ -372,7 +403,9 @@ const AppContent: React.FC = () => {
           <ListChecks className="h-5 w-5 stroke-[2.2]" />
           <span className="text-[10px] mt-1 font-semibold">Products</span>
         </button>
+        )}
 
+        {canAccessTab('inventory') && (
         <button
           onClick={() => setActiveTab('inventory')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
@@ -384,7 +417,9 @@ const AppContent: React.FC = () => {
           <Package className="h-5 w-5 stroke-[2.2]" />
           <span className="text-[10px] mt-1 font-semibold">Restock</span>
         </button>
+        )}
 
+        {canAccessTab('dashboard') && (
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
@@ -396,6 +431,7 @@ const AppContent: React.FC = () => {
           <LayoutDashboard className="h-5 w-5 stroke-[2.2]" />
           <span className="text-[10px] mt-1 font-semibold">Dashboard</span>
         </button>
+        )}
 
         <button
           onClick={() => setIsSidebarOpen(true)}
@@ -412,18 +448,19 @@ const AppContent: React.FC = () => {
         onClose={() => setIsSaaSModalOpen(false)} 
       />
     </div>
+    </SubscriptionGate>
   );
 };
 
-// Simple visual security barrier if staff toggles reports
+// Visual security barrier for any route outside the staff member's permissions.
 const SecurityBarrier: React.FC = () => (
   <div className="rounded-3xl border border-red-500/10 bg-red-50/50 dark:bg-red-950/15 p-12 text-center max-w-md mx-auto space-y-4">
     <div className="mx-auto rounded-full bg-red-100 dark:bg-red-900/50 text-red-500 p-4 w-16 h-16 flex items-center justify-center animate-bounce">
       <ShieldAlert className="h-8 w-8 stroke-[2px]" />
     </div>
-    <h3 className="text-lg font-black text-gray-950 dark:text-white">Administrative clearance Required</h3>
+    <h3 className="text-lg font-black text-gray-950 dark:text-white">Permission required</h3>
     <p className="text-xs text-gray-400 leading-relaxed">
-      You are logged in as Checkout Staff. Reports, spreadheets downloads, and store global settings configurations are restricted to Admin login accounts only.
+      Your staff account does not have access to this area. Ask the store owner to update your permissions under Staff Access.
     </p>
   </div>
 );

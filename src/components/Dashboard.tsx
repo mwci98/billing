@@ -22,8 +22,10 @@ export const Dashboard: React.FC = () => {
     notifications, 
     setActiveTab, 
     currentUser,
-    syncWithCloud
+    syncWithCloud,
+    hasPermission
   } = useAppState();
+  const canViewFinancials = hasPermission('canViewFinancials');
 
   const formatWholeCurrency = (value: number) =>
     `${settings.currency}${Math.round(value).toLocaleString('en-IN')}`;
@@ -137,6 +139,7 @@ export const Dashboard: React.FC = () => {
       {/* 2. Top-tier KPI Cards Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {/* KPI 1 */}
+        {canViewFinancials && (
         <div id="kpi-today-revenue" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Today's Revenue</span>
@@ -154,8 +157,10 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
 
         {/* KPI 2 */}
+        {canViewFinancials && (
         <div id="kpi-total-sales" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Total Sales</span>
@@ -172,6 +177,7 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
 
         {/* KPI 3 */}
         <div id="kpi-total-products" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
@@ -224,6 +230,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* KPI 6 */}
+        {canViewFinancials && (
         <div id="kpi-estimated-profit" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Est. Profit</span>
@@ -241,11 +248,13 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
       </div>
 
 
 
       {/* 4. Recent Live Sales */}
+      {canViewFinancials && (
       <div className="grid grid-cols-1 gap-6">
         {/* Recent Invoices list */}
         <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm flex flex-col justify-between">
@@ -303,6 +312,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

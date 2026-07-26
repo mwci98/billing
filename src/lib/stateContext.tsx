@@ -6,7 +6,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Product, Customer, Supplier, Sale, Purchase, 
-  InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan 
+  InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan,
+  Staff, StaffPermissions, AppUser
 } from '../types';
 import { 
   INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_SUPPLIERS, 
@@ -14,7 +15,7 @@ import {
 } from './demoData';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc } from 'firebase/firestore';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
   { id: 'store-1', name: 'ElectroHub - Flagship Store', branchCode: 'HYD-01', city: 'Hyderabad', status: 'Active' },
@@ -24,41 +25,32 @@ const DEFAULT_SAAS_STORES: SaaSStore[] = [
 
 const DEFAULT_SAAS_PLANS: SaaSPlan[] = [
   {
-    name: 'Free',
-    priceMonthly: 0,
-    maxProducts: 25,
-    maxMonthlySales: 100,
-    multiBranch: false,
-    cloudBackup: true,
-    customBranding: false,
-    features: ['Single Location POS', 'Firebase Real-Time DB', '25 Products Limit', 'Basic Receipts']
-  },
-  {
     name: 'Pro',
-    priceMonthly: 29,
+    priceMonthly: 5500,
     maxProducts: 1000,
     maxMonthlySales: 5000,
     multiBranch: true,
     cloudBackup: true,
     customBranding: true,
-    features: ['Multi-Branch Support', 'Unlimited Firestore Realtime DB', 'Inventory Audit Logs', 'WhatsApp & PDF Invoices', 'Custom Tax & Loyalty Engine']
-  },
-  {
-    name: 'Enterprise',
-    priceMonthly: 99,
-    maxProducts: 50000,
-    maxMonthlySales: 100000,
-    multiBranch: true,
-    cloudBackup: true,
-    customBranding: true,
-    features: ['Multi-Tenant Multi-Store', 'Dedicated Firebase Partition', 'VIP Priority Support', 'Unlimited Staff & Role Guards', 'Custom Tally & ERP Integration']
+    features: ['5-Day Free Trial', 'Multi-Branch Support', 'Firebase Real-Time DB', 'Inventory Audit Logs', 'Staff Permission Controls', 'Custom Tax & Loyalty Engine']
   }
 ];
 
+const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
+  canBill: true,
+  canPurchase: true,
+  canManageProducts: true,
+  canManageCustomers: true,
+  canViewDashboard: false,
+  canViewFinancials: false
+};
+
+const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
+
 interface AppContextType {
   // Auth Session State
-  currentUser: { id: string; name: string; email: string; role: UserRole } | null;
-  login: (email: string, role: UserRole, name?: string) => Promise<boolean>;
+  currentUser: AppUser | null;
+  login: (email: string, role: UserRole, name?: string, passcode?: string) => Promise<boolean>;
   logout: () => void;
   isFirebaseConnected: boolean;
 
@@ -78,6 +70,7 @@ interface AppContextType {
   transactions: InventoryTransaction[];
   settings: StoreSettings;
   notifications: POSNotification[];
+  staff: Staff[];
 
   // Mutators / Actions
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Product;
@@ -94,6 +87,10 @@ interface AppContextType {
   addSupplier: (supplier: Omit<Supplier, 'id' | 'outstandingBalance' | 'createdAt'>) => Supplier;
   editSupplier: (id: string, supplier: Partial<Supplier>) => void;
   deleteSupplier: (id: string) => void;
+  addStaff: (staff: Omit<Staff, 'id' | 'tenantId' | 'role' | 'passcodeHash' | 'createdAt'>, passcode: string) => Promise<boolean>;
+  updateStaff: (id: string, staff: Partial<Pick<Staff, 'name' | 'permissions' | 'active'>>, passcode?: string) => Promise<void>;
+  deleteStaff: (id: string) => Promise<void>;
+  hasPermission: (permission: keyof StaffPermissions) => boolean;
 
   // Settings
   updateSettings: (settings: StoreSettings) => void;
@@ -131,7 +128,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeStore, setActiveStore] = useState<SaaSStore>(DEFAULT_SAAS_STORES[0]);
 
   // Authenticated State (Role-based)
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: UserRole } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
     const savedUser = localStorage.getItem('pos_active_user');
     if (savedUser) {
       try {
@@ -166,6 +163,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
   const [notifications, setNotifications] = useState<POSNotification[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
 
   // Toast notifier state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
@@ -184,8 +182,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [toast]);
 
   // User Tenant Data Scope Resolver
-  const getUserScope = (user: { id: string; name: string; email: string; role: UserRole } | null): string => {
+  const getUserScope = (user: AppUser | null): string => {
     if (!user || !user.email) return 'default_store';
+    if (user.tenantId) return user.tenantId;
     return user.email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
   };
 
@@ -209,6 +208,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localPurchases = localStorage.getItem(scopeKey('purchases'));
     const localTransactions = localStorage.getItem(scopeKey('transactions'));
     const localSettings = localStorage.getItem(scopeKey('settings'));
+    const localStaff = localStorage.getItem(scopeKey('staff'));
 
     if (localProducts) {
       setProducts(JSON.parse(localProducts));
@@ -254,17 +254,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (localSettings) {
       const parsed = JSON.parse(localSettings);
+      if (!parsed.trialStartedAt && parsed.subscriptionStatus !== 'active') {
+        const trialStartedAt = new Date();
+        parsed.trialStartedAt = trialStartedAt.toISOString();
+        parsed.trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString();
+        parsed.subscriptionStatus = 'trialing';
+        parsed.planTier = 'Pro';
+        setDoc(doc(db, 'users', scope, 'store_settings', 'active'), parsed, {merge: true})
+          .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${scope}/store_settings`));
+      }
       if (parsed.currency === '$' || !parsed.currency) parsed.currency = '₹';
       setSettings(parsed);
     } else {
+      const trialStartedAt = new Date();
       const userCustomSettings: StoreSettings = {
         ...INITIAL_SETTINGS,
+        tenantId: scope,
+        planTier: 'Pro',
+        subscriptionStatus: 'trialing',
+        trialStartedAt: trialStartedAt.toISOString(),
+        trialEndsAt: new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString(),
         storeName: currentUser?.name ? `${currentUser.name}'s ElectroHub POS` : INITIAL_SETTINGS.storeName,
         email: currentUser?.email || INITIAL_SETTINGS.email,
         currency: '₹'
       };
       setSettings(userCustomSettings);
       localStorage.setItem(scopeKey('settings'), JSON.stringify(userCustomSettings));
+      getDoc(doc(db, 'users', scope, 'store_settings', 'active'))
+        .then(existing => {
+          if (existing.exists()) {
+            const remoteSettings = existing.data() as StoreSettings;
+            setSettings(remoteSettings);
+            localStorage.setItem(scopeKey('settings'), JSON.stringify(remoteSettings));
+          } else {
+            setDoc(doc(db, 'users', scope, 'store_settings', 'active'), userCustomSettings);
+          }
+        })
+        .catch(error => handleFirestoreError(error, OperationType.GET, `users/${scope}/store_settings`));
+    }
+
+    if (localStaff) {
+      setStaff(JSON.parse(localStaff));
+    } else {
+      setStaff([]);
     }
 
     // Connect real-time Firestore listeners to user tenant subcollections
@@ -331,12 +363,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/store_settings`)
     );
 
+    const unsubStaff = onSnapshot(
+      collection(db, 'users', scope, 'staff'),
+      (snapshot) => {
+        const list: Staff[] = snapshot.docs.map(staffDoc => staffDoc.data() as Staff);
+        setStaff(list);
+        localStorage.setItem(scopeKey('staff'), JSON.stringify(list));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/staff`)
+    );
+
     return () => {
       unsubProducts();
       unsubSales();
       unsubCustomers();
       unsubSuppliers();
       unsubSettings();
+      unsubStaff();
     };
   }, [currentUser]);
 
@@ -346,11 +389,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (firebaseUser) {
         setIsFirebaseConnected(true);
         const isOwner = firebaseUser.email?.toLowerCase() === 'jiv.dasgupta09@gmail.com' || firebaseUser.email?.includes('admin');
-        const session = {
+        const firebaseEmail = firebaseUser.email?.toLowerCase() || 'operator@shop.com';
+        let directoryStaff: Staff | undefined;
+        try {
+          directoryStaff = JSON.parse(localStorage.getItem('pos_staff_directory') || '{}')[firebaseEmail];
+        } catch {
+          directoryStaff = undefined;
+        }
+        const session: AppUser = {
           id: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Store Operator',
-          email: firebaseUser.email || 'operator@shop.com',
-          role: isOwner ? UserRole.ADMIN : UserRole.STAFF
+          name: directoryStaff?.name || firebaseUser.displayName || firebaseEmail.split('@')[0] || 'Store Operator',
+          email: firebaseEmail,
+          role: isOwner ? UserRole.ADMIN : UserRole.STAFF,
+          tenantId: directoryStaff?.tenantId || firebaseEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+          permissions: directoryStaff?.permissions
         };
         setCurrentUser(session);
         try {
@@ -460,19 +512,167 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const normalizeEmail = (email: string) => email.toLowerCase().trim();
+  const directoryIdForEmail = (email: string) => normalizeEmail(email).replace(/[^a-zA-Z0-9]/g, '_');
+
+  const hashPasscode = async (passcode: string) => {
+    const bytes = new TextEncoder().encode(passcode);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+  };
+
+  const readLocalStaffDirectory = (): Record<string, Staff> => {
+    try {
+      return JSON.parse(localStorage.getItem('pos_staff_directory') || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const writeLocalStaffDirectory = (directory: Record<string, Staff>) => {
+    localStorage.setItem('pos_staff_directory', JSON.stringify(directory));
+  };
+
   // 3. Authentications System
-  const login = async (email: string, role: UserRole, name?: string): Promise<boolean> => {
-    const formattedEmail = email.toLowerCase().trim();
+  const login = async (email: string, role: UserRole, name?: string, passcode?: string): Promise<boolean> => {
+    const formattedEmail = normalizeEmail(email);
+    let staffAccount = readLocalStaffDirectory()[formattedEmail];
+
+    if (!staffAccount && role === UserRole.STAFF) {
+      try {
+        const directoryDoc = await getDoc(doc(db, 'staff_directory', directoryIdForEmail(formattedEmail)));
+        if (directoryDoc.exists()) {
+          staffAccount = directoryDoc.data() as Staff;
+          writeLocalStaffDirectory({
+            ...readLocalStaffDirectory(),
+            [formattedEmail]: staffAccount
+          });
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `staff_directory/${directoryIdForEmail(formattedEmail)}`);
+      }
+    }
+
+    if (staffAccount) {
+      if (!staffAccount.active) {
+        triggerToast('This staff account has been disabled by the owner.', 'error');
+        return false;
+      }
+      const authenticatedWithGoogle = auth.currentUser?.email?.toLowerCase() === formattedEmail;
+      if (!authenticatedWithGoogle && (!passcode || await hashPasscode(passcode) !== staffAccount.passcodeHash)) {
+        triggerToast('Invalid staff email or passcode.', 'error');
+        return false;
+      }
+      const staffSession: AppUser = {
+        id: staffAccount.id,
+        email: staffAccount.email,
+        name: staffAccount.name,
+        role: UserRole.STAFF,
+        tenantId: staffAccount.tenantId,
+        permissions: staffAccount.permissions
+      };
+      saveLocalAndState('active_user', staffSession, setCurrentUser);
+      setActiveTab(staffAccount.permissions.canBill ? 'pos' : staffAccount.permissions.canPurchase ? 'inventory' : 'products');
+      triggerToast(`Authenticated as ${staffAccount.name}`, 'success');
+      return true;
+    }
+
+    if (role === UserRole.STAFF && formattedEmail !== 'staff@shop.com') {
+      triggerToast('No active staff account exists for this email.', 'error');
+      return false;
+    }
+
     const cleanName = name || (role === UserRole.ADMIN ? 'Administrator' : 'Billing Staff');
-    const userSession = {
+    const userSession: AppUser = {
       id: `usr_${formattedEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
       email: formattedEmail,
       name: cleanName,
-      role: role
+      role,
+      tenantId: formattedEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+      ...(role === UserRole.STAFF ? {permissions: DEFAULT_STAFF_PERMISSIONS} : {})
     };
     saveLocalAndState('active_user', userSession, setCurrentUser);
     triggerToast(`Authenticated as ${cleanName} (${formattedEmail})`, "success");
     return true;
+  };
+
+  const hasPermission = (permission: keyof StaffPermissions) =>
+    currentUser?.role === UserRole.ADMIN ||
+    Boolean((currentUser?.permissions || DEFAULT_STAFF_PERMISSIONS)[permission]);
+
+  const addStaff = async (
+    staffInput: Omit<Staff, 'id' | 'tenantId' | 'role' | 'passcodeHash' | 'createdAt'>,
+    passcode: string
+  ): Promise<boolean> => {
+    if (currentUser?.role !== UserRole.ADMIN) return false;
+    const email = normalizeEmail(staffInput.email);
+    if (staff.some(member => member.email === email)) {
+      triggerToast('A staff account with this email already exists.', 'error');
+      return false;
+    }
+    const scope = getUserScope(currentUser);
+    const newStaff: Staff = {
+      ...staffInput,
+      id: `staff-${Date.now()}`,
+      email,
+      role: UserRole.STAFF,
+      tenantId: scope,
+      passcodeHash: await hashPasscode(passcode),
+      createdAt: new Date().toISOString()
+    };
+    const updated = [newStaff, ...staff];
+    setStaff(updated);
+    localStorage.setItem(`pos_${scope}_staff`, JSON.stringify(updated));
+    writeLocalStaffDirectory({...readLocalStaffDirectory(), [email]: newStaff});
+    await Promise.all([
+      setDoc(doc(db, 'users', scope, 'staff', newStaff.id), newStaff),
+      setDoc(doc(db, 'staff_directory', directoryIdForEmail(email)), newStaff)
+    ]);
+    triggerToast(`${newStaff.name} can now sign in as staff.`, 'success');
+    return true;
+  };
+
+  const updateStaff = async (
+    id: string,
+    changes: Partial<Pick<Staff, 'name' | 'permissions' | 'active'>>,
+    passcode?: string
+  ) => {
+    if (currentUser?.role !== UserRole.ADMIN) return;
+    const scope = getUserScope(currentUser);
+    const existing = staff.find(member => member.id === id);
+    if (!existing) return;
+    const updatedMember: Staff = {
+      ...existing,
+      ...changes,
+      ...(passcode ? {passcodeHash: await hashPasscode(passcode)} : {})
+    };
+    const updated = staff.map(member => member.id === id ? updatedMember : member);
+    setStaff(updated);
+    localStorage.setItem(`pos_${scope}_staff`, JSON.stringify(updated));
+    writeLocalStaffDirectory({...readLocalStaffDirectory(), [updatedMember.email]: updatedMember});
+    await Promise.all([
+      setDoc(doc(db, 'users', scope, 'staff', id), updatedMember),
+      setDoc(doc(db, 'staff_directory', directoryIdForEmail(updatedMember.email)), updatedMember)
+    ]);
+    triggerToast('Staff permissions updated.', 'success');
+  };
+
+  const deleteStaff = async (id: string) => {
+    if (currentUser?.role !== UserRole.ADMIN) return;
+    const scope = getUserScope(currentUser);
+    const existing = staff.find(member => member.id === id);
+    if (!existing) return;
+    const updated = staff.filter(member => member.id !== id);
+    setStaff(updated);
+    localStorage.setItem(`pos_${scope}_staff`, JSON.stringify(updated));
+    const directory = readLocalStaffDirectory();
+    delete directory[existing.email];
+    writeLocalStaffDirectory(directory);
+    await Promise.all([
+      deleteDoc(doc(db, 'users', scope, 'staff', id)),
+      deleteDoc(doc(db, 'staff_directory', directoryIdForEmail(existing.email)))
+    ]);
+    triggerToast('Staff access removed.', 'success');
   };
 
   const logout = async () => {
@@ -1040,6 +1240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         transactions,
         settings,
         notifications,
+        staff,
 
         addProduct,
         editProduct,
@@ -1054,6 +1255,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addSupplier,
         editSupplier,
         deleteSupplier,
+        addStaff,
+        updateStaff,
+        deleteStaff,
+        hasPermission,
 
         updateSettings,
         deleteAllMockupData,

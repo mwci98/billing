@@ -56,7 +56,7 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleCustomFormSubmit = (e: React.FormEvent) => {
+  const handleCustomFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput) {
       setErrorMsg('Please enter your business email address.');
@@ -68,7 +68,18 @@ export const AuthScreen: React.FC = () => {
     const role = isOwner ? UserRole.ADMIN : UserRole.STAFF;
     const name = emailLower.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    login(emailLower, role, `${name} (${role === UserRole.ADMIN ? 'Owner' : 'Staff'})`);
+    setLoading(true);
+    setErrorMsg(null);
+    const success = await login(
+      emailLower,
+      role,
+      `${name} (${role === UserRole.ADMIN ? 'Owner' : 'Staff'})`,
+      passwordInput
+    );
+    if (!success) {
+      setErrorMsg('Staff account not found, disabled, or the passcode is incorrect.');
+    }
+    setLoading(false);
   };
 
   return (

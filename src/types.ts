@@ -8,12 +8,34 @@ export enum UserRole {
   STAFF = 'Staff'
 }
 
+export interface StaffPermissions {
+  canBill: boolean;
+  canPurchase: boolean;
+  canManageProducts: boolean;
+  canManageCustomers: boolean;
+  canViewDashboard: boolean;
+  canViewFinancials: boolean;
+}
+
 export interface Staff {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  tenantId: string;
+  permissions: StaffPermissions;
+  passcodeHash: string;
+  active: boolean;
   createdAt: string;
+}
+
+export interface AppUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  tenantId?: string;
+  permissions?: StaffPermissions;
 }
 
 export interface Product {
@@ -152,6 +174,11 @@ export interface StoreSettings {
   planTier?: 'Free' | 'Pro' | 'Enterprise';
   tenantId?: string;
   storeBranch?: string;
+  subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
+  trialStartedAt?: string;
+  trialEndsAt?: string;
+  razorpaySubscriptionId?: string;
+  subscriptionCurrentEnd?: string;
 }
 
 export interface SaaSStore {
