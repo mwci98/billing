@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Use the application's theme class consistently in every browser. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -19,6 +22,10 @@
   --sidebar-hex: #111112;
   --card-hex: #141416;
   --border-hex: rgba(255, 255, 255, 0.05);
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 /* Custom Slim Dark Scrollbars */
