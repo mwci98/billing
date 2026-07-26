@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  Building2, CheckCircle2, Shield, Zap, Database, 
-  Layers, ArrowUpRight, Check, X, Sparkles, Globe, MapPin, Server, CreditCard
+  Building2, CheckCircle2, Zap,
+  Layers, Check, X, Sparkles, Globe, MapPin, CreditCard
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 
@@ -18,27 +18,15 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
     switchStoreBranch, 
     upgradeSaaSPlan, 
     settings, 
-    products, 
-    sales, 
-    customers, 
-    suppliers,
     currentUser,
-    isFirebaseConnected,
-    syncWithCloud
+    isFirebaseConnected
   } = useAppState();
 
-  const [activeTab, setActiveTab] = useState<'branches' | 'plans' | 'database'>('branches');
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'branches' | 'plans'>('branches');
 
   if (!isOpen) return null;
 
   const currentPlanTier = settings.planTier || 'Pro';
-
-  const handleManualSync = async () => {
-    setIsSyncing(true);
-    await syncWithCloud();
-    setTimeout(() => setIsSyncing(false), 600);
-  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
@@ -95,17 +83,6 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
           >
             <Zap className="h-4 w-4" />
             Subscription & Plans
-          </button>
-          <button
-            onClick={() => setActiveTab('database')}
-            className={`py-3.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-colors ${
-              activeTab === 'database' 
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <Database className="h-4 w-4" />
-            Firebase DB Inspector
           </button>
         </div>
 
@@ -254,93 +231,6 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: FIREBASE DATABASE INSPECTOR */}
-          {activeTab === 'database' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center font-bold shrink-0">
-                    <Server className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">Firebase Firestore Cloud Database</h4>
-                    <p className="text-[11px] text-gray-500 font-mono mt-0.5">Project ID: ai-studio-6936ecb8-f4bb-4b22-88cd-421a5053b2cd</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                    isFirebaseConnected 
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                  }`}>
-                    <span className={`h-2 w-2 rounded-full ${isFirebaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                    {isFirebaseConnected ? 'Firestore Connected' : 'Connecting Cloud...'}
-                  </span>
-                  
-                  <button
-                    onClick={handleManualSync}
-                    disabled={isSyncing}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
-                  >
-                    <Database className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Syncing...' : 'Force Cloud Sync'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider text-gray-400">
-                  Real-time Firestore Collections Status
-                </h4>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase font-mono">Collection: products</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1">{products.length} Docs</p>
-                    <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                      <Check className="h-3 w-3" /> Live Listener Active
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase font-mono">Collection: sales</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1">{sales.length} Docs</p>
-                    <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                      <Check className="h-3 w-3" /> Live Listener Active
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase font-mono">Collection: customers</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1">{customers.length} Docs</p>
-                    <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                      <Check className="h-3 w-3" /> Live Listener Active
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase font-mono">Collection: suppliers</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1">{suppliers.length} Docs</p>
-                    <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                      <Check className="h-3 w-3" /> Live Listener Active
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-3 text-xs text-emerald-700 dark:text-emerald-300">
-                <Shield className="h-5 w-5 text-emerald-500 shrink-0" />
-                <div>
-                  <span className="font-bold">Tenant Data Scope:</span>
-                  <p className="text-gray-500 dark:text-white/60 text-[11px] mt-0.5">
-                    Application data is stored under tenant <span className="font-mono text-emerald-500 font-semibold">{settings.tenantId || currentUser?.tenantId}</span> for <span className="font-mono text-emerald-500 font-semibold">{currentUser?.email}</span>.
-                  </p>
-                </div>
               </div>
             </div>
           )}
