@@ -8,7 +8,9 @@ export default async function handler(request: any, response: any) {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) {
-    return response.status(503).json({error: 'Razorpay is not configured.'});
+    return response.status(503).json({
+      error: 'Razorpay is not configured yet. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel.',
+    });
   }
 
   const {tenantId, email, name} = request.body || {};
@@ -37,7 +39,15 @@ export default async function handler(request: any, response: any) {
     }),
   });
 
-  const payload = await razorpayResponse.json();
+  const razorpayBody = await razorpayResponse.text();
+  let payload: any = {};
+  try {
+    payload = razorpayBody ? JSON.parse(razorpayBody) : {};
+  } catch {
+    return response.status(502).json({
+      error: 'Razorpay returned an invalid response. Please try again.',
+    });
+  }
   if (!razorpayResponse.ok) {
     return response.status(razorpayResponse.status).json({
       error: payload?.error?.description || 'Unable to create Razorpay subscription.',

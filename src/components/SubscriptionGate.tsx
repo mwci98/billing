@@ -20,6 +20,21 @@ async function loadRazorpayCheckout() {
   });
 }
 
+async function readApiResponse(response: Response) {
+  const body = await response.text();
+  if (!body) return {};
+
+  try {
+    return JSON.parse(body) as Record<string, any>;
+  } catch {
+    throw new Error(
+      response.ok
+        ? 'The payment server returned an invalid response. Please try again.'
+        : `The payment service is temporarily unavailable (${response.status}). Please try again.`,
+    );
+  }
+}
+
 export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({children}) => {
   const {settings, currentUser, updateSettings, logout, triggerToast} = useAppState();
   const [loading, setLoading] = useState(false);
@@ -52,8 +67,15 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
           name: currentUser.name,
         }),
       });
-      const subscription = await createResponse.json();
-      if (!createResponse.ok) throw new Error(subscription.error || 'Unable to start subscription.');
+      const subscription = await readApiResponse(createResponse);
+      if (!createResponse.ok) {
+        throw new Error(
+          subscription.error ||
+          (createResponse.status === 503
+            ? 'Razorpay is not configured yet. Add the Razorpay keys in Vercel to enable upgrades.'
+            : 'Unable to start subscription. Please try again.'),
+        );
+      }
 
       const checkout = new window.Razorpay({
         key: subscription.keyId,
@@ -73,7 +95,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
               razorpaySignature: payment.razorpay_signature,
             }),
           });
-          const verification = await verificationResponse.json();
+          const verification = await readApiResponse(verificationResponse);
           if (!verificationResponse.ok || !verification.verified) {
             triggerToast(verification.error || 'Payment verification failed.', 'error');
             return;
