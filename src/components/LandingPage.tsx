@@ -330,6 +330,60 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
+          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214]">
+            <div className="grid lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
+              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-amber-300">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Coming soon
+                </div>
+                <h2 className="mt-6 text-4xl font-extrabold leading-[1.05] tracking-[-0.055em] sm:text-5xl">
+                  QuickPOS
+                  <span className="block text-emerald-400">Smart Terminal.</span>
+                </h2>
+                <p className="mt-5 max-w-md text-sm leading-7 text-white/42">
+                  A complete countertop experience bringing QuickPOS billing, barcode scanning,
+                  receipt printing and card payments together in one purpose-built terminal.
+                </p>
+                <div className="mt-8 grid grid-cols-2 gap-3 text-[10px] font-bold text-white/55">
+                  {[
+                    [ScanBarcode, 'Barcode ready'],
+                    [FileText, 'Built-in receipts'],
+                    [BadgeIndianRupee, 'Card payments'],
+                    [Cloud, 'Cloud connected'],
+                  ].map(([Icon, label]) => {
+                    const TerminalIcon = Icon as React.ComponentType<{ className?: string }>;
+                    return (
+                      <div key={label as string} className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-3">
+                        <TerminalIcon className="h-4 w-4 text-emerald-400" />
+                        {label as string}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-6 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                  Hardware availability will be announced soon
+                </p>
+              </div>
+
+              <div className="relative min-h-[22rem] overflow-hidden border-t border-white/[0.06] lg:min-h-[36rem] lg:border-l lg:border-t-0">
+                <img
+                  src="/images/quickpos-terminal-coming-soon.png"
+                  alt="Preview of the upcoming QuickPOS smart billing terminal with receipt printer and card reader"
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#121214]/55 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#121214]/30 lg:via-transparent lg:to-transparent" />
+                <div className="absolute bottom-5 right-5 rounded-xl border border-white/15 bg-black/55 px-4 py-2.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white/75 backdrop-blur-xl">
+                  Concept preview
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Straightforward pricing</span>
