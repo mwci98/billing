@@ -423,11 +423,11 @@ export const ProductManagement: React.FC = () => {
               <tr className="border-b border-gray-100 dark:border-gray-900 text-gray-400 uppercase tracking-wider text-[9px] font-extrabold">
                 <th className="py-3 px-2">Preview</th>
                 <th className="py-3">Details</th>
-                <th className="py-3">SKU & BAR</th>
-                <th className="py-3">Origin</th>
-                <th className="py-3">Category</th>
+                <th className="hidden xl:table-cell py-3">SKU & BAR</th>
+                <th className="hidden xl:table-cell py-3">Origin</th>
+                <th className="hidden xl:table-cell py-3">Category</th>
                 <th className="py-3 font-mono">Cost / Raw Cost</th>
-                <th className="py-3 font-mono">Sell Price (Tax)</th>
+                <th className="hidden xl:table-cell py-3 font-mono">Sell Price (Tax)</th>
                 <th className="py-3">Stock count</th>
                 <th className="py-3 text-right">Actions</th>
               </tr>
@@ -443,13 +443,13 @@ export const ProductManagement: React.FC = () => {
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">Brand: {p.brand} • Unit: {p.unit}</p>
                     </td>
-                    <td className="py-3 font-mono max-w-[6rem] truncate pr-2">
+                    <td className="hidden xl:table-cell py-3 font-mono max-w-[6rem] truncate pr-2">
                       <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{p.sku}</p>
                       <p className="text-[10px] text-emerald-500 truncate flex items-center gap-0.5">
                         <Barcode className="h-3 w-3 inline" /> {p.barcode}
                       </p>
                     </td>
-                    <td className="py-3">
+                    <td className="hidden xl:table-cell py-3">
                       {src === 'Manufactured' ? (
                         <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
                           🏭 In-House
@@ -464,7 +464,7 @@ export const ProductManagement: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-3">
+                    <td className="hidden xl:table-cell py-3">
                       <span className="rounded-md bg-gray-50 dark:bg-gray-900 px-2 py-0.5 text-[10px]">
                         {p.category}
                       </span>
@@ -475,7 +475,7 @@ export const ProductManagement: React.FC = () => {
                         <span className="block text-[9px] text-amber-500 font-bold">Mat: {settings.currency}{p.manufacturingCost.toFixed(2)}</span>
                       )}
                     </td>
-                    <td className="py-3 font-mono">
+                    <td className="hidden xl:table-cell py-3 font-mono">
                       <p className="font-bold">{settings.currency}{p.sellingPrice.toFixed(2)}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">+{p.taxRate}% GST</p>
                     </td>
