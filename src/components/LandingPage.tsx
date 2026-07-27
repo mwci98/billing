@@ -10,12 +10,15 @@ import {
   Cloud,
   FileText,
   LayoutDashboard,
+  Laptop,
   PackageCheck,
   ScanBarcode,
   ShieldCheck,
   ShoppingCart,
+  Smartphone,
   Sparkles,
   Store,
+  Tablet,
   Users,
   Wifi,
   Zap,
@@ -344,6 +347,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     Explore QuickPOS
                     <ChevronRight className="h-4 w-4" />
                   </a>
+                </div>
+                <div className="mt-6 flex flex-wrap items-center gap-3 text-[10px] font-bold text-white/45">
+                  <span className="uppercase tracking-[0.12em] text-white/28">Use QuickPOS on</span>
+                  <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5 text-emerald-400" /> Mobile</span>
+                  <span className="h-1 w-1 rounded-full bg-white/15" />
+                  <span className="flex items-center gap-1.5"><Tablet className="h-3.5 w-3.5 text-emerald-400" /> Tablet</span>
+                  <span className="h-1 w-1 rounded-full bg-white/15" />
+                  <span className="flex items-center gap-1.5"><Laptop className="h-3.5 w-3.5 text-emerald-400" /> Laptop</span>
                 </div>
               </div>
 
