@@ -63,8 +63,59 @@ export const ProductManagement: React.FC = () => {
   const [manufacturingCost, setManufacturingCost] = useState<string>('');
   const [batchNo, setBatchNo] = useState<string>('');
   const [productionNotes, setProductionNotes] = useState<string>('');
+  const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
 
-  const handlePullBarcodeInfo = (barcodeToLookup: string) => {
+  const handleLiveBarcodeLookup = async (barcodeToLookup: string) => {
+    const cleanBarcode = barcodeToLookup.replace(/\D/g, '');
+    if (!cleanBarcode) {
+      triggerToast('Please scan or enter a barcode first.', 'warning');
+      return;
+    }
+
+    const existingProduct = products.find(product => product.barcode === cleanBarcode);
+    if (existingProduct) {
+      setName(existingProduct.name);
+      setSku(existingProduct.sku);
+      setCategory(existingProduct.category);
+      setBrand(existingProduct.brand);
+      setUnit(existingProduct.unit);
+      setPurchasePrice(existingProduct.purchasePrice.toString());
+      setSellingPrice(existingProduct.sellingPrice.toString());
+      setTaxRate(existingProduct.taxRate.toString());
+      setImageUrl(existingProduct.imageUrl || '📦');
+      triggerToast(`Loaded "${existingProduct.name}" from your catalog.`, 'success');
+      return;
+    }
+
+    setIsBarcodeLookupLoading(true);
+    try {
+      const lookupResponse = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(cleanBarcode)}`);
+      const payload = await lookupResponse.json().catch(() => ({}));
+      if (!lookupResponse.ok || !payload.found) {
+        triggerToast(payload.error || 'No verified product information was found.', 'warning');
+        return;
+      }
+
+      const externalCategory = String(payload.category || '');
+      const isPhone = /phone|mobile|smartphone|cellular/i.test(`${payload.name} ${externalCategory}`);
+      setName(String(payload.name || ''));
+      setBrand(String(payload.brand || ''));
+      setCategory(isPhone ? 'Smartphones' : externalCategory.split(' > ').pop() || 'General');
+      setUnit('Unit');
+      setSku(`SKU-${cleanBarcode.slice(-6)}`);
+      setImageUrl(isPhone ? '📱' : '📦');
+      triggerToast(
+        `Loaded verified barcode details from ${payload.source}. Enter your prices, stock, GST and supplier.`,
+        'success'
+      );
+    } catch {
+      triggerToast('Unable to look up this barcode right now. Please try again.', 'error');
+    } finally {
+      setIsBarcodeLookupLoading(false);
+    }
+  };
+
+  const handleDemoBarcodeInfo = (barcodeToLookup: string) => {
     if (!barcodeToLookup) {
       triggerToast("Please enter a barcode to scan or lookup!", "warning");
       return;
@@ -729,10 +780,11 @@ export const ProductManagement: React.FC = () => {
                     <button
                       type="button"
                       id="pull-barcode-info-btn"
-                      onClick={() => handlePullBarcodeInfo(barcode)}
+                      onClick={() => void handleLiveBarcodeLookup(barcode)}
+                      disabled={isBarcodeLookupLoading}
                       className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 transition active:scale-95 cursor-pointer bg-emerald-500/10 dark:bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-500/20 shadow-sm"
                     >
-                      ⚡ Pull Info from Barcode
+                      {isBarcodeLookupLoading ? 'Looking up…' : '⚡ Pull Info from Barcode'}
                     </button>
                     {barcode && products.some(p => p.barcode === barcode) && (
                       <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-500/10 animate-pulse">Catalog Match</span>
@@ -1005,7 +1057,7 @@ export const ProductManagement: React.FC = () => {
             setBarcode(scannedCode);
             setIsBarcodeCameraOpen(false);
             // Immediately pull metadata upon successful scan
-            handlePullBarcodeInfo(scannedCode);
+            void handleLiveBarcodeLookup(scannedCode);
           }}
           onClose={() => setIsBarcodeCameraOpen(false)}
         />
