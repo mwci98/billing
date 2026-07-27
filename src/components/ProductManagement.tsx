@@ -845,7 +845,10 @@ export const ProductManagement: React.FC = () => {
                     <button
                       type="button"
                       id="scan-barcode-modal-btn"
-                      onClick={() => setIsBarcodeCameraOpen(true)}
+                      onClick={() => {
+                        setBarcode('');
+                        setIsBarcodeCameraOpen(true);
+                      }}
                       className="absolute right-2 top-1/2 -track-y-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 hover:text-emerald-400 hover:bg-white/5 active:scale-95 transition cursor-pointer"
                       title="Scan Barcode via Camera"
                     >
