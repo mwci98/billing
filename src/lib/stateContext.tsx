@@ -412,10 +412,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let disposed = false;
 
     const initialiseAuth = async () => {
-      await authPersistenceReady;
-      await signOut(auth).catch(() => undefined);
-      localStorage.removeItem('pos_active_user');
+      await authPersistenceReady.catch(() => undefined);
       if (disposed) return;
+
+      try {
+        const storedSession = JSON.parse(localStorage.getItem('pos_active_user') || 'null') as AppUser | null;
+        if (storedSession?.email && storedSession?.tenantId && storedSession?.role) {
+          setCurrentUser(storedSession);
+        }
+      } catch {
+        localStorage.removeItem('pos_active_user');
+      }
 
       unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
         if (!firebaseUser) return;
@@ -436,6 +443,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           permissions: directoryStaff?.permissions
         };
         setCurrentUser(session);
+        localStorage.setItem('pos_active_user', JSON.stringify(session));
       });
     };
 
