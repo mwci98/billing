@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'electrohub-v1';
+const CACHE_VERSION = 'quickpos-v2';
 const APP_SHELL = [
   '/',
   '/index.html',

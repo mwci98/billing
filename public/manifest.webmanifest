@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "ElectroHub Smart POS & Inventory",
-  "short_name": "ElectroHub",
+  "name": "QuickPOS – Point of Sales",
+  "short_name": "QuickPOS",
   "description": "Smart point-of-sale and inventory management.",
   "start_url": "/",
   "scope": "/",
