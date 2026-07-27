@@ -312,7 +312,7 @@ export const POSBilling: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 min-h-[calc(100vh-10rem)]">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:min-h-[calc(100vh-10rem)]">
       
       {/* LEFT: Fast Product search & fast selections catalog (7 cols on tablet/desktop) */}
       <div className="md:col-span-7 space-y-4">
@@ -508,7 +508,7 @@ export const POSBilling: React.FC = () => {
       </div>
 
       {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols on tablet/desktop) */}
-      <div className="md:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-full">
+      <div className="md:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-auto self-start md:h-full md:self-stretch">
         
         {/* Panel Cart Title */}
         <div className="border-b border-gray-100 dark:border-gray-900 p-5 bg-gray-50/50 dark:bg-gray-900/15 flex items-center justify-between">
@@ -528,9 +528,9 @@ export const POSBilling: React.FC = () => {
         </div>
 
         {/* POS Cart items table list */}
-        <div className="flex-1 overflow-y-auto max-h-[16rem] p-5 space-y-3 font-medium">
+        <div className="flex-none md:flex-1 overflow-y-auto min-h-[12rem] max-h-[16rem] p-4 sm:p-5 space-y-3 font-medium">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-400">
+            <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-center text-gray-400">
               <ReceiptText className="h-10 w-10 text-gray-300 dark:text-gray-800 stroke-[1.5px] mb-3" />
               <p className="text-xs font-semibold">Your terminal cart is empty</p>
               <p className="text-[10px] text-gray-500 mt-1 max-w-[12rem]">

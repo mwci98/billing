@@ -129,7 +129,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
   return (
     <>
       {isTrialing && Boolean(settings.trialEndsAt) && !isBlocked && (
-        <div className="fixed top-16 right-4 z-40 rounded-xl border border-amber-500/20 bg-amber-500/10 backdrop-blur-xl px-3 py-2 text-[10px] font-bold text-amber-500 shadow-lg">
+        <div className="hidden sm:block fixed top-16 right-4 z-40 rounded-xl border border-amber-500/20 bg-amber-500/10 backdrop-blur-xl px-3 py-2 text-[10px] font-bold text-amber-500 shadow-lg">
           <span className="flex items-center gap-1.5">
             <Clock3 className="h-3.5 w-3.5" />
             Basic trial · {remainingDays} {remainingDays === 1 ? 'day' : 'days'} remaining

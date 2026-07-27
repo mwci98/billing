@@ -452,7 +452,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
       {/* Scoped CSS rules to guarantee 100% black text on crisp white paper background in all dark/light modes */}
       <style>{`
         .tally-invoice-paper, .tally-invoice-paper * {
@@ -517,38 +517,38 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         document.body
       )}
 
-      <div className="w-full max-w-3xl rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl p-4 sm:p-6 relative flex flex-col my-auto max-h-[92vh]">
+      <div className="w-full max-w-3xl rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl p-3 sm:p-6 relative flex flex-col my-auto max-h-[calc(100dvh-1rem)] sm:max-h-[92vh]">
         
         {/* Header toolbar */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-800 text-white shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-gray-800 text-white shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold flex items-center gap-2">
+              <h3 className="text-base font-bold flex flex-wrap items-center gap-2">
                 Tally GST Tax Invoice <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">A5 Paper Ready</span>
               </h3>
               <p className="text-xs text-gray-400">Official GST compliant invoice print layout</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             <button
               onClick={downloadPDF}
               disabled={isPdfLoading}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
               title="Download A5 GST Tax Invoice as PDF file"
             >
               {isPdfLoading ? <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
-              <span>{isPdfLoading ? 'Generating PDF...' : 'Download PDF'}</span>
+              <span className="hidden sm:inline">{isPdfLoading ? 'Generating PDF...' : 'Download PDF'}</span>
             </button>
             <button
               onClick={printInvoice}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
+              className="flex items-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
             >
               <Printer className="h-4 w-4" />
-              <span>Print A5 Invoice</span>
+              <span className="hidden sm:inline">Print A5 Invoice</span>
             </button>
             <button
               onClick={onClose}
@@ -560,11 +560,11 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </div>
 
         {/* Printable / Preview A5 Paper Sheet */}
-        <div className="flex-1 overflow-y-auto pr-1 flex justify-center bg-gray-950/60 p-3 sm:p-6 rounded-xl border border-gray-800">
+        <div className="flex-1 min-h-0 overflow-auto flex justify-center bg-gray-950/60 p-2 sm:p-6 rounded-xl border border-gray-800">
           
           <div 
             id="printable-tally-a5-invoice" 
-            className="tally-invoice-paper w-full max-w-[148mm] bg-white text-black p-4 sm:p-5 shadow-2xl rounded-sm border border-black text-[10px] leading-tight space-y-0"
+            className="tally-invoice-paper w-full max-w-[148mm] bg-white text-black p-2 sm:p-5 shadow-2xl rounded-sm border border-black text-[8px] sm:text-[10px] leading-tight space-y-0"
             style={{ width: '100%', maxWidth: '148mm', minHeight: '210mm', boxSizing: 'border-box' }}
           >
             {renderInvoiceContent()}
@@ -573,15 +573,15 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </div>
 
         {/* Action buttons footer */}
-        <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-800 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 sm:pt-4 mt-2 border-t border-gray-800 shrink-0">
           <p className="text-xs text-gray-400">
             Sale Completed • <span className="text-white font-semibold">{activeReceipt.items.length} Items Billed</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={downloadPDF}
               disabled={isPdfLoading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
+              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
             >
               {isPdfLoading ? <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
               <span>{isPdfLoading ? 'Saving PDF...' : 'Save as PDF'}</span>
@@ -595,16 +595,16 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold transition cursor-pointer"
+              className="min-w-0 px-2 sm:px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold transition cursor-pointer"
             >
               Done / Close
             </button>
             <button
               onClick={printInvoice}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer"
+              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer"
             >
               <Printer className="h-4 w-4" />
-              <span>Print A5 Invoice</span>
+              <span>Print A5</span>
             </button>
           </div>
         </div>
