@@ -14,6 +14,37 @@ import { BarcodeGenerator, QRGenerator } from './BarcodeGenerator';
 import { CameraScanner } from './CameraScanner';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
+const PRODUCT_BRANDS = [
+  'Apple / iPhone',
+  'Samsung',
+  'OPPO',
+  'Vivo',
+  'Xiaomi',
+  'Redmi',
+  'Realme',
+  'OnePlus',
+  'Nothing',
+  'Google Pixel',
+  'Motorola',
+  'Nokia',
+  'Honor',
+  'Huawei',
+  'Poco',
+  'Infinix',
+  'Tecno',
+  'Lava',
+  'Asus',
+  'Sony',
+  'Lenovo',
+  'Microsoft',
+  'Dell',
+  'HP',
+  'Acer',
+  'LG',
+  'Panasonic',
+  'Jio',
+];
+
 export const ProductManagement: React.FC = () => {
   const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, triggerToast } = useAppState();
 
@@ -854,11 +885,17 @@ export const ProductManagement: React.FC = () => {
                   <input
                     id="form-prod-brand"
                     type="text"
+                    list="product-brand-options"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
-                    placeholder="Harvest Farms..."
+                    placeholder="Select or enter a brand..."
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
+                  <datalist id="product-brand-options">
+                    {PRODUCT_BRANDS.map((brandName) => (
+                      <option key={brandName} value={brandName} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>
