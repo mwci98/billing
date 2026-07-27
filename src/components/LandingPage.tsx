@@ -108,46 +108,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         </div>
       </header>
 
-      <main id="top" className="relative z-10">
-        <section className="mx-auto max-w-7xl px-5 pb-20 pt-16 sm:px-8 sm:pt-24 lg:pb-28 lg:pt-28">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/[0.08] px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.13em] text-emerald-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              5-day free trial · No card required
-            </div>
-            <h1 className="text-[2.8rem] font-extrabold leading-[1.02] tracking-[-0.065em] text-white sm:text-6xl lg:text-[5.25rem]">
-              Run your store.
-              <span className="block bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                Know every number.
-              </span>
-            </h1>
-            <p className="mx-auto mt-7 max-w-2xl text-base leading-7 text-white/50 sm:text-lg">
-              QuickPOS brings billing, inventory, GST invoices, staff access and multi-store control into one fast, cloud-connected workspace.
-            </p>
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button
-                onClick={onGetStarted}
-                className="group flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 px-7 py-4 text-sm font-extrabold text-[#06130E] shadow-[0_16px_50px_rgba(16,185,129,0.22)] transition hover:-translate-y-0.5 hover:bg-emerald-400 sm:w-auto"
-              >
-                Build my store workspace
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-              </button>
-              <a
-                href="#features"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-7 py-4 text-sm font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.06] sm:w-auto"
-              >
-                Explore QuickPOS
-                <ChevronRight className="h-4 w-4" />
-              </a>
-            </div>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] font-medium text-white/35">
-              <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> Works on mobile & desktop</span>
-              <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> Secure Firebase cloud</span>
-              <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> PWA ready</span>
-            </div>
-          </div>
-
-          <div className="relative mx-auto mt-16 max-w-6xl">
+      <main id="top" className="relative z-10 flex flex-col">
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+          <div className="relative mx-auto max-w-6xl">
             <div className="absolute -inset-7 rounded-[3rem] bg-emerald-500/[0.06] blur-3xl" />
             <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111113] p-2 shadow-[0_40px_100px_rgba(0,0,0,0.55)] sm:p-3">
               <div className="overflow-hidden rounded-[1.25rem] border border-white/[0.06] bg-[#0D0D0F]">
@@ -330,19 +293,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
-          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214]">
-            <div className="grid lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
-              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
+        <section className="order-first mx-auto w-full max-w-[96rem] px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-12 lg:px-8 lg:pb-20">
+          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
+            <div className="grid lg:min-h-[42rem] lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
+              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14 xl:p-16">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-amber-300">
                   <Sparkles className="h-3.5 w-3.5" />
                   Coming soon
                 </div>
-                <h2 className="mt-6 text-4xl font-extrabold leading-[1.05] tracking-[-0.055em] sm:text-5xl">
+                <h1 className="mt-7 text-[2.9rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-6xl xl:text-[4.6rem]">
                   QuickPOS
                   <span className="block text-emerald-400">Smart Terminal.</span>
-                </h2>
-                <p className="mt-5 max-w-md text-sm leading-7 text-white/42">
+                </h1>
+                <p className="mt-6 max-w-lg text-sm leading-7 text-white/45 sm:text-base">
                   A complete countertop experience bringing QuickPOS billing, barcode scanning,
                   receipt printing and card payments together in one purpose-built terminal.
                 </p>
@@ -366,13 +329,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   Hardware availability will be announced soon
                 </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    onClick={onGetStarted}
+                    className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                  >
+                    Start software free
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </button>
+                  <a
+                    href="#features"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3.5 text-xs font-bold text-white/70 transition hover:border-white/20 hover:text-white"
+                  >
+                    Explore QuickPOS
+                    <ChevronRight className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
 
-              <div className="relative min-h-[22rem] overflow-hidden border-t border-white/[0.06] lg:min-h-[36rem] lg:border-l lg:border-t-0">
+              <div className="relative min-h-[24rem] overflow-hidden border-t border-white/[0.06] sm:min-h-[32rem] lg:min-h-full lg:border-l lg:border-t-0">
                 <img
                   src="/images/quickpos-terminal-coming-soon.png"
                   alt="Preview of the upcoming QuickPOS smart billing terminal with receipt printer and card reader"
-                  loading="lazy"
+                  fetchPriority="high"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#121214]/55 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#121214]/30 lg:via-transparent lg:to-transparent" />
