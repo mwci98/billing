@@ -961,11 +961,11 @@ export const ProductManagement: React.FC = () => {
                     onChange={(e) => setTaxRate(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   >
-                    <option value="0">0% Exempt</option>
-                    <option value="5">5% Basic</option>
-                    <option value="12">12% Standard</option>
-                    <option value="18">18% Standard High</option>
-                    <option value="28">28% Luxury Tax</option>
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
+                    <option value="28">28%</option>
                   </select>
                 </div>
 
