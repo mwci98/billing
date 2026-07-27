@@ -437,7 +437,18 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             </td>
             <td className="w-2/5 p-2 text-right align-top">
               <p className="font-bold uppercase">for {settings.storeName}</p>
-              <div className="mt-12 pt-2 border-t border-black">
+              {settings.invoiceSignature ? (
+                <div className="mt-2 flex h-10 items-end justify-center">
+                  <img
+                    src={settings.invoiceSignature}
+                    alt="Authorised signature"
+                    className="max-h-10 max-w-[120px] object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="h-12" />
+              )}
+              <div className="pt-2 border-t border-black">
                 <p className="font-bold uppercase text-[8.5px]">Authorised Signatory</p>
               </div>
             </td>

@@ -170,6 +170,7 @@ export interface StoreSettings {
   currency: string; // e.g. "₹", "$", "€"
   receiptHeader: string;
   receiptFooter: string;
+  invoiceSignature?: string;
   loyaltyPointsPerDollar: number; // conversion rate
   planTier?: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
   tenantId?: string;

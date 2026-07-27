@@ -23,6 +23,7 @@ export const SettingsPage: React.FC = () => {
   const [loyaltyPointsPerDollar, setLoyaltyPointsPerDollar] = useState<string>(settings.loyaltyPointsPerDollar.toString());
   const [receiptHeader, setReceiptHeader] = useState<string>(settings.receiptHeader);
   const [receiptFooter, setReceiptFooter] = useState<string>(settings.receiptFooter);
+  const [invoiceSignature, setInvoiceSignature] = useState<string>(settings.invoiceSignature || '');
 
   // Status logs
   const [statusMsg, setStatusMsg] = useState<string>('');
@@ -30,6 +31,7 @@ export const SettingsPage: React.FC = () => {
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings({
+      ...settings,
       storeName,
       address,
       phone,
@@ -37,10 +39,53 @@ export const SettingsPage: React.FC = () => {
       gstNumber,
       loyaltyPointsPerDollar: parseFloat(loyaltyPointsPerDollar) || 1,
       receiptHeader,
-      receiptFooter
+      receiptFooter,
+      invoiceSignature
     });
     setStatusMsg('Store settings saved successfully! ✔');
     setTimeout(() => setStatusMsg(''), 4000);
+  };
+
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      triggerToast('Please select a PNG, JPG, or WebP signature image.', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      triggerToast('Signature image must be smaller than 5 MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 600 / image.width, 200 / image.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          triggerToast('Unable to process the signature image.', 'error');
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+        if (dataUrl.length > 500_000) {
+          triggerToast('The processed signature is still too large. Please use a simpler image.', 'error');
+          return;
+        }
+        setInvoiceSignature(dataUrl);
+        triggerToast('Signature ready. Select Apply Config to save it.', 'success');
+      };
+      image.onerror = () => triggerToast('Unable to read the selected signature image.', 'error');
+      image.src = reader.result as string;
+    };
+    reader.onerror = () => triggerToast('Unable to read the selected signature image.', 'error');
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // Database Backup export utilities
@@ -247,6 +292,47 @@ export const SettingsPage: React.FC = () => {
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-white"
                 />
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Authorised Invoice Signature</p>
+                  <p className="mt-1 text-[10px] font-normal text-gray-400">PNG with a transparent background works best. Maximum source size: 5 MB.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-900 px-3 py-2 text-[10px] font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <UploadCloud className="h-4 w-4 text-emerald-500" />
+                    <span>{invoiceSignature ? 'Replace Signature' : 'Upload Signature'}</span>
+                    <input
+                      id="set-invoice-signature"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleSignatureUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {invoiceSignature && (
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceSignature('')}
+                      className="rounded-xl border border-rose-200 dark:border-rose-900/60 p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                      title="Remove invoice signature"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {invoiceSignature && (
+                <div className="mt-4 flex min-h-20 items-center justify-center rounded-xl bg-white p-3">
+                  <img
+                    src={invoiceSignature}
+                    alt="Authorised invoice signature preview"
+                    className="max-h-16 max-w-full object-contain"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
