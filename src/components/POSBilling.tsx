@@ -194,6 +194,7 @@ export const POSBilling: React.FC = () => {
         return matchQuery && matchCategory && matchStock;
       })
     : [];
+  const hasPOSWorkspaceActive = hasSearchActive || cart.length > 0;
 
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
@@ -315,7 +316,7 @@ export const POSBilling: React.FC = () => {
     <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:min-h-[calc(100vh-10rem)]">
       
       {/* LEFT: Fast Product search & fast selections catalog (7 cols on tablet/desktop) */}
-      <div className="md:col-span-7 space-y-4">
+      <div className={`${hasPOSWorkspaceActive ? 'md:col-span-7' : 'w-full max-w-4xl mx-auto md:col-span-12'} space-y-4`}>
         
         {/* Rapid Search Bar actions */}
         <div className="flex flex-col md:flex-row gap-3 rounded-2xl bg-white dark:bg-gray-950 p-4 border border-gray-100 dark:border-gray-900 shadow-sm">
@@ -502,6 +503,7 @@ export const POSBilling: React.FC = () => {
       </div>
 
       {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols on tablet/desktop) */}
+      {hasPOSWorkspaceActive && (
       <div className="md:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-auto self-start md:h-full md:self-stretch">
         
         {/* Panel Cart Title */}
@@ -872,6 +874,7 @@ export const POSBilling: React.FC = () => {
           </button>
         </div>
       </div>
+      )}
 
       {/* Camera scanner Dialog Overlay */}
       {isCameraActive && (
