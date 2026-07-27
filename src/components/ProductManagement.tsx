@@ -63,6 +63,7 @@ export const ProductManagement: React.FC = () => {
   const [manufacturingCost, setManufacturingCost] = useState<string>('');
   const [batchNo, setBatchNo] = useState<string>('');
   const [productionNotes, setProductionNotes] = useState<string>('');
+  const [imeiInput, setImeiInput] = useState<string>('');
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
 
   const handleLiveBarcodeLookup = async (barcodeToLookup: string) => {
@@ -261,6 +262,7 @@ export const ProductManagement: React.FC = () => {
     setManufacturingCost('');
     setBatchNo('');
     setProductionNotes('');
+    setImeiInput('');
     setIsFormOpen(true);
   };
 
@@ -283,6 +285,7 @@ export const ProductManagement: React.FC = () => {
     setManufacturingCost(p.manufacturingCost ? p.manufacturingCost.toString() : '');
     setBatchNo(p.batchNo || '');
     setProductionNotes(p.productionNotes || '');
+    setImeiInput((p.imeiNumbers || []).join('\n'));
     setIsFormOpen(true);
   };
 
@@ -293,10 +296,33 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
+    const enteredImeis = imeiInput
+      .split(/[\s,;]+/)
+      .map(value => value.replace(/\D/g, ''))
+      .filter(Boolean);
+    if (enteredImeis.some(imei => imei.length !== 15)) {
+      triggerToast('Every IMEI must contain exactly 15 digits.', 'warning');
+      return;
+    }
+    const imeiNumbers = Array.from(new Set(enteredImeis));
+    if (imeiNumbers.length !== enteredImeis.length) {
+      triggerToast('The same IMEI was entered more than once.', 'warning');
+      return;
+    }
+    const duplicateProduct = products.find(product =>
+      product.id !== editingItem?.id &&
+      product.imeiNumbers?.some(imei => imeiNumbers.includes(imei))
+    );
+    if (duplicateProduct) {
+      triggerToast(`An IMEI is already registered under "${duplicateProduct.name}".`, 'error');
+      return;
+    }
+
     const payload = {
       name,
       sku,
       barcode,
+      imeiNumbers: imeiNumbers.length ? imeiNumbers : undefined,
       category,
       brand,
       unit,
@@ -330,7 +356,8 @@ export const ProductManagement: React.FC = () => {
   const filtered = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.sku.toLowerCase().includes(search.toLowerCase()) ||
-                          p.barcode.includes(search);
+                          p.barcode.includes(search) ||
+                          Boolean(p.imeiNumbers?.some(imei => imei.includes(search.replace(/\D/g, ''))));
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     const itemSourcing = p.sourcingType || 'Purchased';
     const matchesSourcing = sourcingFilter === 'All' || itemSourcing === sourcingFilter;
@@ -493,6 +520,9 @@ export const ProductManagement: React.FC = () => {
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">Brand: {p.brand} • Unit: {p.unit}</p>
+                      {Boolean(p.imeiNumbers?.length) && (
+                        <p className="text-[9px] text-emerald-500 mt-0.5">{p.imeiNumbers?.length} IMEI registered</p>
+                      )}
                     </td>
                     <td className="hidden xl:table-cell py-3 font-mono max-w-[6rem] truncate pr-2">
                       <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{p.sku}</p>
@@ -737,6 +767,21 @@ export const ProductManagement: React.FC = () => {
                     placeholder="e.g. Organic Whole Wheat Bread..."
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold mb-1">IMEI Numbers (Optional)</label>
+                  <textarea
+                    id="form-prod-imei"
+                    rows={3}
+                    value={imeiInput}
+                    onChange={(e) => setImeiInput(e.target.value)}
+                    placeholder={'Enter one 15-digit IMEI per line\nIMEI 1\nIMEI 2'}
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                  />
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    Use the EAN/UPC above for the phone model. Add each handset's unique IMEI here for serial tracking.
+                  </p>
                 </div>
 
                 <div>

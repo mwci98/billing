@@ -43,6 +43,7 @@ export interface Product {
   name: string;
   sku: string;
   barcode: string;
+  imeiNumbers?: string[];
   category: string;
   brand: string;
   unit: string;
