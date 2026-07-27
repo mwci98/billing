@@ -192,7 +192,7 @@ export const SettingsPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `martpos-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `quickpos-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -238,7 +238,7 @@ export const SettingsPage: React.FC = () => {
       <form onSubmit={handleSettingsSubmit} className="md:col-span-12 lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-6">
         <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-950">
           <div>
-            <h3 className="text-xl font-black text-gray-950 dark:text-white">Mart Operating Configurations</h3>
+            <h3 className="text-xl font-black text-gray-950 dark:text-white">Store Operating Configurations</h3>
             <p className="text-xs text-gray-400">Modify store details, receipt headers/footers, and loyalty points tiers</p>
           </div>
           
@@ -361,7 +361,7 @@ export const SettingsPage: React.FC = () => {
                   rows={2}
                   value={receiptHeader}
                   onChange={(e) => setReceiptHeader(e.target.value)}
-                  placeholder="e.g. Welcome to Organic Mart!"
+                  placeholder="e.g. Welcome to our store!"
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-white"
                 />
               </div>

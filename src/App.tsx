@@ -52,6 +52,7 @@ const AppContent: React.FC = () => {
   // The authentication screen is intentionally always dark.
   useEffect(() => {
     document.documentElement.classList.toggle('dark', currentUser ? isDarkMode : true);
+    document.title = 'QuickPOS';
   }, [currentUser, isDarkMode]);
 
   // Unauthenticated screen guard gate
@@ -139,7 +140,7 @@ const AppContent: React.FC = () => {
 
   // Get active tab title for app header
   const currentTabItem = sidebarItems.find(i => i.id === activeTab);
-  const activeTabTitle = currentTabItem ? currentTabItem.name : 'ElectroHub POS';
+  const activeTabTitle = currentTabItem ? currentTabItem.name : 'QuickPOS';
 
   return (
     <SubscriptionGate>

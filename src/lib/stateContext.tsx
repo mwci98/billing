@@ -286,7 +286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         trialStartedAt: trialStartedAt.toISOString(),
         trialEndsAt: new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString(),
         onboardingCompleted: false,
-        storeName: currentUser?.name ? `${currentUser.name}'s ElectroHub POS` : INITIAL_SETTINGS.storeName,
+        storeName: currentUser?.name ? `${currentUser.name}'s QuickPOS` : INITIAL_SETTINGS.storeName,
         email: currentUser?.email || INITIAL_SETTINGS.email,
         currency: '₹'
       };

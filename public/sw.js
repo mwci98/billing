@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'quickpos-v2';
+const CACHE_VERSION = 'quickpos-v3';
 const APP_SHELL = [
   '/',
   '/index.html',

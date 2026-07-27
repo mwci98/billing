@@ -1095,7 +1095,7 @@ export const ProductManagement: React.FC = () => {
 
               <div className="flex gap-4 items-center justify-center py-2 bg-white rounded-xl p-3 shadow-inner">
                 <BarcodeGenerator value={activeLabels.barcode} sku={activeLabels.sku} size="md" />
-                <QRGenerator value={`http://pos.quickmart.com/p/${activeLabels.id}`} size={70} />
+                <QRGenerator value={`https://qpos.neospec.co.in/p/${activeLabels.id}`} size={70} />
               </div>
 
               <div className="text-center">
