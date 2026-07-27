@@ -438,12 +438,21 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             <td className="w-2/5 p-2 text-right align-top">
               <p className="font-bold uppercase">for {settings.storeName}</p>
               {settings.invoiceSignature ? (
-                <div className="mt-3 flex h-11 items-center justify-end pr-2">
+                <div className="mt-3 h-11">
                   <img
                     src={settings.invoiceSignature}
                     alt="Authorised signature"
-                    className="max-h-9 max-w-[110px] object-contain"
-                    style={{filter: 'contrast(1.8) brightness(1.15)'}}
+                    style={{
+                      display: 'block',
+                      width: 'auto',
+                      height: 'auto',
+                      maxWidth: '110px',
+                      maxHeight: '36px',
+                      marginLeft: 'auto',
+                      marginRight: '8px',
+                      objectFit: 'contain',
+                      filter: 'contrast(1.8) brightness(1.15)'
+                    }}
                   />
                 </div>
               ) : (
