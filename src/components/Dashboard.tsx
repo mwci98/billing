@@ -279,10 +279,10 @@ export const Dashboard: React.FC = () => {
                   <tr className="border-b border-gray-100 dark:border-gray-900 text-gray-400 uppercase tracking-widest text-[9px] font-bold">
                     <th className="py-2.5">Invoice ID</th>
                     <th className="py-2.5">Customer</th>
-                    <th className="py-2.5">Payment</th>
+                    <th className="hidden sm:table-cell py-2.5">Payment</th>
                     <th className="py-2.5">Total</th>
-                    <th className="py-2.5">Time</th>
-                    <th className="py-2.5 text-right">Status</th>
+                    <th className="hidden lg:table-cell py-2.5">Time</th>
+                    <th className="hidden sm:table-cell py-2.5 text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-900/45">
@@ -290,16 +290,16 @@ export const Dashboard: React.FC = () => {
                     <tr key={s.id} className="text-gray-700 dark:text-gray-300 font-medium">
                       <td className="py-3 font-mono text-emerald-500 font-semibold">{s.id}</td>
                       <td className="py-3">{s.customerName || 'Walk-in Customer'}</td>
-                      <td className="py-3">
+                      <td className="hidden sm:table-cell py-3">
                         <span className="rounded-md bg-gray-50 dark:bg-gray-900 px-2 py-0.5 border border-gray-100 dark:border-gray-800 text-xs tracking-tight">
                           {s.paymentMethod}
                         </span>
                       </td>
                       <td className="py-3 font-bold">{formatWholeCurrency(s.total)}</td>
-                      <td className="py-3 text-gray-400 font-mono text-[10px]">
+                      <td className="hidden lg:table-cell py-3 text-gray-400 font-mono text-[10px]">
                         {new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="hidden sm:table-cell py-3 text-right">
                         <span className="inline-flex rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-0.5 font-semibold text-[10px]">
                           {s.status}
                         </span>
