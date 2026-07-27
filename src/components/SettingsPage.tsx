@@ -62,7 +62,7 @@ export const SettingsPage: React.FC = () => {
     reader.onload = () => {
       const image = new Image();
       image.onload = () => {
-        const scale = Math.min(1, 600 / image.width, 200 / image.height);
+        const scale = Math.min(1, 1000 / image.width, 400 / image.height);
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -72,7 +72,92 @@ export const SettingsPage: React.FC = () => {
           return;
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+        const sampleSize = Math.max(2, Math.min(12, Math.floor(Math.min(canvas.width, canvas.height) * 0.08)));
+        const cornerStarts = [
+          [0, 0],
+          [canvas.width - sampleSize, 0],
+          [0, canvas.height - sampleSize],
+          [canvas.width - sampleSize, canvas.height - sampleSize]
+        ];
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        let samples = 0;
+        cornerStarts.forEach(([startX, startY]) => {
+          for (let y = startY; y < startY + sampleSize; y += 1) {
+            for (let x = startX; x < startX + sampleSize; x += 1) {
+              const index = (y * canvas.width + x) * 4;
+              if (pixels.data[index + 3] > 20) {
+                red += pixels.data[index];
+                green += pixels.data[index + 1];
+                blue += pixels.data[index + 2];
+                samples += 1;
+              }
+            }
+          }
+        });
+        const background = samples
+          ? [red / samples, green / samples, blue / samples]
+          : [255, 255, 255];
+        let minX = canvas.width;
+        let minY = canvas.height;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < canvas.height; y += 1) {
+          for (let x = 0; x < canvas.width; x += 1) {
+            const index = (y * canvas.width + x) * 4;
+            const originalAlpha = pixels.data[index + 3];
+            if (originalAlpha <= 20) continue;
+            const distance = Math.sqrt(
+              (pixels.data[index] - background[0]) ** 2 +
+              (pixels.data[index + 1] - background[1]) ** 2 +
+              (pixels.data[index + 2] - background[2]) ** 2
+            );
+            const alphaFactor = Math.max(0, Math.min(1, (distance - 18) / 47));
+            pixels.data[index + 3] = Math.round(originalAlpha * alphaFactor);
+            if (pixels.data[index + 3] > 20) {
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+
+        if (maxX < minX || maxY < minY) {
+          triggerToast('No clear signature was detected. Please use a higher-contrast image.', 'error');
+          return;
+        }
+        context.putImageData(pixels, 0, 0);
+        const padding = 6;
+        const cropX = Math.max(0, minX - padding);
+        const cropY = Math.max(0, minY - padding);
+        const cropWidth = Math.min(canvas.width - cropX, maxX - minX + 1 + padding * 2);
+        const cropHeight = Math.min(canvas.height - cropY, maxY - minY + 1 + padding * 2);
+        const outputScale = Math.min(1, 600 / cropWidth, 160 / cropHeight);
+        const output = document.createElement('canvas');
+        output.width = Math.max(1, Math.round(cropWidth * outputScale));
+        output.height = Math.max(1, Math.round(cropHeight * outputScale));
+        const outputContext = output.getContext('2d');
+        if (!outputContext) {
+          triggerToast('Unable to process the signature image.', 'error');
+          return;
+        }
+        outputContext.drawImage(
+          canvas,
+          cropX,
+          cropY,
+          cropWidth,
+          cropHeight,
+          0,
+          0,
+          output.width,
+          output.height
+        );
+        const dataUrl = output.toDataURL('image/png');
         if (dataUrl.length > 500_000) {
           triggerToast('The processed signature is still too large. Please use a simpler image.', 'error');
           return;
