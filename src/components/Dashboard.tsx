@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import { 
   TrendingUp, ShoppingCart, Users, Package, AlertTriangle, 
   ArrowUpRight, ArrowDownRight, Calendar, Bell, IndianRupee,
-  Layers, PackageMinus, RefreshCw
+  Layers, PackageMinus, Printer, RefreshCw
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
-import { UserRole } from '../types';
+import { Sale, UserRole } from '../types';
+import {TallyInvoiceModal} from './TallyInvoiceModal';
 
 export const Dashboard: React.FC = () => {
   const { 
@@ -25,6 +26,7 @@ export const Dashboard: React.FC = () => {
     syncWithCloud,
     hasPermission
   } = useAppState();
+  const [invoiceToReprint, setInvoiceToReprint] = useState<Sale | null>(null);
   const canViewFinancials = hasPermission('canViewFinancials');
 
   const formatWholeCurrency = (value: number) =>
@@ -283,6 +285,7 @@ export const Dashboard: React.FC = () => {
                     <th className="py-2.5">Total</th>
                     <th className="hidden lg:table-cell py-2.5">Time</th>
                     <th className="hidden sm:table-cell py-2.5 text-right">Status</th>
+                    <th className="py-2.5 text-right">Reprint</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-900/45">
@@ -304,6 +307,17 @@ export const Dashboard: React.FC = () => {
                           {s.status}
                         </span>
                       </td>
+                      <td className="py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setInvoiceToReprint(s)}
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-gray-600 dark:text-gray-300 hover:border-emerald-500 hover:text-emerald-500 transition cursor-pointer"
+                          title={`Reprint invoice ${s.id}`}
+                          aria-label={`Reprint invoice ${s.id}`}
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -312,6 +326,13 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
+      {invoiceToReprint && (
+        <TallyInvoiceModal
+          activeReceipt={invoiceToReprint}
+          settings={settings}
+          onClose={() => setInvoiceToReprint(null)}
+        />
       )}
     </div>
   );
