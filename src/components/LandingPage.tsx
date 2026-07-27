@@ -297,17 +297,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
             <div className="grid lg:min-h-[42rem] lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
               <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14 xl:p-16">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-amber-300">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Coming soon
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                  QuickPOS software available now
                 </div>
                 <h1 className="mt-7 text-[2.9rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-6xl xl:text-[4.6rem]">
-                  QuickPOS
-                  <span className="block text-emerald-400">Smart Terminal.</span>
+                  Run your store
+                  <span className="block text-emerald-400">with QuickPOS.</span>
                 </h1>
                 <p className="mt-6 max-w-lg text-sm leading-7 text-white/45 sm:text-base">
-                  A complete countertop experience bringing QuickPOS billing, barcode scanning,
-                  receipt printing and card payments together in one purpose-built terminal.
+                  Start using the complete QuickPOS billing, inventory and GST invoice software
+                  today. Our optional all-in-one countertop Smart Terminal is coming soon.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 text-[10px] font-bold text-white/55">
                   {[
@@ -327,14 +327,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 </div>
                 <p className="mt-6 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  Hardware availability will be announced soon
+                  Only the optional Smart Terminal hardware is coming soon
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={onGetStarted}
                     className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
                   >
-                    Start software free
+                    Start QuickPOS free
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </button>
                   <a
@@ -356,7 +356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#121214]/55 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#121214]/30 lg:via-transparent lg:to-transparent" />
                 <div className="absolute bottom-5 right-5 rounded-xl border border-white/15 bg-black/55 px-4 py-2.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white/75 backdrop-blur-xl">
-                  Concept preview
+                  Smart Terminal · Coming soon
                 </div>
               </div>
             </div>
