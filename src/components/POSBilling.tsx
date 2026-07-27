@@ -359,6 +359,7 @@ export const POSBilling: React.FC = () => {
         </div>
 
         {/* Dynamic Category Slider with Interactive Scroll Controls */}
+        {hasSearchActive && (
         <div className="flex items-center gap-1.5 bg-white dark:bg-gray-950 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-900 shadow-sm">
           <button
             type="button"
@@ -428,18 +429,11 @@ export const POSBilling: React.FC = () => {
             <span>{showOutOfStock ? 'Showing Out-of-Stock' : 'In Stock Only'}</span>
           </button>
         </div>
+        )}
 
         {/* Product Grid catalog */}
         {!hasSearchActive ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl bg-white dark:bg-[#141416]/90 border border-gray-100 dark:border-white/5 p-8 shadow-sm">
-            <div className="rounded-full bg-emerald-50 dark:bg-emerald-500/10 p-4 text-emerald-500 dark:text-emerald-400 mb-4">
-              <Search className="h-8 w-8 stroke-[1.5]" />
-            </div>
-            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">Search Products to Display</h4>
-            <p className="text-xs text-gray-400 dark:text-gray-450 mt-1 max-w-sm leading-relaxed px-4">
-              Type a product name, SKU, or scan a barcode above to search items in the POS catalog.
-            </p>
-          </div>
+          null
         ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl bg-white dark:bg-[#141416]/90 border border-gray-100 dark:border-white/5 p-8 shadow-sm">
             <div className="rounded-full bg-gray-100 dark:bg-white/5 p-4 text-gray-400 mb-4">
