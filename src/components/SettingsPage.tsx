@@ -235,7 +235,7 @@ export const SettingsPage: React.FC = () => {
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
       
       {/* Primary configuration column */}
-      <form onSubmit={handleSettingsSubmit} className="md:col-span-7 lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-6">
+      <form onSubmit={handleSettingsSubmit} className="md:col-span-12 lg:col-span-8 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-6">
         <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-950">
           <div>
             <h3 className="text-xl font-black text-gray-950 dark:text-white">Mart Operating Configurations</h3>
@@ -424,7 +424,7 @@ export const SettingsPage: React.FC = () => {
       </form>
 
       {/* Database sync parameters import/export triggers (4 cols) */}
-      <div className="lg:col-span-4 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-5">
+      <div className="md:col-span-12 lg:col-span-4 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm space-y-5">
         <div>
           <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">Import & Export backups</h4>
           <p className="text-[10px] text-gray-400 mt-1">Export, download, and backup your entire catalog datasets offline to local files safely</p>
