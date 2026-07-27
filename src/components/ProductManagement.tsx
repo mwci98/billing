@@ -839,16 +839,15 @@ export const ProductManagement: React.FC = () => {
                       required
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onClick={(e) => e.currentTarget.select()}
                       placeholder="e.g. 101010"
                       className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 pr-10 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                     />
                     <button
                       type="button"
                       id="scan-barcode-modal-btn"
-                      onClick={() => {
-                        setBarcode('');
-                        setIsBarcodeCameraOpen(true);
-                      }}
+                      onClick={() => setIsBarcodeCameraOpen(true)}
                       className="absolute right-2 top-1/2 -track-y-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 hover:text-emerald-400 hover:bg-white/5 active:scale-95 transition cursor-pointer"
                       title="Scan Barcode via Camera"
                     >
