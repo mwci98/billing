@@ -201,7 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">Live business overview</p>
-                        <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">Welcome back, Rajive</h2>
+                        <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">Welcome back, Store Owner</h2>
                       </div>
                       <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">Fast Billing POS</span>
                     </div>
