@@ -45,6 +45,11 @@ const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
 
 const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 
+const omitUndefinedFields = <T extends Record<string, unknown>>(value: T): T =>
+  Object.fromEntries(
+    Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)
+  ) as T;
+
 interface AppContextType {
   // Auth Session State
   currentUser: AppUser | null;
@@ -728,12 +733,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // 4. Product mutators with direct Firestore Cloud persistence
   const addProduct = (p: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product => {
     const scope = getUserScope(currentUser);
-    const newProd: Product = {
+    const newProd = omitUndefinedFields({
       ...p,
       id: `prod-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    };
+    }) as Product;
 
     setProducts((prev) => {
       const updated = [newProd, ...prev];
@@ -764,7 +769,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProducts((prev) => {
       const updated = prev.map((prod) => {
         if (prod.id === id) {
-          const merged = { ...prod, ...p, updatedAt: new Date().toISOString() };
+          const merged = omitUndefinedFields({
+            ...prod,
+            ...p,
+            updatedAt: new Date().toISOString()
+          }) as Product;
           // Log transaction if stock modified
           if (p.stock !== undefined && p.stock !== prod.stock) {
             const delta = p.stock - prod.stock;
