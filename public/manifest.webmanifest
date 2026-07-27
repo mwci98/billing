@@ -1,6 +1,6 @@
 {
-  "id": "/",
-  "name": "QuickPOS – Point of Sales",
+  "id": "/quickpos",
+  "name": "QuickPOS",
   "short_name": "QuickPOS",
   "description": "Smart point-of-sale and inventory management.",
   "start_url": "/",

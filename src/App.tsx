@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog
+  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog, ArrowRight
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -25,6 +25,7 @@ import { UserManagement } from './components/UserManagement';
 import { StaffPermissions } from './types';
 import { SubscriptionGate } from './components/SubscriptionGate';
 import { BusinessOnboarding } from './components/BusinessOnboarding';
+import { LandingPage } from './components/LandingPage';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -47,6 +48,7 @@ const AppContent: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
   const [isSaaSModalOpen, setIsSaaSModalOpen] = useState<boolean>(false);
+  const [showLogin, setShowLogin] = useState<boolean>(false);
 
   // Keep global theme selectors aligned with application state.
   // The authentication screen is intentionally always dark.
@@ -57,9 +59,21 @@ const AppContent: React.FC = () => {
 
   // Unauthenticated screen guard gate
   if (!currentUser) {
+    if (!showLogin) {
+      return <LandingPage onGetStarted={() => setShowLogin(true)} />;
+    }
+
     return (
       <div className="dark bg-[#0A0A0B] min-h-screen">
-        <div className="bg-[#0A0A0B] min-h-screen text-[#E0E0E0] font-sans flex items-center justify-center p-4">
+        <button
+          type="button"
+          onClick={() => setShowLogin(false)}
+          className="fixed left-4 top-4 z-50 flex items-center gap-2 rounded-xl border border-white/10 bg-[#141416]/90 px-4 py-2.5 text-xs font-bold text-white/70 backdrop-blur-xl transition hover:border-white/20 hover:text-white sm:left-7 sm:top-7"
+        >
+          <ArrowRight className="h-3.5 w-3.5 rotate-180" />
+          Back to home
+        </button>
+        <div className="bg-[#0A0A0B] min-h-screen text-[#E0E0E0] font-sans flex items-center justify-center p-4 pt-20">
           <AuthScreen />
         </div>
       </div>
