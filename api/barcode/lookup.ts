@@ -8,6 +8,31 @@ export default async function handler(request: any, response: any) {
     return response.status(400).json({error: 'Enter a valid 8 to 14 digit UPC, EAN, or GTIN barcode.'});
   }
 
+  const verifiedLabelProducts: Record<string, {
+    name: string;
+    brand: string;
+    category: string;
+    description: string;
+  }> = {
+    '6974434228290': {
+      name: 'Nothing Phone (4a) Pro 8GB / 128GB Silver',
+      brand: 'Nothing',
+      category: 'Electronics > Mobile Phones > Smartphones',
+      description: 'Nothing Phone (4a) Pro, 8GB RAM, 128GB storage, Silver.',
+    },
+  };
+  const verifiedLabelProduct = verifiedLabelProducts[code];
+  if (verifiedLabelProduct) {
+    response.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
+    return response.status(200).json({
+      found: true,
+      barcode: code,
+      ...verifiedLabelProduct,
+      image: '',
+      source: 'Verified product label',
+    });
+  }
+
   const userKey = process.env.UPCITEMDB_USER_KEY;
   const endpoint = userKey
     ? 'https://api.upcitemdb.com/prod/v1/lookup'
