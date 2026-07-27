@@ -558,7 +558,7 @@ export const ProductManagement: React.FC = () => {
                     </td>
                     <td className="hidden xl:table-cell py-3 font-mono">
                       <p className="font-bold">{settings.currency}{p.sellingPrice.toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">+{p.taxRate}% GST</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Incl. {p.taxRate}% GST</p>
                     </td>
                     <td className="py-3">
                       <div className="flex items-center gap-1.5">
@@ -887,7 +887,7 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">
-                    {sourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price (${settings.currency})`}
+                    {sourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price incl. GST (${settings.currency})`}
                   </label>
                   <input
                     id="form-prod-purchase-price"
@@ -941,7 +941,7 @@ export const ProductManagement: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">POS Selling Price ({settings.currency})</label>
+                  <label className="block text-xs font-semibold mb-1">POS Selling Price incl. GST ({settings.currency})</label>
                   <input
                     id="form-prod-selling-price"
                     type="number"

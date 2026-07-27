@@ -114,9 +114,8 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
 
   items.forEach(item => {
     const rate = item.taxRate || 18;
-    const itemTotal = item.total || (item.price * item.quantity);
-    const taxable = itemTotal / (1 + rate / 100);
-    const taxAmt = itemTotal - taxable;
+    const taxable = item.price * item.quantity;
+    const taxAmt = item.taxAmount ?? (taxable * rate / 100);
     const halfTax = taxAmt / 2;
 
     if (!taxGroups[rate]) {

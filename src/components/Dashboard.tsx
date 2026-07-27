@@ -51,9 +51,11 @@ export const Dashboard: React.FC = () => {
       const saleCost = sale.items.reduce((itemCost, item) => {
         const p = products.find(prod => prod.id === item.productId);
         const buyPrice = p ? p.purchasePrice : item.price * 0.5; // fallback
-        return itemCost + (buyPrice * item.quantity);
+        const buyTaxRate = p?.taxRate || item.taxRate || 0;
+        const buyPriceBeforeTax = buyPrice / (1 + buyTaxRate / 100);
+        return itemCost + (buyPriceBeforeTax * item.quantity);
       }, 0);
-      return acc + (sale.total - sale.subtotal * 0.1) - saleCost; // Subtract estimates taxes
+      return acc + (sale.total - sale.taxAmount) - saleCost;
     }, 0);
 
   // Purchases aggregate

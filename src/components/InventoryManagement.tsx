@@ -132,22 +132,30 @@ export const InventoryManagement: React.FC = () => {
     const supplierName = supplierRef ? supplierRef.name : 'Unknown distributor';
 
     // Calculate sum aggregates
-    const subtotal = buyItems.reduce((sum, item) => sum + (item.purchasePrice * item.quantity), 0);
-    const taxAmount = subtotal * 0.12; // Flat 12% purchase invoices fallback
-    const total = subtotal + taxAmount;
+    const total = buyItems.reduce((sum, item) => sum + (item.purchasePrice * item.quantity), 0);
+    const taxAmount = buyItems.reduce((sum, item) => {
+      const product = products.find(prod => prod.id === item.productId);
+      const rate = product?.taxRate || 0;
+      const itemGross = item.purchasePrice * item.quantity;
+      return sum + (itemGross - itemGross / (1 + rate / 100));
+    }, 0);
+    const subtotal = total - taxAmount;
     const dueAmount = payStatus === 'Paid' ? 0 : payStatus === 'Unpaid' ? total : parseFloat(balanceDue) || total * 0.5;
 
     // Convert items to purchases standard
     const itemsPayload = buyItems.map((item) => {
       const p = products.find(prod => prod.id === item.productId);
+      const rate = p?.taxRate || 0;
+      const itemGross = item.purchasePrice * item.quantity;
+      const itemTax = itemGross - itemGross / (1 + rate / 100);
       return {
         productId: item.productId,
         name: p ? p.name : 'Unknown Product',
         quantity: item.quantity,
         purchasePrice: item.purchasePrice,
-        taxRate: 12,
-        taxAmount: item.purchasePrice * item.quantity * 0.12,
-        total: (item.purchasePrice * item.quantity) * 1.12
+        taxRate: rate,
+        taxAmount: itemTax,
+        total: itemGross
       };
     });
 

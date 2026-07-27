@@ -202,23 +202,24 @@ export const POSBilling: React.FC = () => {
   );
 
   // 5. Total calculations
-  const calculateCartSubtotal = () => {
+  const calculateCartGrossTotal = () => {
     return cart.reduce((sum, item) => sum + (getItemPrice(item) * item.quantity), 0);
   };
 
   const calculateCartTax = () => {
     return cart.reduce((sum, item) => {
       const price = getItemPrice(item);
-      const itemSubtotal = price * item.quantity;
-      const taxPart = itemSubtotal * (item.product.taxRate / 100);
+      const itemGross = price * item.quantity;
+      const taxPart = itemGross - (itemGross / (1 + item.product.taxRate / 100));
       return sum + taxPart;
     }, 0);
   };
 
-  const subtotal = calculateCartSubtotal();
+  const grossTotal = calculateCartGrossTotal();
   const taxAmount = calculateCartTax();
+  const subtotal = grossTotal - taxAmount;
   const discount = parseFloat(discountInput) || 0;
-  const netTotal = Math.max(0, subtotal + taxAmount - discount);
+  const netTotal = Math.max(0, grossTotal - discount);
 
   // 6. Fast Quick Customer creation inside screen
   const handleAddNewCustomer = () => {
@@ -249,18 +250,19 @@ export const POSBilling: React.FC = () => {
     const saleItems: SaleItem[] = cart.map((item) => {
       const rawPrice = getItemPrice(item);
       const rate = item.product.taxRate;
-      const tAmount = rawPrice * item.quantity * (rate / 100);
-      const totalCost = (rawPrice * item.quantity) + tAmount;
+      const totalCost = rawPrice * item.quantity;
+      const taxableUnitPrice = rawPrice / (1 + rate / 100);
+      const tAmount = totalCost - (taxableUnitPrice * item.quantity);
       return {
         productId: item.product.id,
         name: item.product.name,
         sku: item.product.sku,
         barcode: item.product.barcode,
-        price: rawPrice,
+        price: taxableUnitPrice,
         quantity: item.quantity,
         taxRate: rate,
         taxAmount: tAmount,
-        total: totalCost
+        total: taxableUnitPrice * item.quantity
       };
     });
 
@@ -558,7 +560,7 @@ export const POSBilling: React.FC = () => {
                           title="Click to edit unit selling price for this item"
                         />
                       </div>
-                      <span className="text-[9px] text-gray-400 font-mono">+ {item.product.taxRate}% GST</span>
+                      <span className="text-[9px] text-gray-400 font-mono">Incl. {item.product.taxRate}% GST</span>
                       {isPriceOverridden && (
                         <button
                           type="button"
@@ -719,11 +721,11 @@ export const POSBilling: React.FC = () => {
           <div className="space-y-1.5 text-xs font-semibold text-gray-500">
             <div className="flex items-center justify-between">
               <span>Gross Cart Total</span>
-              <span className="font-mono">{settings.currency}{subtotal.toFixed(2)}</span>
+              <span className="font-mono">{settings.currency}{grossTotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Estimated Tax (GST Lines)</span>
-              <span className="font-mono text-gray-450">+{settings.currency}{taxAmount.toFixed(2)}</span>
+              <span>Included Tax (GST Lines)</span>
+              <span className="font-mono text-gray-450">{settings.currency}{taxAmount.toFixed(2)}</span>
             </div>
             
             {/* Interactive Discount Slider & Inputs */}
@@ -742,7 +744,7 @@ export const POSBilling: React.FC = () => {
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 0;
                       setDiscountInput(e.target.value);
-                      const gross = subtotal + taxAmount;
+                      const gross = grossTotal;
                       if (gross > 0) {
                         const pct = Math.min(100, Math.max(0, Math.round((val / gross) * 100)));
                         setDiscountPercent(pct);
@@ -764,7 +766,7 @@ export const POSBilling: React.FC = () => {
                   onChange={(e) => {
                     const pct = parseInt(e.target.value) || 0;
                     setDiscountPercent(pct);
-                    const gross = subtotal + taxAmount;
+                    const gross = grossTotal;
                     const calculated = Math.round((gross * pct) / 100);
                     setDiscountInput(calculated.toString());
                   }}
@@ -780,7 +782,7 @@ export const POSBilling: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setDiscountPercent(p);
-                      const gross = subtotal + taxAmount;
+                      const gross = grossTotal;
                       const calculated = Math.round((gross * p) / 100);
                       setDiscountInput(calculated.toString());
                     }}
