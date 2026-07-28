@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
   // The authentication screen is intentionally always dark.
   useEffect(() => {
     document.documentElement.classList.toggle('dark', currentUser ? isDarkMode : true);
-    document.title = 'QuickPOS';
+    document.title = 'QPOS';
   }, [currentUser, isDarkMode]);
 
   // Unauthenticated screen guard gate
@@ -154,7 +154,7 @@ const AppContent: React.FC = () => {
 
   // Get active tab title for app header
   const currentTabItem = sidebarItems.find(i => i.id === activeTab);
-  const activeTabTitle = currentTabItem ? currentTabItem.name : 'QuickPOS';
+  const activeTabTitle = currentTabItem ? currentTabItem.name : 'QPOS';
 
   return (
     <SubscriptionGate>
@@ -208,7 +208,7 @@ const AppContent: React.FC = () => {
                     rel="noopener noreferrer"
                     className="mt-0.5 block w-fit text-[8px] font-semibold tracking-wide text-gray-400 transition hover:text-emerald-500"
                   >
-                    by Neospec Services
+                    A Neospec Services Product
                   </a>
                 </div>
               </div>

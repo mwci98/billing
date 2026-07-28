@@ -40,7 +40,7 @@ export const ReportsView: React.FC = () => {
   const handleExportCSV = (type: 'sales' | 'inventory' | 'tax') => {
     let headers: string[] = [];
     let rows: string[][] = [];
-    let fileName = `quickpos-${type}-report.csv`;
+    let fileName = `qpos-${type}-report.csv`;
 
     if (type === 'sales') {
       headers = ['InvoiceID', 'Customer', 'Subtotal', 'TaxAmount', 'Discount', 'TotalBill', 'PaymentMode', 'Date', 'Operator'];

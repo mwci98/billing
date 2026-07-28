@@ -77,12 +77,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
       <header className="relative z-30 border-b border-white/[0.06] bg-[#09090A]/80 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <a href="#top" className="flex items-center gap-3" aria-label="QuickPOS home">
+          <a href="#top" className="flex items-center gap-3" aria-label="QPOS home">
             <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-500 text-[#07110D] shadow-[0_0_30px_rgba(16,185,129,0.18)]">
               <Store className="h-5 w-5" strokeWidth={2.5} />
             </span>
             <span>
-              <span className="block text-[15px] font-extrabold tracking-[-0.03em]">QUICKPOS</span>
+              <span className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</span>
               <span className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400">Smart business terminal</span>
             </span>
           </a>
@@ -124,7 +124,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       <span className="h-2 w-2 rounded-full bg-white/15" />
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
                     </div>
-                    <span className="hidden text-[10px] font-bold text-white/35 sm:inline">QuickPOS · Dashboard</span>
+                    <span className="hidden text-[10px] font-bold text-white/35 sm:inline">QPOS · Dashboard</span>
                   </div>
                   <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider">
                     <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-emerald-400 sm:flex">
@@ -139,7 +139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2.5">
                       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-[11px] font-black text-[#07110D]">Q</span>
                       <span>
-                        <span className="block text-[10px] font-extrabold">QuickPOS</span>
+                        <span className="block text-[10px] font-extrabold">QPOS</span>
                         <span className="block text-[7px] font-bold uppercase text-emerald-400">Active workspace</span>
                       </span>
                     </div>
@@ -250,7 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               Built for the way modern stores work.
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/45">
-              From the first barcode scan to the final sales report, QuickPOS keeps every part of your operation connected.
+              From the first barcode scan to the final sales report, QPOS keeps every part of your operation connected.
             </p>
           </div>
 
@@ -279,7 +279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Simple from day one</span>
                 <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em]">Your store, live in three steps.</h2>
-                <p className="mt-5 text-sm leading-7 text-white/40">No complicated setup. QuickPOS guides every new business through its workspace configuration.</p>
+                <p className="mt-5 text-sm leading-7 text-white/40">No complicated setup. QPOS guides every new business through its workspace configuration.</p>
               </div>
               <div className="space-y-3">
                 {workflow.map(([number, title, description]) => (
@@ -302,14 +302,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14 xl:p-16">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  QuickPOS software available now
+                  QPOS software available now
                 </div>
                 <h1 className="mt-7 text-[2.9rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-6xl xl:text-[4.6rem]">
                   Run your store
-                  <span className="block text-emerald-400">with QuickPOS.</span>
+                  <span className="block text-emerald-400">with QPOS.</span>
                 </h1>
                 <p className="mt-6 max-w-lg text-sm leading-7 text-white/45 sm:text-base">
-                  Start using the complete QuickPOS billing, inventory and GST invoice software
+                  Start using the complete QPOS billing, inventory and GST invoice software
                   today. Our optional all-in-one countertop Smart Terminal is coming soon.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 text-[10px] font-bold text-white/55">
@@ -337,19 +337,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     onClick={onGetStarted}
                     className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
                   >
-                    Start QuickPOS free
+                    Start QPOS free
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </button>
                   <a
                     href="#features"
                     className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3.5 text-xs font-bold text-white/70 transition hover:border-white/20 hover:text-white"
                   >
-                    Explore QuickPOS
+                    Explore QPOS
                     <ChevronRight className="h-4 w-4" />
                   </a>
                 </div>
                 <div className="mt-6 flex flex-wrap items-center gap-3 text-[10px] font-bold text-white/45">
-                  <span className="uppercase tracking-[0.12em] text-white/28">Use QuickPOS on</span>
+                  <span className="uppercase tracking-[0.12em] text-white/28">Use QPOS on</span>
                   <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5 text-emerald-400" /> Mobile</span>
                   <span className="h-1 w-1 rounded-full bg-white/15" />
                   <span className="flex items-center gap-1.5"><Tablet className="h-3.5 w-3.5 text-emerald-400" /> Tablet</span>
@@ -360,8 +360,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
               <div className="relative min-h-[24rem] overflow-hidden border-t border-white/[0.06] sm:min-h-[32rem] lg:min-h-full lg:border-l lg:border-t-0">
                 <img
-                  src="/images/quickpos-terminal-coming-soon.png"
-                  alt="Preview of the upcoming QuickPOS smart billing terminal with receipt printer and card reader"
+                  src="/images/qpos-terminal-coming-soon.png"
+                  alt="Preview of the upcoming QPOS smart billing terminal with receipt printer and card reader"
                   fetchPriority="high"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
@@ -377,7 +377,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Straightforward pricing</span>
-            <h2 className="mt-4 text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QuickPOS.</h2>
+            <h2 className="mt-4 text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QPOS.</h2>
             <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/40">Start free for five days, then keep your entire business connected for one simple annual price.</p>
           </div>
 
@@ -385,7 +385,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <div className="rounded-[1.35rem] border border-white/[0.07] bg-[#101513]/90 p-6 sm:p-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-400">QuickPOS Pro</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-400">QPOS Pro</span>
                   <h3 className="mt-2 text-xl font-extrabold">Everything your store needs</h3>
                 </div>
                 <Zap className="h-6 w-6 text-emerald-400" />
@@ -439,7 +439,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <div className="relative">
               <ShieldCheck className="mx-auto h-8 w-8" />
               <h2 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">Give your business a smarter operating system.</h2>
-              <p className="mx-auto mt-4 max-w-xl text-sm font-medium text-[#06130E]/65">Set up your QuickPOS workspace today and start billing in minutes.</p>
+              <p className="mx-auto mt-4 max-w-xl text-sm font-medium text-[#06130E]/65">Set up your QPOS workspace today and start billing in minutes.</p>
               <button
                 onClick={onGetStarted}
                 className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#07110D] px-7 py-4 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-black"
@@ -458,9 +458,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-emerald-500 text-[#07110D]">
               <Store className="h-4 w-4" />
             </span>
-            <span className="text-xs font-extrabold">QUICKPOS</span>
+            <span className="text-xs font-extrabold">QPOS</span>
           </div>
-          <p className="text-[10px] text-white/30">© 2026 QuickPOS. Smart billing and inventory for modern businesses.</p>
+          <p className="text-[10px] text-white/30">© 2026 QPOS. Smart billing and inventory for modern businesses.</p>
           <div className="flex items-center gap-4 text-[10px] font-semibold text-white/35">
             <span className="flex items-center gap-1.5"><Cloud className="h-3 w-3 text-emerald-400" /> Cloud connected</span>
             <span className="flex items-center gap-1.5"><ScanBarcode className="h-3 w-3 text-emerald-400" /> Barcode ready</span>

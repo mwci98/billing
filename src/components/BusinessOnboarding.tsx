@@ -105,7 +105,7 @@ export const BusinessOnboarding: React.FC = () => {
                     <option value="Hybrid">Hybrid — purchase and manufacture</option>
                   </select>
                   <span className="mt-1.5 block text-[10px] font-medium leading-4 text-gray-500">
-                    QuickPOS will hide tools that are not relevant to this mode.
+                    QPOS will hide tools that are not relevant to this mode.
                   </span>
                 </label>
               </div>

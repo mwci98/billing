@@ -80,7 +80,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
       const checkout = new window.Razorpay({
         key: subscription.keyId,
         subscription_id: subscription.subscriptionId,
-        name: 'QuickPOS',
+        name: 'QPOS',
         description: 'Basic Plan · ₹6,000 per year',
         prefill: {name: currentUser.name, email: currentUser.email},
         theme: {color: '#10B981'},

@@ -1,7 +1,7 @@
 {
-  "id": "/quickpos",
-  "name": "QuickPOS",
-  "short_name": "QuickPOS",
+  "id": "/qpos",
+  "name": "QPOS",
+  "short_name": "QPOS",
   "description": "Smart point-of-sale and inventory management.",
   "start_url": "/",
   "scope": "/",

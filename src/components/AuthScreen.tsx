@@ -75,7 +75,7 @@ export const AuthScreen: React.FC = () => {
             <Store className="h-7 w-7" />
           </div>
           <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white">
-            QuickPOS
+            QPOS
           </h2>
           <p className="mt-2 text-sm text-gray-400">
             Realtime Billing & Inventory Management System
@@ -177,8 +177,8 @@ export const AuthScreen: React.FC = () => {
         </div>
 
         <div className="text-center text-xs text-gray-400">
-          <p>QuickPOS Security: Active terminals log transactions with operator details.</p>
-          <p>© 2026 QuickPOS.</p>
+          <p>QPOS Security: Active terminals log transactions with operator details.</p>
+          <p>© 2026 QPOS.</p>
         </div>
       </div>
     </div>
