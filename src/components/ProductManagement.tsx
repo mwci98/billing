@@ -726,8 +726,8 @@ export const ProductManagement: React.FC = () => {
 
       {/* MODAL: Add/Edit Product registration */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto">
+          <div className="my-auto w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-3xl bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-4 sm:p-6 relative">
             <button
               onClick={() => setIsFormOpen(false)}
               className="absolute top-4 right-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-white transition"
