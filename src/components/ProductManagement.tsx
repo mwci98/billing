@@ -16,7 +16,7 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 
 const PRODUCT_BRANDS = [
-  'Apple / iPhone',
+  'Apple',
   'Samsung',
   'OPPO',
   'Vivo',
@@ -44,6 +44,7 @@ const PRODUCT_BRANDS = [
   'LG',
   'Panasonic',
   'Jio',
+  'Generic / Unbranded',
 ];
 
 export const ProductManagement: React.FC = () => {
@@ -285,7 +286,7 @@ export const ProductManagement: React.FC = () => {
     setSku(`SKU-${autoId}`);
     setBarcode(`${autoId}`);
     setCategory('General');
-    setBrand('Premium');
+    setBrand('');
     setUnit('Piece');
     setPurchasePrice('1.50');
     setSellingPrice('2.99');
@@ -889,20 +890,20 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">Brand Name</label>
-                  <input
+                  <select
                     id="form-prod-brand"
-                    type="text"
-                    list="product-brand-options"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
-                    placeholder="Select or enter a brand..."
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
-                  />
-                  <datalist id="product-brand-options">
+                  >
+                    <option value="">Select brand</option>
+                    {brand && !PRODUCT_BRANDS.includes(brand) && (
+                      <option value={brand}>{brand}</option>
+                    )}
                     {PRODUCT_BRANDS.map((brandName) => (
-                      <option key={brandName} value={brandName} />
+                      <option key={brandName} value={brandName}>{brandName}</option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
 
                 <div>
