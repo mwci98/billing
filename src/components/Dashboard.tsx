@@ -155,7 +155,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* 2. Top-tier KPI Cards Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         {/* KPI 1 */}
         {canViewFinancials && dashboardWidgets.revenue && (
         <div id="kpi-today-revenue" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
