@@ -460,7 +460,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </span>
             <span className="text-xs font-extrabold">QPOS</span>
           </div>
-          <p className="text-[10px] text-white/30">© 2026 QPOS. Smart billing and inventory for modern businesses.</p>
+          <div className="text-[10px] text-white/30">
+            <p>&copy; 2026 QPOS. Smart billing and inventory for modern businesses.</p>
+            <a
+              href="https://neospec.co.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block font-semibold text-white/50 transition hover:text-emerald-400"
+            >
+              QPOS is a Neospec Services product
+            </a>
+          </div>
           <div className="flex items-center gap-4 text-[10px] font-semibold text-white/35">
             <span className="flex items-center gap-1.5"><Cloud className="h-3 w-3 text-emerald-400" /> Cloud connected</span>
             <span className="flex items-center gap-1.5"><ScanBarcode className="h-3 w-3 text-emerald-400" /> Barcode ready</span>
