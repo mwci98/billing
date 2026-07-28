@@ -102,7 +102,7 @@ const AppContent: React.FC = () => {
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
     { id: 'pos', name: 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
     { id: 'products', name: 'SKU Products', icon: ListChecks, permission: 'canManageProducts' },
-    { id: 'inventory', name: 'Restock Inventory', icon: Package, permission: 'canPurchase' },
+    { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'B2B Suppliers', icon: Truck, permission: 'canManageCustomers' },
     { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
