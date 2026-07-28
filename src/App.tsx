@@ -202,6 +202,14 @@ const AppContent: React.FC = () => {
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Smart App Terminal
                   </p>
+                  <a
+                    href="https://neospec.co.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-0.5 block w-fit text-[8px] font-semibold tracking-wide text-gray-400 transition hover:text-emerald-500"
+                  >
+                    by Neospec Services
+                  </a>
                 </div>
               </div>
               <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 active:scale-95">
