@@ -13,6 +13,7 @@ import { Product } from '../types';
 import { BarcodeGenerator, QRGenerator } from './BarcodeGenerator';
 import { CameraScanner } from './CameraScanner';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 
 const PRODUCT_BRANDS = [
   'Apple / iPhone',
@@ -96,6 +97,10 @@ export const ProductManagement: React.FC = () => {
   const [productionNotes, setProductionNotes] = useState<string>('');
   const [imeiInput, setImeiInput] = useState<string>('');
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
+  const businessMode = getBusinessMode(settings.businessType);
+  const effectiveSourcingType = businessMode === 'Hybrid'
+    ? sourcingType
+    : sourcingForBusinessMode(businessMode);
 
   const handleLiveBarcodeLookup = async (barcodeToLookup: string) => {
     const cleanBarcode = barcodeToLookup.replace(/\D/g, '');
@@ -289,7 +294,7 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert('5');
     setExpiryDate('');
     setImageUrl('📦');
-    setSourcingType('Purchased');
+    setSourcingType(sourcingForBusinessMode(businessMode));
     setManufacturingCost('');
     setBatchNo('');
     setProductionNotes('');
@@ -364,10 +369,10 @@ export const ProductManagement: React.FC = () => {
       lowStockAlert: parseInt(lowStockAlert) || 0,
       expiryDate: expiryDate || undefined,
       imageUrl,
-      sourcingType,
-      manufacturingCost: manufacturingCost ? parseFloat(manufacturingCost) : undefined,
-      batchNo: batchNo || undefined,
-      productionNotes: productionNotes || undefined
+      sourcingType: effectiveSourcingType,
+      manufacturingCost: effectiveSourcingType !== 'Purchased' && manufacturingCost ? parseFloat(manufacturingCost) : undefined,
+      batchNo: effectiveSourcingType !== 'Purchased' && batchNo ? batchNo : undefined,
+      productionNotes: effectiveSourcingType !== 'Purchased' && productionNotes ? productionNotes : undefined
     };
 
     if (editingItem) {
@@ -391,7 +396,7 @@ export const ProductManagement: React.FC = () => {
                           Boolean(p.imeiNumbers?.some(imei => imei.includes(search.replace(/\D/g, ''))));
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     const itemSourcing = p.sourcingType || 'Purchased';
-    const matchesSourcing = sourcingFilter === 'All' || itemSourcing === sourcingFilter;
+    const matchesSourcing = businessMode !== 'Hybrid' || sourcingFilter === 'All' || itemSourcing === sourcingFilter;
     return matchesSearch && matchesCategory && matchesSourcing;
   });
 
@@ -433,7 +438,7 @@ export const ProductManagement: React.FC = () => {
 
           <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full lg:w-auto">
             {/* Origin/Sourcing Filter */}
-            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800 shrink-0">
+            {businessMode === 'Hybrid' && <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800 shrink-0">
               <button
                 type="button"
                 onClick={() => setSourcingFilter('All')}
@@ -467,7 +472,7 @@ export const ProductManagement: React.FC = () => {
               >
                 <span>🏭 In-House</span>
               </button>
-            </div>
+            </div>}
 
             {/* Category Slider */}
             <div className="flex items-center gap-1.5 w-full lg:w-auto bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800">
@@ -741,7 +746,7 @@ export const ProductManagement: React.FC = () => {
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {/* Sourcing / Origin Selection */}
-                <div className="col-span-2 p-3.5 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                {businessMode === 'Hybrid' && <div className="col-span-2 p-3.5 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
                   <label className="block text-xs font-bold text-gray-900 dark:text-white">Product Origin & Sourcing Mode</label>
                   <p className="text-[11px] text-gray-400">Specify whether this item is purchased from external B2B suppliers or produced/assembled in-house.</p>
                   
@@ -785,7 +790,7 @@ export const ProductManagement: React.FC = () => {
                       <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5">Purchased & produced locally</p>
                     </button>
                   </div>
-                </div>
+                </div>}
 
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold mb-1">Product Title</label>
@@ -926,7 +931,7 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">
-                    {sourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price incl. GST (${settings.currency})`}
+                    {effectiveSourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price incl. GST (${settings.currency})`}
                   </label>
                   <input
                     id="form-prod-purchase-price"
@@ -938,7 +943,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>
 
-                {(sourcingType === 'Manufactured' || sourcingType === 'Both') && (
+                {(effectiveSourcingType === 'Manufactured' || effectiveSourcingType === 'Both') && (
                   <>
                     <div>
                       <label className="block text-xs font-semibold mb-1 text-amber-600 dark:text-amber-400">Raw Material Cost / Unit ({settings.currency})</label>

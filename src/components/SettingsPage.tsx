@@ -9,6 +9,7 @@ import {
   HelpCircle, Settings, Save, DownloadCloud, UploadCloud, Info, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+import { BusinessMode, getBusinessMode } from '../lib/businessMode';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions, triggerToast, deleteAllMockupData } = useAppState();
@@ -24,6 +25,7 @@ export const SettingsPage: React.FC = () => {
   const [receiptHeader, setReceiptHeader] = useState<string>(settings.receiptHeader);
   const [receiptFooter, setReceiptFooter] = useState<string>(settings.receiptFooter);
   const [invoiceSignature, setInvoiceSignature] = useState<string>(settings.invoiceSignature || '');
+  const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
 
   // Status logs
   const [statusMsg, setStatusMsg] = useState<string>('');
@@ -40,7 +42,8 @@ export const SettingsPage: React.FC = () => {
       loyaltyPointsPerDollar: parseFloat(loyaltyPointsPerDollar) || 1,
       receiptHeader,
       receiptFooter,
-      invoiceSignature
+      invoiceSignature,
+      businessType
     });
     setStatusMsg('Store settings saved successfully! ✔');
     setTimeout(() => setStatusMsg(''), 4000);
@@ -273,6 +276,23 @@ export const SettingsPage: React.FC = () => {
               onChange={(e) => setStoreName(e.target.value)}
               className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
             />
+          </div>
+
+          <div>
+            <label className="block text-gray-450 mb-1 flex items-center gap-1.5">
+              <Settings className="h-3.5 w-3.5" /> Business Operating Mode
+            </label>
+            <select
+              id="set-business-mode"
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value as BusinessMode)}
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-white"
+            >
+              <option value="Retail">Retail</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+            <p className="mt-1 text-[9px] font-medium text-gray-400">Controls which inventory and sourcing tools are shown.</p>
           </div>
 
           {/* Sizing currencies */}

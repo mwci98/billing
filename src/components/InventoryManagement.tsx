@@ -9,6 +9,7 @@ import {
   Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 
 export const InventoryManagement: React.FC = () => {
   const { 
@@ -58,6 +59,12 @@ export const InventoryManagement: React.FC = () => {
 
   // 2. Buy & Production Entry Form States
   const [restockSource, setRestockSource] = useState<'supplier' | 'in_house'>('supplier');
+  const businessMode = getBusinessMode(settings.businessType);
+  const effectiveRestockSource = businessMode === 'Manufacturing'
+    ? 'in_house'
+    : businessMode === 'Retail'
+      ? 'supplier'
+      : restockSource;
   const [buySupplierId, setBuySupplierId] = useState<string>('');
   const [buyItems, setBuyItems] = useState<{ productId: string; quantity: number; purchasePrice: number }[]>([]);
   const [activeAddProdId, setActiveAddProdId] = useState<string>('');
@@ -279,10 +286,10 @@ export const InventoryManagement: React.FC = () => {
       taxRate: 18,
       stock,
       lowStockAlert: 5,
-      sourcingType: quickProdSourcing
+      sourcingType: businessMode === 'Hybrid' ? quickProdSourcing : sourcingForBusinessMode(businessMode)
     });
 
-    if (restockSource === 'supplier') {
+    if (effectiveRestockSource === 'supplier') {
       setActiveAddProdId(newProd.id);
     } else {
       setMfgProdId(newProd.id);
@@ -498,7 +505,7 @@ export const InventoryManagement: React.FC = () => {
               <p className="text-xs text-gray-400">Choose incoming stock origin mode</p>
             </div>
 
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-800">
+            {businessMode === 'Hybrid' && <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-800">
               <button
                 type="button"
                 onClick={() => setRestockSource('supplier')}
@@ -522,10 +529,10 @@ export const InventoryManagement: React.FC = () => {
               >
                 <span>🏭 In-House Production Batch</span>
               </button>
-            </div>
+            </div>}
           </div>
 
-          {restockSource === 'supplier' ? (
+          {effectiveRestockSource === 'supplier' ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <form onSubmit={handleSubmitPurchaseBill} className="lg:col-span-12 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-12 border-b border-gray-100 dark:border-gray-900 pb-3">
@@ -1000,7 +1007,7 @@ export const InventoryManagement: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className={businessMode === 'Hybrid' ? '' : 'col-span-2'}>
                   <label className="block text-xs font-semibold mb-1">Category</label>
                   <input
                     type="text"
@@ -1011,7 +1018,7 @@ export const InventoryManagement: React.FC = () => {
                   />
                 </div>
 
-                <div>
+                {businessMode === 'Hybrid' && <div>
                   <label className="block text-xs font-semibold mb-1">Sourcing Origin</label>
                   <select
                     value={quickProdSourcing}
@@ -1022,7 +1029,7 @@ export const InventoryManagement: React.FC = () => {
                     <option value="Manufactured">🏭 Manufactured (In-House)</option>
                     <option value="Both">⚙️ Hybrid / Both</option>
                   </select>
-                </div>
+                </div>}
               </div>
 
               <div className="grid grid-cols-3 gap-3">

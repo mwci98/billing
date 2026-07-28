@@ -4,6 +4,7 @@ import {
   Receipt, Rocket, Store, UserRound
 } from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
+import {BusinessMode, getBusinessMode} from '../lib/businessMode';
 
 const steps = ['Business', 'Compliance', 'POS setup'];
 
@@ -12,7 +13,7 @@ export const BusinessOnboarding: React.FC = () => {
   const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState(settings.storeName || '');
   const [ownerName, setOwnerName] = useState(settings.ownerName || currentUser?.name || '');
-  const [businessType, setBusinessType] = useState(settings.businessType || 'Retail Store');
+  const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
   const [phone, setPhone] = useState(settings.phone || '');
   const [email, setEmail] = useState(settings.email || currentUser?.email || '');
   const [address, setAddress] = useState(settings.address || '');
@@ -96,16 +97,16 @@ export const BusinessOnboarding: React.FC = () => {
                 <Field label="Business / store name" value={storeName} onChange={setStoreName} icon={<Store />} required />
                 <Field label="Owner name" value={ownerName} onChange={setOwnerName} icon={<UserRound />} required />
                 <label className="sm:col-span-2 text-xs font-bold text-gray-300">
-                  Business type
-                  <select value={businessType} onChange={event => setBusinessType(event.target.value)}
+                  Business operating mode
+                  <select value={businessType} onChange={event => setBusinessType(event.target.value as BusinessMode)}
                     className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#18181B] p-3 text-sm text-white">
-                    <option>Retail Store</option>
-                    <option>Wholesale Business</option>
-                    <option>Restaurant / Cafe</option>
-                    <option>Pharmacy</option>
-                    <option>Service Business</option>
-                    <option>Other</option>
+                    <option value="Retail">Retail — buy from suppliers and sell</option>
+                    <option value="Manufacturing">Manufacturing — produce items in-house</option>
+                    <option value="Hybrid">Hybrid — purchase and manufacture</option>
                   </select>
+                  <span className="mt-1.5 block text-[10px] font-medium leading-4 text-gray-500">
+                    QuickPOS will hide tools that are not relevant to this mode.
+                  </span>
                 </label>
               </div>
             </div>
