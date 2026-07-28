@@ -50,6 +50,13 @@ const omitUndefinedFields = <T extends Record<string, unknown>>(value: T): T =>
     Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)
   ) as T;
 
+const migrateLegacyQposBranding = (settings: StoreSettings): StoreSettings => ({
+  ...settings,
+  storeName: settings.storeName.replace(/\bquick\s*pos\b/gi, 'QPOS'),
+  receiptHeader: settings.receiptHeader.replace(/\bquick\s*pos\b/gi, 'QPOS'),
+  receiptFooter: settings.receiptFooter.replace(/\bquick\s*pos\b/gi, 'QPOS')
+});
+
 interface AppContextType {
   // Auth Session State
   currentUser: AppUser | null;
@@ -262,7 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (localSettings) {
-      const parsed = JSON.parse(localSettings);
+      const parsed = migrateLegacyQposBranding(JSON.parse(localSettings) as StoreSettings);
       parsed.tenantId = parsed.tenantId || scope;
       parsed.onboardingCompleted = parsed.onboardingCompleted ?? false;
       if (!parsed.trialStartedAt && parsed.subscriptionStatus !== 'active') {
@@ -276,6 +283,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (parsed.currency === '$' || !parsed.currency) parsed.currency = '₹';
       setSettings(parsed);
+      localStorage.setItem(scopeKey('settings'), JSON.stringify(parsed));
     } else {
       const trialStartedAt = new Date();
       const userCustomSettings: StoreSettings = {
@@ -296,14 +304,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .then(existing => {
           if (existing.exists()) {
             const remote = existing.data() as StoreSettings;
-            const remoteSettings: StoreSettings = {
+            const remoteSettings = migrateLegacyQposBranding({
               ...remote,
               tenantId: remote.tenantId || scope,
               onboardingCompleted: remote.onboardingCompleted ?? false
-            };
+            });
             setSettings(remoteSettings);
             localStorage.setItem(scopeKey('settings'), JSON.stringify(remoteSettings));
-            if (!remote.tenantId || remote.onboardingCompleted === undefined) {
+            if (!remote.tenantId || remote.onboardingCompleted === undefined || remoteSettings.storeName !== remote.storeName) {
               setDoc(doc(db, 'users', scope, 'store_settings', 'active'), remoteSettings, {merge: true});
             }
           } else {
@@ -375,14 +383,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const sDoc = snapshot.docs.find(d => d.id === 'active');
           if (sDoc) {
             const remote = sDoc.data() as StoreSettings;
-            const data: StoreSettings = {
+            const data = migrateLegacyQposBranding({
               ...remote,
               tenantId: remote.tenantId || scope,
               onboardingCompleted: remote.onboardingCompleted ?? false
-            };
+            });
             setSettings(data);
             localStorage.setItem(scopeKey('settings'), JSON.stringify(data));
-            if (!remote.tenantId || remote.onboardingCompleted === undefined) {
+            if (!remote.tenantId || remote.onboardingCompleted === undefined || data.storeName !== remote.storeName) {
               setDoc(doc(db, 'users', scope, 'store_settings', 'active'), data, {merge: true});
             }
           }
