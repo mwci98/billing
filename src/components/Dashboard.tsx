@@ -13,6 +13,16 @@ import { useAppState } from '../lib/stateContext';
 import { Sale, UserRole } from '../types';
 import {TallyInvoiceModal} from './TallyInvoiceModal';
 
+const DEFAULT_DASHBOARD_WIDGETS = {
+  revenue: true,
+  totalSales: true,
+  catalogItems: true,
+  lowStock: false,
+  customers: false,
+  profit: true,
+  salesRegister: true
+};
+
 export const Dashboard: React.FC = () => {
   const { 
     products, 
@@ -28,6 +38,10 @@ export const Dashboard: React.FC = () => {
   } = useAppState();
   const [invoiceToReprint, setInvoiceToReprint] = useState<Sale | null>(null);
   const canViewFinancials = hasPermission('canViewFinancials');
+  const dashboardWidgets = {
+    ...DEFAULT_DASHBOARD_WIDGETS,
+    ...settings.dashboardWidgets
+  };
 
   const formatWholeCurrency = (value: number) =>
     `${settings.currency}${Math.round(value).toLocaleString('en-IN')}`;
@@ -143,7 +157,7 @@ export const Dashboard: React.FC = () => {
       {/* 2. Top-tier KPI Cards Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {/* KPI 1 */}
-        {canViewFinancials && (
+        {canViewFinancials && dashboardWidgets.revenue && (
         <div id="kpi-today-revenue" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Today's Revenue</span>
@@ -164,7 +178,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* KPI 2 */}
-        {canViewFinancials && (
+        {canViewFinancials && dashboardWidgets.totalSales && (
         <div id="kpi-total-sales" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Total Sales</span>
@@ -184,6 +198,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* KPI 3 */}
+        {dashboardWidgets.catalogItems && (
         <div id="kpi-total-products" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Catalog Items</span>
@@ -198,8 +213,10 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
 
         {/* KPI 4 */}
+        {dashboardWidgets.lowStock && (
         <div id="kpi-low-stock" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Low Stock Alert</span>
@@ -216,8 +233,10 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
 
         {/* KPI 5 */}
+        {dashboardWidgets.customers && (
         <div id="kpi-total-customers" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Total Customers</span>
@@ -232,9 +251,10 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
 
         {/* KPI 6 */}
-        {canViewFinancials && (
+        {canViewFinancials && dashboardWidgets.profit && (
         <div id="kpi-estimated-profit" className="rounded-2xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-400">Est. Profit</span>
@@ -258,7 +278,7 @@ export const Dashboard: React.FC = () => {
 
 
       {/* 4. Recent Live Sales */}
-      {canViewFinancials && (
+      {canViewFinancials && dashboardWidgets.salesRegister && (
       <div className="grid grid-cols-1 gap-6">
         {/* Recent Invoices list */}
         <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm flex flex-col justify-between">

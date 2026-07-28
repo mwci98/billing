@@ -10,6 +10,27 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { BusinessMode, getBusinessMode } from '../lib/businessMode';
+import { DashboardWidgetSettings } from '../types';
+
+const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetSettings = {
+  revenue: true,
+  totalSales: true,
+  catalogItems: true,
+  lowStock: false,
+  customers: false,
+  profit: true,
+  salesRegister: true
+};
+
+const DASHBOARD_WIDGET_OPTIONS: Array<{ key: keyof DashboardWidgetSettings; label: string }> = [
+  { key: 'revenue', label: "Today's Revenue" },
+  { key: 'totalSales', label: 'Total Sales' },
+  { key: 'catalogItems', label: 'Catalog Items' },
+  { key: 'lowStock', label: 'Low Stock Alert' },
+  { key: 'customers', label: 'Total Customers' },
+  { key: 'profit', label: 'Estimated Profit' },
+  { key: 'salesRegister', label: 'Sales Register' }
+];
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions, triggerToast, deleteAllMockupData } = useAppState();
@@ -26,6 +47,10 @@ export const SettingsPage: React.FC = () => {
   const [receiptFooter, setReceiptFooter] = useState<string>(settings.receiptFooter);
   const [invoiceSignature, setInvoiceSignature] = useState<string>(settings.invoiceSignature || '');
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
+  const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidgetSettings>(() => ({
+    ...DEFAULT_DASHBOARD_WIDGETS,
+    ...settings.dashboardWidgets
+  }));
 
   // Status logs
   const [statusMsg, setStatusMsg] = useState<string>('');
@@ -43,7 +68,8 @@ export const SettingsPage: React.FC = () => {
       receiptHeader,
       receiptFooter,
       invoiceSignature,
-      businessType
+      businessType,
+      dashboardWidgets
     });
     setStatusMsg('Store settings saved successfully! ✔');
     setTimeout(() => setStatusMsg(''), 4000);
@@ -365,6 +391,34 @@ export const SettingsPage: React.FC = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 p-2.5 text-xs text-white"
             />
+          </div>
+
+          <div className="sm:col-span-2 border-t border-gray-100 dark:border-gray-900 pt-5">
+            <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">
+              Dashboard Visibility
+            </span>
+            <p className="mt-1 text-[10px] font-normal text-gray-400">
+              Choose which cards and sections are visible on your dashboard.
+            </p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {DASHBOARD_WIDGET_OPTIONS.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2.5"
+                >
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{label}</span>
+                  <input
+                    type="checkbox"
+                    checked={dashboardWidgets[key]}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setDashboardWidgets((current) => ({ ...current, [key]: checked }));
+                    }}
+                    className="h-4 w-4 accent-emerald-500"
+                  />
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Printed receipt greetings custom messages */}

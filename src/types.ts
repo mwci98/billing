@@ -187,6 +187,17 @@ export interface StoreSettings {
   website?: string;
   storeBranches?: SaaSStore[];
   activeStoreId?: string;
+  dashboardWidgets?: DashboardWidgetSettings;
+}
+
+export interface DashboardWidgetSettings {
+  revenue: boolean;
+  totalSales: boolean;
+  catalogItems: boolean;
+  lowStock: boolean;
+  customers: boolean;
+  profit: boolean;
+  salesRegister: boolean;
 }
 
 export interface SaaSStore {
