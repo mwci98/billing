@@ -436,7 +436,45 @@ export const POSBilling: React.FC = () => {
 
         {/* Product Grid catalog */}
         {!hasSearchActive ? (
-          null
+          <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white px-6 py-12 text-center shadow-sm dark:border-white/5 dark:bg-[#141416]/90 md:py-16">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.09),transparent_48%)]" />
+            <div className="relative mx-auto flex max-w-xl flex-col items-center">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/5">
+                <Barcode className="h-8 w-8" strokeWidth={1.7} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Start a new sale</h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Scan a product barcode or search by product name, SKU, or barcode. Matching products will appear here.
+              </p>
+
+              <div className="mt-7 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => barcodeFieldRef.current?.focus()}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-600 transition hover:bg-emerald-500/15 dark:text-emerald-400"
+                >
+                  <Barcode className="h-4 w-4" />
+                  Use barcode scanner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('pos-text-search')?.focus()}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-gray-700 transition hover:border-emerald-500/40 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300"
+                >
+                  <Search className="h-4 w-4" />
+                  Search products
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCameraActive(true)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-gray-700 transition hover:border-emerald-500/40 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300"
+                >
+                  <Camera className="h-4 w-4" />
+                  Open camera
+                </button>
+              </div>
+            </div>
+          </div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl bg-white dark:bg-[#141416]/90 border border-gray-100 dark:border-white/5 p-8 shadow-sm">
             <div className="rounded-full bg-gray-100 dark:bg-white/5 p-4 text-gray-400 mb-4">
