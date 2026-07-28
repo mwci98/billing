@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'qpos-v4';
+const CACHE_VERSION = 'qpos-v5';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -50,17 +50,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkResponse = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        });
-
-      return cached || networkResponse;
-    }),
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request)),
   );
 });
