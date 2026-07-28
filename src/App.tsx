@@ -104,7 +104,7 @@ const AppContent: React.FC = () => {
     { id: 'products', name: 'SKU Products', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
-    { id: 'suppliers', name: 'B2B Suppliers', icon: Truck, permission: 'canManageCustomers' },
+    { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
     { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
     { id: 'staff', name: 'Staff Access', icon: UserCog, adminOnly: true },
     { id: 'settings', name: 'Store Config', icon: Settings, adminOnly: true },
