@@ -487,7 +487,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       </table>
 
       <div className="text-center text-[8px] font-bold uppercase mt-3 pb-1 tracking-normal leading-normal text-gray-800">
-        SUBJECT TO LOCAL JURISDICTION • THIS IS A COMPUTER GENERATED QWICKPOS INVOICE
+        THIS IS A COMPUTER GENERATED INVOICE BY QPOS
       </div>
     </>
   );
