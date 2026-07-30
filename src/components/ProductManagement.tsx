@@ -296,12 +296,12 @@ export const ProductManagement: React.FC = () => {
     setBarcode(`${autoId}`);
     setCategory('General');
     setBrand('');
-    setUnit('Piece');
-    setPurchasePrice('1.50');
-    setSellingPrice('2.99');
+    setUnit('');
+    setPurchasePrice('');
+    setSellingPrice('');
     setTaxRate('18');
-    setStock('20');
-    setLowStockAlert('5');
+    setStock('');
+    setLowStockAlert('');
     setExpiryDate('');
     setImageUrl('📦');
     setSourcingType(sourcingForBusinessMode(businessMode));
@@ -1015,6 +1015,7 @@ export const ProductManagement: React.FC = () => {
                     disabled={Boolean(editingItem || trackInventoryByImei)} // Serialized stock is derived from handset records.
                     value={trackInventoryByImei ? parseSerializedUnitLines(imeiInput).length : stock}
                     onChange={(e) => setStock(e.target.value)}
+                    placeholder={trackInventoryByImei ? 'Calculated from IMEIs' : 'Enter opening stock'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white disabled:opacity-50"
                   />
                 </div>
@@ -1029,6 +1030,7 @@ export const ProductManagement: React.FC = () => {
                     step="0.01"
                     value={purchasePrice}
                     onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="Enter purchase price"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
@@ -1083,6 +1085,7 @@ export const ProductManagement: React.FC = () => {
                     required
                     value={sellingPrice}
                     onChange={(e) => setSellingPrice(e.target.value)}
+                    placeholder="Enter selling price"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
@@ -1110,6 +1113,7 @@ export const ProductManagement: React.FC = () => {
                     type="number"
                     value={lowStockAlert}
                     onChange={(e) => setLowStockAlert(e.target.value)}
+                    placeholder="Optional warning quantity"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
