@@ -156,6 +156,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<POSNotification[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
 
+  const getDeviceStoreKey = (user: AppUser | null) => {
+    const accountScope = user?.email
+      ? user.email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_')
+      : 'anonymous';
+    return `qpos_device_active_store_${accountScope}`;
+  };
+
   useEffect(() => {
     const tenantId = settings.tenantId || getUserScope(currentUser);
     const primaryStore: SaaSStore = {
@@ -168,14 +175,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const branches = settings.storeBranches?.length
       ? settings.storeBranches
       : [primaryStore];
-    const selected = branches.find(store => store.id === settings.activeStoreId)
+    const deviceStoreId = localStorage.getItem(getDeviceStoreKey(currentUser));
+    const selected = branches.find(store => store.id === deviceStoreId)
       || branches.find(store => store.id === activeStore.id)
       || branches[0];
     setSaaSStores(branches);
     setActiveStore(selected);
   }, [
     currentUser,
-    settings.activeStoreId,
     settings.address,
     settings.storeBranch,
     settings.storeBranches,
@@ -1252,8 +1259,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Settings
   const updateSettings = (newSettings: StoreSettings) => {
     const scope = getUserScope(currentUser);
-    saveLocalAndState('settings', newSettings, setSettings);
-    setDoc(doc(db, 'users', scope, 'store_settings', 'active'), newSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/store_settings`));
+    // The selected workspace is a device preference. Never sync it through
+    // Firestore, otherwise a store switch on one terminal changes every
+    // terminal logged into the same owner account.
+    const { activeStoreId: _legacyActiveStoreId, ...sharedSettings } = newSettings;
+    saveLocalAndState('settings', sharedSettings as StoreSettings, setSettings);
+    setDoc(doc(db, 'users', scope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/store_settings`));
   };
 
   const deleteAllMockupData = async () => {
@@ -1385,7 +1396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setStaff([]);
       setNotifications([]);
       setActiveStore(target);
-      updateSettings({...settings, activeStoreId: target.id});
+      localStorage.setItem(getDeviceStoreKey(currentUser), target.id);
       triggerToast(`Switched workspace branch to ${target.name}`, 'info');
     }
   };
@@ -1420,10 +1431,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
     setSaaSStores(storeBranches);
     setActiveStore(newStore);
+    localStorage.setItem(getDeviceStoreKey(currentUser), newStore.id);
     updateSettings({
       ...settings,
-      storeBranches,
-      activeStoreId: newStore.id
+      storeBranches
     });
     triggerToast(`${newStore.name} added and activated.`, 'success');
   };
@@ -1452,10 +1463,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const storeBranches = saasStores.map(store => store.id === activeStore.id ? updatedStore : store);
     setSaaSStores(storeBranches);
     setActiveStore(updatedStore);
+    localStorage.setItem(getDeviceStoreKey(currentUser), updatedStore.id);
     updateSettings({
       ...settings,
-      storeBranches,
-      activeStoreId: updatedStore.id
+      storeBranches
     });
     setActiveTab('dashboard');
     triggerToast(`${updatedStore.name} is configured and ready.`, 'success');
