@@ -90,6 +90,8 @@ interface AppContextType {
   editProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   addSale: (sale: Omit<Sale, 'id' | 'date'>) => Sale;
+  editSale: (id: string, sale: Partial<Sale>) => void;
+  deleteSale: (id: string) => void;
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => void;
   adjustStock: (productId: string, quantity: number, type: 'Stock In' | 'Stock Out' | 'Adjustment', description: string) => void;
   
@@ -1029,6 +1031,104 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newSale;
   };
 
+  const editSale = (id: string, changes: Partial<Sale>) => {
+    const scope = getWorkspaceScope();
+    const originalSale = sales.find(sale => sale.id === id);
+    let changedSale: Sale | null = null;
+    const updatedSales = sales.map((sale) => {
+      if (sale.id !== id) return sale;
+      changedSale = omitUndefinedFields({...sale, ...changes}) as Sale;
+      return changedSale;
+    });
+    if (!changedSale) return;
+    saveLocalAndState('sales', updatedSales, setSales);
+    setDoc(doc(db, 'users', scope, 'sales', id), changedSale)
+      .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/sales`));
+    if (originalSale?.customerId && originalSale.customerId === changedSale.customerId && originalSale.total !== changedSale.total) {
+      const updatedCustomers = customers.map(customer => {
+        if (customer.id !== originalSale.customerId) return customer;
+        const updatedCustomer = {
+          ...customer,
+          totalSpent: Math.max(0, customer.totalSpent + changedSale!.total - originalSale.total)
+        };
+        setDoc(doc(db, 'users', scope, 'customers', customer.id), updatedCustomer)
+          .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/customers`));
+        return updatedCustomer;
+      });
+      saveLocalAndState('customers', updatedCustomers, setCustomers);
+    }
+  };
+
+  const deleteSale = (id: string) => {
+    const scope = getWorkspaceScope();
+    const sale = sales.find(entry => entry.id === id);
+    if (!sale) return;
+
+    setProducts((currentProducts) => {
+      const restoredProducts = currentProducts.map((product) => {
+        if (product.itemType === 'Service') return product;
+        const soldLines = sale.items.filter(item => item.productId === product.id);
+        if (!soldLines.length) return product;
+        const quantityToRestore = soldLines.reduce((sum, item) => sum + item.quantity, 0);
+        const serializedUnits = productUsesImeiTracking(product)
+          ? getSerializedUnits(product).map(unit => {
+              if (unit.saleId !== sale.id) return unit;
+              const {soldAt: _soldAt, saleId: _saleId, ...availableUnit} = unit;
+              return {...availableUnit, status: 'Returned' as const};
+            })
+          : product.serializedUnits;
+        const restoredStock = productUsesImeiTracking(product)
+          ? (serializedUnits || []).filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+          : product.stock + quantityToRestore;
+        const restoredProduct = omitUndefinedFields({
+          ...product,
+          stock: restoredStock,
+          serializedUnits,
+          ...(serializedUnits ? {
+            imeiNumbers: serializedUnits
+              .filter(unit => unit.status !== 'Sold')
+              .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])
+          } : {}),
+          updatedAt: new Date().toISOString()
+        }) as Product;
+        setDoc(doc(db, 'users', scope, 'products', product.id), restoredProduct)
+          .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/products`));
+        addTransaction(
+          product.id,
+          product.name,
+          product.sku,
+          'Adjustment',
+          quantityToRestore,
+          product.stock,
+          restoredStock,
+          `Invoice ${sale.id} deleted; stock restored.`
+        );
+        return restoredProduct;
+      });
+      localStorage.setItem(`pos_${scope}_products`, JSON.stringify(restoredProducts));
+      return restoredProducts;
+    });
+
+    const updatedSales = sales.filter(entry => entry.id !== id);
+    saveLocalAndState('sales', updatedSales, setSales);
+    deleteDoc(doc(db, 'users', scope, 'sales', id))
+      .catch(e => handleFirestoreError(e, OperationType.DELETE, `users/${scope}/sales`));
+    if (sale.customerId) {
+      const updatedCustomers = customers.map(customer => {
+        if (customer.id !== sale.customerId) return customer;
+        const updatedCustomer = {
+          ...customer,
+          totalSpent: Math.max(0, customer.totalSpent - sale.total),
+          loyaltyPoints: Math.max(0, customer.loyaltyPoints - sale.loyaltyPointsEarned)
+        };
+        setDoc(doc(db, 'users', scope, 'customers', customer.id), updatedCustomer)
+          .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/customers`));
+        return updatedCustomer;
+      });
+      saveLocalAndState('customers', updatedCustomers, setCustomers);
+    }
+  };
+
   // 7. Purchase entry restock catalog
   const addPurchase = (p: Omit<Purchase, 'id' | 'date'>) => {
     const scope = getWorkspaceScope();
@@ -1508,6 +1608,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         editProduct,
         deleteProduct,
         addSale,
+        editSale,
+        deleteSale,
         addPurchase,
         adjustStock,
 

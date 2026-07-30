@@ -6,17 +6,40 @@
 import React, { useState } from 'react';
 import { 
   FileDown, BarChart2, Calendar, Coins, TrendingUp, Landmark, ShieldCheck,
-  ShoppingBag, ClipboardList, Info, FileSpreadsheet
+  ShoppingBag, ClipboardList, Info, FileSpreadsheet, Search, Edit2, Trash2, X
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+import { Sale } from '../types';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const ReportsView: React.FC = () => {
-  const { sales, purchases, products, settings } = useAppState();
+  const { sales, purchases, products, settings, editSale, deleteSale, triggerToast } = useAppState();
 
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
+  const [salesSearch, setSalesSearch] = useState('');
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState<Sale['paymentMethod']>('Cash');
+  const [editTaxAmount, setEditTaxAmount] = useState('');
+  const [editTotal, setEditTotal] = useState('');
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
+  const visibleSales = completedSales.filter((sale) => {
+    const query = salesSearch.trim().toLowerCase();
+    if (!query) return true;
+    return [
+      sale.id,
+      sale.customerName,
+      sale.customerCompanyName,
+      sale.customerGstNumber,
+      sale.paymentMethod,
+      sale.employeeName,
+      new Date(sale.date).toLocaleDateString()
+    ].some(value => String(value || '').toLowerCase().includes(query));
+  });
   const salesCount = completedSales.length;
   const grossSalesVolume = completedSales.reduce((acc, sale) => acc + sale.total, 0);
   const totalGstCollected = completedSales.reduce((acc, sale) => acc + sale.taxAmount, 0);
@@ -35,6 +58,37 @@ export const ReportsView: React.FC = () => {
   }, 0);
 
   const netProfits = Math.max(0, grossSalesVolume - totalGstCollected - totalStockCostSold);
+
+  const openSaleEditor = (sale: Sale) => {
+    setEditingSale(sale);
+    setEditCustomerName(sale.customerName || '');
+    const localDate = new Date(sale.date);
+    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+    setEditDate(localDate.toISOString().slice(0, 16));
+    setEditPaymentMethod(sale.paymentMethod);
+    setEditTaxAmount(sale.taxAmount.toString());
+    setEditTotal(sale.total.toString());
+  };
+
+  const saveSaleEdits = () => {
+    if (!editingSale) return;
+    const nextTotal = Number(editTotal);
+    const nextTax = Number(editTaxAmount);
+    if (!editCustomerName.trim() || !editDate || !Number.isFinite(nextTotal) || nextTotal < 0 || !Number.isFinite(nextTax) || nextTax < 0) {
+      triggerToast('Enter a client, date, total, and tax amount that are valid.', 'warning');
+      return;
+    }
+    editSale(editingSale.id, {
+      customerName: editCustomerName.trim(),
+      date: new Date(editDate).toISOString(),
+      paymentMethod: editPaymentMethod,
+      taxAmount: nextTax,
+      total: nextTotal,
+      subtotal: Math.max(0, nextTotal - nextTax + editingSale.discount)
+    });
+    triggerToast(`Invoice ${editingSale.id} updated.`, 'success');
+    setEditingSale(null);
+  };
 
   // --- Export to CSV utilities ---
   const handleExportCSV = (type: 'sales' | 'inventory' | 'tax') => {
@@ -194,6 +248,15 @@ export const ReportsView: React.FC = () => {
         {/* VIEW A: SALES REGISTER */}
         {activeReportTab === 'sales' && (
           <div className="space-y-4">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                value={salesSearch}
+                onChange={(event) => setSalesSearch(event.target.value)}
+                placeholder="Search invoice, client, GSTIN, payment, operator, or date..."
+                className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 py-2.5 pl-10 pr-3 text-xs focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
             <div className="overflow-x-auto min-h-[14rem]">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -204,11 +267,12 @@ export const ReportsView: React.FC = () => {
                     <th className="py-2.5 font-mono">Tax Amount</th>
                     <th className="py-2.5 font-mono">Paid Sum</th>
                     <th className="py-2.5">Method</th>
-                    <th className="py-2.5 text-right">Cashier Operator</th>
+                    <th className="py-2.5">Cashier Operator</th>
+                    <th className="py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-900/40">
-                  {completedSales.map((s) => (
+                  {visibleSales.map((s) => (
                     <tr key={s.id} className="text-gray-700 dark:text-gray-350 font-medium hover:bg-gray-50/20">
                       <td className="py-3 font-mono text-emerald-500 font-semibold">{s.id}</td>
                       <td className="py-3 font-mono text-[10px] text-gray-400">
@@ -224,9 +288,34 @@ export const ReportsView: React.FC = () => {
                         {settings.currency}{s.total.toFixed(2)}
                       </td>
                       <td className="py-3 uppercase tracking-wider text-[10px]">{s.paymentMethod}</td>
-                      <td className="py-3 text-right uppercase text-[10px] text-gray-400 font-semibold">{s.employeeName}</td>
+                      <td className="py-3 uppercase text-[10px] text-gray-400 font-semibold">{s.employeeName}</td>
+                      <td className="py-3">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => openSaleEditor(s)}
+                            title="Edit sales record"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-blue-500/10 hover:text-blue-500"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setSaleToDelete(s)}
+                            title="Delete and reverse invoice"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
+                  {visibleSales.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-14 text-center text-xs text-gray-400">
+                        No sales records match your search.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -340,6 +429,98 @@ export const ReportsView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {editingSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="relative w-full max-w-lg rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 text-gray-950 dark:text-white shadow-2xl">
+            <button
+              onClick={() => setEditingSale(null)}
+              className="absolute right-4 top-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-xl font-black">Edit Sales Record</h3>
+            <p className="mt-1 text-xs text-gray-400">Invoice {editingSale.id}. Item quantities cannot be changed after billing.</p>
+
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-semibold">Client / Customer</label>
+                <input
+                  value={editCustomerName}
+                  onChange={(event) => setEditCustomerName(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold">Invoice Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={editDate}
+                  onChange={(event) => setEditDate(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold">Payment Method</label>
+                <select
+                  value={editPaymentMethod}
+                  onChange={(event) => setEditPaymentMethod(event.target.value as Sale['paymentMethod'])}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Card">Card</option>
+                  <option value="Split">Split</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold">GST Amount ({settings.currency})</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editTaxAmount}
+                  onChange={(event) => setEditTaxAmount(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold">Invoice Total ({settings.currency})</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editTotal}
+                  onChange={(event) => setEditTotal(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setEditingSale(null)} className="rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900">
+                Cancel
+              </button>
+              <button onClick={saveSaleEdits} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-600">
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDeleteModal
+        isOpen={!!saleToDelete}
+        title="Delete Sales Invoice"
+        message={`Delete invoice "${saleToDelete?.id}"? Material stock from this invoice will be restored and the sale will be removed from reports.`}
+        itemName={saleToDelete?.id}
+        onConfirm={() => {
+          if (!saleToDelete) return;
+          deleteSale(saleToDelete.id);
+          triggerToast(`Invoice ${saleToDelete.id} deleted and inventory restored.`, 'success');
+          setSaleToDelete(null);
+        }}
+        onClose={() => setSaleToDelete(null)}
+      />
     </div>
   );
 };
