@@ -94,7 +94,7 @@ interface AppContextType {
   adjustStock: (productId: string, quantity: number, type: 'Stock In' | 'Stock Out' | 'Adjustment', description: string) => void;
   
   // Contacts
-  addCustomer: (customer: Omit<Customer, 'id' | 'totalSpent' | 'outstandingDue' | 'createdAt'>) => Customer;
+  addCustomer: (customer: Omit<Customer, 'id' | 'totalSpent' | 'outstandingDue' | 'createdAt'> & {outstandingDue?: number}) => Customer;
   editCustomer: (id: string, customer: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
   addSupplier: (supplier: Omit<Supplier, 'id' | 'outstandingBalance' | 'createdAt'>) => Supplier;
@@ -1175,15 +1175,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // 8. Contact management list controllers
-  const addCustomer = (c: Omit<Customer, 'id' | 'totalSpent' | 'outstandingDue' | 'createdAt'>): Customer => {
+  const addCustomer = (c: Omit<Customer, 'id' | 'totalSpent' | 'outstandingDue' | 'createdAt'> & {outstandingDue?: number}): Customer => {
     const scope = getWorkspaceScope();
-    const newCust: Customer = {
+    const newCust = omitUndefinedFields({
       ...c,
       id: `cust-${Date.now()}`,
       totalSpent: 0,
-      outstandingDue: 0,
+      outstandingDue: c.outstandingDue || 0,
       createdAt: new Date().toISOString()
-    };
+    }) as Customer;
     const updated = [newCust, ...customers];
     saveLocalAndState('customers', updated, setCustomers);
 
@@ -1196,7 +1196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let updatedC: Customer | null = null;
     const updated = customers.map((cust) => {
       if (cust.id === id) {
-        updatedC = { ...cust, ...c };
+        updatedC = omitUndefinedFields({ ...cust, ...c }) as Customer;
         return updatedC;
       }
       return cust;

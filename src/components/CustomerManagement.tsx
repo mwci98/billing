@@ -10,9 +10,11 @@ import {
 import { useAppState } from '../lib/stateContext';
 import { Customer } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { getBusinessMode } from '../lib/businessMode';
 
 export const CustomerManagement: React.FC = () => {
-  const { customers, addCustomer, editCustomer, deleteCustomer, sales, settings, triggerToast } = useAppState();
+  const { customers, addCustomer, editCustomer, deleteCustomer, sales, settings, activeStore, triggerToast } = useAppState();
+  const isServiceBusiness = getBusinessMode(activeStore.configuration?.businessType || settings.businessType) === 'Service';
 
   const [search, setSearch] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -22,6 +24,14 @@ export const CustomerManagement: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [customerType, setCustomerType] = useState<'Individual' | 'Business'>('Business');
+  const [gstNumber, setGstNumber] = useState<string>('');
+  const [panNumber, setPanNumber] = useState<string>('');
+  const [state, setState] = useState<string>('');
+  const [stateCode, setStateCode] = useState<string>('');
+  const [billingAddress, setBillingAddress] = useState<string>('');
+  const [shippingAddress, setShippingAddress] = useState<string>('');
   const [loyaltyPoints, setLoyaltyPoints] = useState<string>('0');
   const [outstandingDue, setOutstandingDue] = useState<string>('0');
 
@@ -38,6 +48,14 @@ export const CustomerManagement: React.FC = () => {
     setName('');
     setPhone('');
     setEmail('');
+    setCompanyName('');
+    setCustomerType(isServiceBusiness ? 'Business' : 'Individual');
+    setGstNumber('');
+    setPanNumber('');
+    setState('');
+    setStateCode('');
+    setBillingAddress('');
+    setShippingAddress('');
     setLoyaltyPoints('0');
     setOutstandingDue('0');
     setIsFormOpen(true);
@@ -48,6 +66,14 @@ export const CustomerManagement: React.FC = () => {
     setName(c.name);
     setPhone(c.phone);
     setEmail(c.email || '');
+    setCompanyName(c.companyName || '');
+    setCustomerType(c.customerType || (isServiceBusiness ? 'Business' : 'Individual'));
+    setGstNumber(c.gstNumber || '');
+    setPanNumber(c.panNumber || '');
+    setState(c.state || '');
+    setStateCode(c.stateCode || '');
+    setBillingAddress(c.billingAddress || '');
+    setShippingAddress(c.shippingAddress || '');
     setLoyaltyPoints(c.loyaltyPoints.toString());
     setOutstandingDue(c.outstandingDue.toString());
     setIsFormOpen(true);
@@ -64,6 +90,14 @@ export const CustomerManagement: React.FC = () => {
       name,
       phone,
       email: email || undefined,
+      companyName: companyName || undefined,
+      customerType,
+      gstNumber: gstNumber.trim().toUpperCase() || undefined,
+      panNumber: panNumber.trim().toUpperCase() || undefined,
+      state: state || undefined,
+      stateCode: stateCode || undefined,
+      billingAddress: billingAddress || undefined,
+      shippingAddress: shippingAddress || undefined,
       loyaltyPoints: parseInt(loyaltyPoints) || 0,
       outstandingDue: parseFloat(outstandingDue) || 0
     };
@@ -98,7 +132,9 @@ export const CustomerManagement: React.FC = () => {
 
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
+    c.phone.includes(search) ||
+    Boolean(c.companyName?.toLowerCase().includes(search.toLowerCase())) ||
+    Boolean(c.gstNumber?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -107,8 +143,12 @@ export const CustomerManagement: React.FC = () => {
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-950 p-6 rounded-3xl border border-gray-100 dark:border-gray-900 shadow-sm">
         <div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white">Customer loyalty Register</h2>
-          <p className="text-xs text-gray-400">Manage registered members, loyalty points tiers, and outstanding credit totals</p>
+          <h2 className="text-2xl font-black text-gray-950 dark:text-white">{isServiceBusiness ? 'Client Register' : 'Customer Loyalty Register'}</h2>
+          <p className="text-xs text-gray-400">
+            {isServiceBusiness
+              ? 'Manage client contacts, GST identity, state, billing addresses, invoices, and outstanding balances'
+              : 'Manage registered members, loyalty points, and outstanding credit totals'}
+          </p>
         </div>
 
         <button
@@ -117,7 +157,7 @@ export const CustomerManagement: React.FC = () => {
           className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-xs font-semibold text-white shadow-md cursor-pointer cursor-pointer hover:scale-95 transition duration-150"
         >
           <Plus className="h-4 w-4 stroke-[3.5px]" />
-          <span>Register customer</span>
+          <span>{isServiceBusiness ? 'Add client' : 'Register customer'}</span>
         </button>
       </div>
 
@@ -131,7 +171,7 @@ export const CustomerManagement: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, numeric phone number..."
+            placeholder={isServiceBusiness ? 'Search by client, company, phone, or GSTIN...' : 'Search by name or phone number...'}
             className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-2.5 pl-10 text-xs focus:border-emerald-500 focus:outline-none"
           />
         </div>
@@ -140,10 +180,19 @@ export const CustomerManagement: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-gray-105 text-gray-400 uppercase tracking-widest text-[9px] font-bold">
-                <th className="py-2.5">Customer Name</th>
+                <th className="py-2.5">{isServiceBusiness ? 'Client / Company' : 'Customer Name'}</th>
                 <th className="py-2.5">Contact phone</th>
-                <th className="py-2.5 font-mono">Loyalty Stars</th>
-                <th className="py-2.5 font-mono">Accumulated Spend</th>
+                {isServiceBusiness ? (
+                  <>
+                    <th className="py-2.5">GSTIN / PAN</th>
+                    <th className="py-2.5">State</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="py-2.5 font-mono">Loyalty Stars</th>
+                    <th className="py-2.5 font-mono">Accumulated Spend</th>
+                  </>
+                )}
                 <th className="py-2.5 font-mono">outstanding Due Credits</th>
                 <th className="py-2.5 text-right">Ledger actions</th>
               </tr>
@@ -156,9 +205,24 @@ export const CustomerManagement: React.FC = () => {
                   <tr key={c.id} className="text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50/20">
                     <td className="py-3">
                       <p className="font-bold text-gray-950 dark:text-white">{c.name}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{c.email || 'No email attached'}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        {isServiceBusiness ? c.companyName || c.email || 'Individual client' : c.email || 'No email attached'}
+                      </p>
                     </td>
                     <td className="py-3 font-mono text-gray-800 dark:text-gray-200">{c.phone}</td>
+                    {isServiceBusiness ? (
+                      <>
+                        <td className="py-3">
+                          <p className="font-mono text-[11px]">{c.gstNumber || 'Unregistered'}</p>
+                          {c.panNumber && <p className="text-[9px] text-gray-400 mt-0.5">PAN: {c.panNumber}</p>}
+                        </td>
+                        <td className="py-3">
+                          <p>{c.state || 'Not specified'}</p>
+                          {c.stateCode && <p className="text-[9px] text-gray-400">Code: {c.stateCode}</p>}
+                        </td>
+                      </>
+                    ) : (
+                    <>
                     <td className="py-3 font-mono">
                       <span className="inline-flex items-center gap-1.5 text-amber-500 font-bold">
                         <Trophy className="h-3.5 w-3.5 shrink-0" />
@@ -168,6 +232,8 @@ export const CustomerManagement: React.FC = () => {
                     <td className="py-3 font-mono text-gray-800 dark:text-gray-200">
                       {settings.currency}{(c.totalSpent || 0).toFixed(2)}
                     </td>
+                    </>
+                    )}
                     <td className="py-3 font-mono">
                       {hasDue ? (
                         <div className="flex items-center gap-2">
@@ -225,7 +291,7 @@ export const CustomerManagement: React.FC = () => {
       {/* FORM MODAL: Add/Edit Customers */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-gray-950 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-6 relative">
+          <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-gray-950 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-6 relative">
             <button
               onClick={() => setIsFormOpen(false)}
               className="absolute top-4 right-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-white transition"
@@ -233,12 +299,44 @@ export const CustomerManagement: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="text-xl font-black mb-1">{editingItem ? 'Modify Customer Profile' : 'Register New Member Card'}</h3>
-            <p className="text-xs text-gray-450 mb-4">Store details for card updates</p>
+            <h3 className="text-xl font-black mb-1">
+              {editingItem
+                ? `Edit ${isServiceBusiness ? 'Client' : 'Customer'}`
+                : `Add New ${isServiceBusiness ? 'Client' : 'Customer'}`}
+            </h3>
+            <p className="text-xs text-gray-450 mb-4">
+              {isServiceBusiness ? 'These details can be used for GST invoices and client records.' : 'Store customer and loyalty details.'}
+            </p>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
+              {isServiceBusiness && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Client Type</label>
+                    <select
+                      value={customerType}
+                      onChange={(e) => setCustomerType(e.target.value as 'Individual' | 'Business')}
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                    >
+                      <option value="Business">Business / Company</option>
+                      <option value="Individual">Individual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Business / Company Name</label>
+                    <input
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g. ABC Technologies Pvt Ltd"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1">Full Name</label>
+                <label className="block text-xs font-semibold mb-1">{isServiceBusiness ? 'Contact Person' : 'Full Name'}</label>
                 <input
                   id="form-cust-name"
                   type="text"
@@ -262,7 +360,9 @@ export const CustomerManagement: React.FC = () => {
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
                 />
               </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-slate-500 mb-1">Email address</label>
                 <input
@@ -275,8 +375,80 @@ export const CustomerManagement: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {isServiceBusiness && (
                 <div>
+                  <label className="block text-xs font-semibold mb-1">GSTIN</label>
+                  <input
+                    value={gstNumber}
+                    onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                    maxLength={15}
+                    placeholder="15-character GSTIN"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono uppercase"
+                  />
+                </div>
+              )}
+              </div>
+
+              {isServiceBusiness && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">PAN</label>
+                      <input
+                        value={panNumber}
+                        onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                        maxLength={10}
+                        placeholder="PAN number"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">State</label>
+                      <input
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        placeholder="e.g. West Bengal"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">GST State Code</label>
+                      <input
+                        value={stateCode}
+                        onChange={(e) => setStateCode(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                        placeholder="e.g. 19"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Billing Address</label>
+                      <textarea
+                        value={billingAddress}
+                        onChange={(e) => setBillingAddress(e.target.value)}
+                        rows={3}
+                        placeholder="Address used on invoices"
+                        className="w-full resize-none rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Shipping / Service Address</label>
+                      <textarea
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        rows={3}
+                        placeholder="Optional, if different"
+                        className="w-full resize-none rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                {!isServiceBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">Loyalty Stars</label>
                   <input
                     id="form-cust-points"
@@ -285,9 +457,9 @@ export const CustomerManagement: React.FC = () => {
                     onChange={(e) => setLoyaltyPoints(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-white"
                   />
-                </div>
+                </div>}
 
-                <div>
+                <div className={isServiceBusiness ? 'col-span-2 sm:col-span-1' : ''}>
                   <label className="block text-xs font-semibold mb-1">Credit Due ({settings.currency})</label>
                   <input
                     id="form-cust-due"
@@ -313,7 +485,7 @@ export const CustomerManagement: React.FC = () => {
                   type="submit"
                   className="rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 px-5 py-2 text-xs font-bold shadow-md cursor-pointer"
                 >
-                  Confirm Card
+                  {editingItem ? 'Save Changes' : `Add ${isServiceBusiness ? 'Client' : 'Customer'}`}
                 </button>
               </div>
             </form>
@@ -406,16 +578,16 @@ export const CustomerManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Confirm Delete Customer Modal */}
+      {/* Confirm Delete Client / Customer Modal */}
       <ConfirmDeleteModal
         isOpen={!!custToDelete}
-        title="Remove Customer Profile"
-        message={`Are you sure you want to remove customer profile "${custToDelete?.name}" from the store register?`}
+        title={`Remove ${isServiceBusiness ? 'Client' : 'Customer'} Profile`}
+        message={`Are you sure you want to remove ${isServiceBusiness ? 'client' : 'customer'} "${custToDelete?.name}" from this workspace?`}
         itemName={custToDelete?.name}
         onConfirm={() => {
           if (custToDelete) {
             deleteCustomer(custToDelete.id);
-            triggerToast(`Customer "${custToDelete.name}" profile deleted! ✔`, 'success');
+            triggerToast(`${isServiceBusiness ? 'Client' : 'Customer'} "${custToDelete.name}" deleted.`, 'success');
             setCustToDelete(null);
           }
         }}

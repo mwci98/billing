@@ -115,7 +115,7 @@ const AppContent: React.FC = () => {
     { id: 'pos', name: isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
     { id: 'products', name: isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
-    { id: 'customers', name: 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
+    { id: 'customers', name: isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
     { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
     { id: 'staff', name: 'Staff Access', icon: UserCog, adminOnly: true },

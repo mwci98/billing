@@ -766,7 +766,7 @@ export const ProductManagement: React.FC = () => {
                           id={`prod-labels-btn-${p.id}`}
                           onClick={() => setActiveLabels(p)}
                           title="Generate printable labels, barcodes & QR"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer"
+                          className={`${p.itemType === 'Service' ? 'hidden' : ''} p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer`}
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -774,17 +774,21 @@ export const ProductManagement: React.FC = () => {
                         <button
                           id={`prod-edit-btn-${p.id}`}
                           onClick={() => openEditModal(p)}
-                          className="p-1.5 rounded-lg text-gray-450 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition cursor-pointer"
+                          title={`Edit ${p.itemType === 'Service' ? 'service' : 'catalog item'}`}
+                          className="inline-flex items-center gap-1 p-1.5 rounded-lg text-gray-450 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition cursor-pointer"
                         >
                           <Edit2 className="h-4 w-4" />
+                          {p.itemType === 'Service' && <span className="text-[10px] font-bold">Edit</span>}
                         </button>
 
                         <button
                           id={`prod-delete-btn-${p.id}`}
                           onClick={() => setProductToDelete(p)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
+                          title={`Delete ${p.itemType === 'Service' ? 'service' : 'catalog item'}`}
+                          className="inline-flex items-center gap-1 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
+                          {p.itemType === 'Service' && <span className="text-[10px] font-bold">Delete</span>}
                         </button>
                       </div>
                     </td>

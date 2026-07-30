@@ -96,7 +96,14 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   onClose
 }) => {
   const sellerState = getGstStateInfo(settings.gstNumber);
-  const buyerState = sellerState; // Default intra-state POS transaction unless buyer GSTIN specified
+  const buyerState = activeReceipt.customerStateCode
+    ? {
+        stateName: activeReceipt.customerState || GST_STATE_MAP[activeReceipt.customerStateCode] || 'Not specified',
+        stateCode: activeReceipt.customerStateCode
+      }
+    : activeReceipt.customerGstNumber
+      ? getGstStateInfo(activeReceipt.customerGstNumber)
+      : sellerState;
   const formattedDate = new Date(activeReceipt.date).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -275,14 +282,17 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           <tr>
             <td colSpan={2} className="p-2 align-top border-t border-black">
               <p className="font-semibold text-[9px] uppercase tracking-wide">Buyer (Billed to):</p>
-              <p className="font-bold text-xs uppercase mt-0.5">{activeReceipt.customerName || 'Cash / Walk-in Customer'}</p>
-              <p className="text-[9px] mt-0.5">Contact: {activeReceipt.customerId ? 'Registered Account' : 'Counter Sale'}</p>
+              <p className="font-bold text-xs uppercase mt-0.5">{activeReceipt.customerCompanyName || activeReceipt.customerName || 'Cash / Walk-in Customer'}</p>
+              {activeReceipt.customerCompanyName && <p className="text-[9px]">Contact Person: {activeReceipt.customerName}</p>}
+              <p className="text-[9px] mt-0.5">Contact: {activeReceipt.customerPhone || (activeReceipt.customerId ? 'Registered Account' : 'Counter Sale')}</p>
+              {activeReceipt.customerBillingAddress && <p className="text-[9px] whitespace-pre-line">{activeReceipt.customerBillingAddress}</p>}
+              {activeReceipt.customerGstNumber && <p className="text-[9px]">GSTIN: {activeReceipt.customerGstNumber}</p>}
               <p className="text-[9px]">State Name: {buyerState.stateName}, Code: {buyerState.stateCode}</p>
             </td>
             <td colSpan={2} className="p-2 align-top border-t border-black">
               <p className="font-semibold text-[9px] uppercase tracking-wide">Consignee (Shipped to):</p>
-              <p className="font-bold text-xs uppercase mt-0.5">{activeReceipt.customerName || 'Cash / Walk-in Customer'}</p>
-              <p className="text-[9px] mt-0.5">Destination: Counter Pick</p>
+              <p className="font-bold text-xs uppercase mt-0.5">{activeReceipt.customerCompanyName || activeReceipt.customerName || 'Cash / Walk-in Customer'}</p>
+              <p className="text-[9px] mt-0.5 whitespace-pre-line">Destination: {activeReceipt.customerShippingAddress || activeReceipt.customerBillingAddress || 'Counter Pick'}</p>
             </td>
           </tr>
         </tbody>
