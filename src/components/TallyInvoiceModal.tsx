@@ -321,7 +321,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                 <td className="p-1 text-center font-bold">{item.quantity}</td>
                 <td className="p-1 text-right font-mono">{item.price.toFixed(2)}</td>
                 <td className="p-1 text-center">Pcs</td>
-                <td className="p-1 text-right font-bold font-mono">{(item.total || item.price * item.quantity).toFixed(2)}</td>
+                <td className="p-1 text-right font-bold font-mono">{(item.price * item.quantity).toFixed(2)}</td>
               </tr>
             );
           })}
@@ -416,14 +416,17 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             <td className="p-0.5">{Object.values(taxGroups).reduce((s, g) => s + g.cgst, 0).toFixed(2)}</td>
             <td className="p-0.5"></td>
             <td className="p-0.5">{Object.values(taxGroups).reduce((s, g) => s + g.sgst, 0).toFixed(2)}</td>
-            <td className="p-0.5">{activeReceipt.taxAmount.toFixed(2)}</td>
+            <td className="p-0.5">{Object.values(taxGroups).reduce((s, g) => s + g.totalTax, 0).toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
 
       {/* Tax Amount in Words */}
       <div className="border-x border-b border-black p-1.5 font-bold text-[9px]">
-        Tax Amount (in words): <span className="font-normal italic">{numberToWords(activeReceipt.taxAmount)}</span>
+        Tax Amount (in words):{' '}
+        <span className="font-normal italic">
+          {numberToWords(Object.values(taxGroups).reduce((sum, group) => sum + group.totalTax, 0))}
+        </span>
       </div>
 
       {/* Bank details & Terms + Signatory */}
