@@ -484,7 +484,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       </table>
 
       <div className="text-center text-[8px] font-bold uppercase mt-3 pb-1 tracking-normal leading-normal text-gray-800">
-        SUBJECT TO LOCAL JURISDICTION • THIS IS A COMPUTER GENERATED TALLY GST TAX INVOICE
+        SUBJECT TO LOCAL JURISDICTION • THIS IS A COMPUTER GENERATED QWICKPOS INVOICE
       </div>
     </>
   );
@@ -565,7 +565,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold flex flex-wrap items-center gap-2">
-                Tally GST Tax Invoice <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">A5 Paper Ready</span>
+                QwickPOS Invoice <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">A5 Paper Ready</span>
               </h3>
               <p className="text-xs text-gray-400">Official GST compliant invoice print layout</p>
             </div>
