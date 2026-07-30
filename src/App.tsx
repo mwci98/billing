@@ -46,6 +46,10 @@ const AppContent: React.FC = () => {
     hasPermission
   } = useAppState();
   const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
+  const ownerWorkspaceId = settings.tenantId || currentUser?.tenantId;
+  const isPrimaryWorkspace =
+    activeStore.id === 'primary-store' ||
+    activeStore.id === ownerWorkspaceId;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
@@ -85,7 +89,10 @@ const AppContent: React.FC = () => {
   if (
     currentUser.role === UserRole.ADMIN &&
     settings.tenantId &&
-    settings.onboardingCompleted !== true
+    (
+      (isPrimaryWorkspace && settings.onboardingCompleted !== true) ||
+      (!isPrimaryWorkspace && activeStore.onboardingCompleted !== true)
+    )
   ) {
     return <BusinessOnboarding />;
   }

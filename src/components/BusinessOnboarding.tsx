@@ -10,22 +10,42 @@ import {isInternalTestingAccount} from '../lib/internalEntitlements';
 const steps = ['Business', 'Compliance', 'POS setup'];
 
 export const BusinessOnboarding: React.FC = () => {
-  const {settings, currentUser, updateSettings} = useAppState();
+  const {settings, currentUser, activeStore, updateSettings, completeStoreBranchSetup} = useAppState();
   const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
+  const isPrimaryWorkspace =
+    activeStore.id === 'primary-store' ||
+    activeStore.id === (settings.tenantId || currentUser?.tenantId);
+  const branchConfiguration = activeStore.configuration;
   const [step, setStep] = useState(0);
-  const [storeName, setStoreName] = useState(settings.storeName || '');
-  const [ownerName, setOwnerName] = useState(settings.ownerName || currentUser?.name || '');
-  const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
-  const [phone, setPhone] = useState(settings.phone || '');
-  const [email, setEmail] = useState(settings.email || currentUser?.email || '');
-  const [address, setAddress] = useState(settings.address || '');
-  const [gstNumber, setGstNumber] = useState(settings.gstNumber || '');
-  const [website, setWebsite] = useState(settings.website || '');
-  const [currency, setCurrency] = useState(settings.currency || '₹');
-  const [receiptHeader, setReceiptHeader] = useState(settings.receiptHeader || '');
-  const [receiptFooter, setReceiptFooter] = useState(settings.receiptFooter || '');
+  const [storeName, setStoreName] = useState(isPrimaryWorkspace ? settings.storeName || '' : activeStore.name || '');
+  const [ownerName, setOwnerName] = useState(branchConfiguration?.ownerName || settings.ownerName || currentUser?.name || '');
+  const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(branchConfiguration?.businessType || settings.businessType));
+  const [phone, setPhone] = useState(branchConfiguration?.phone || (isPrimaryWorkspace ? settings.phone : '') || '');
+  const [email, setEmail] = useState(branchConfiguration?.email || settings.email || currentUser?.email || '');
+  const [address, setAddress] = useState(branchConfiguration?.address || (isPrimaryWorkspace ? settings.address : activeStore.city) || '');
+  const [gstNumber, setGstNumber] = useState(branchConfiguration?.gstNumber || (isPrimaryWorkspace ? settings.gstNumber : '') || '');
+  const [website, setWebsite] = useState(branchConfiguration?.website || (isPrimaryWorkspace ? settings.website : '') || '');
+  const [currency, setCurrency] = useState(branchConfiguration?.currency || settings.currency || '₹');
+  const [receiptHeader, setReceiptHeader] = useState(branchConfiguration?.receiptHeader || settings.receiptHeader || '');
+  const [receiptFooter, setReceiptFooter] = useState(branchConfiguration?.receiptFooter || settings.receiptFooter || '');
 
   const completeSetup = () => {
+    if (!isPrimaryWorkspace) {
+      completeStoreBranchSetup({
+        storeName: storeName.trim(),
+        ownerName: ownerName.trim(),
+        businessType,
+        phone: phone.trim(),
+        email: email.trim(),
+        address: address.trim(),
+        gstNumber: gstNumber.trim(),
+        website: website.trim(),
+        currency,
+        receiptHeader: receiptHeader.trim(),
+        receiptFooter: receiptFooter.trim()
+      });
+      return;
+    }
     updateSettings({
       ...settings,
       storeName: storeName.trim(),
@@ -56,9 +76,11 @@ export const BusinessOnboarding: React.FC = () => {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
             <Store className="h-7 w-7" />
           </div>
-          <h1 className="mt-4 text-3xl font-black">Set up your business</h1>
+          <h1 className="mt-4 text-3xl font-black">
+            {isPrimaryWorkspace ? 'Set up your business' : `Configure ${activeStore.name}`}
+          </h1>
           <p className="mt-2 text-sm text-gray-400">
-            Complete these details once to prepare your isolated POS workspace.
+            Complete these details once to prepare this isolated POS workspace.
           </p>
           <span className="mt-3 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
             {hasInternalAccess ? 'Internal testing access · no trial expiry' : 'Your 5-day Basic trial starts now'}

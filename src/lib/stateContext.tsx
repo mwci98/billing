@@ -71,6 +71,7 @@ interface AppContextType {
   saasPlans: SaaSPlan[];
   switchStoreBranch: (storeId: string) => void;
   addStoreBranch: (store: Pick<SaaSStore, 'name' | 'branchCode' | 'city'>) => void;
+  completeStoreBranchSetup: (configuration: NonNullable<SaaSStore['configuration']> & {storeName: string}) => void;
   upgradeSaaSPlan: (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => void;
 
   // Business Data Store
@@ -1382,7 +1383,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...store,
       id: `branch-${Date.now()}`,
       branchCode: store.branchCode.trim().toUpperCase(),
-      status: 'Active'
+      status: 'Active',
+      onboardingCompleted: false
     };
     const storeBranches = [...existingBranches, newStore];
     setProducts([]);
@@ -1401,6 +1403,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeStoreId: newStore.id
     });
     triggerToast(`${newStore.name} added and activated.`, 'success');
+  };
+
+  const completeStoreBranchSetup = (
+    configuration: NonNullable<SaaSStore['configuration']> & {storeName: string}
+  ) => {
+    const updatedStore: SaaSStore = {
+      ...activeStore,
+      name: configuration.storeName.trim(),
+      city: configuration.address?.trim() || activeStore.city,
+      onboardingCompleted: true,
+      configuration: {
+        ownerName: configuration.ownerName,
+        businessType: configuration.businessType,
+        phone: configuration.phone,
+        email: configuration.email,
+        address: configuration.address,
+        gstNumber: configuration.gstNumber,
+        website: configuration.website,
+        currency: configuration.currency,
+        receiptHeader: configuration.receiptHeader,
+        receiptFooter: configuration.receiptFooter
+      }
+    };
+    const storeBranches = saasStores.map(store => store.id === activeStore.id ? updatedStore : store);
+    setSaaSStores(storeBranches);
+    setActiveStore(updatedStore);
+    updateSettings({
+      ...settings,
+      storeBranches,
+      activeStoreId: updatedStore.id
+    });
+    setActiveTab('dashboard');
+    triggerToast(`${updatedStore.name} is configured and ready.`, 'success');
   };
 
   const upgradeSaaSPlan = (planName: 'Free' | 'Basic' | 'Pro' | 'Enterprise') => {
@@ -1422,6 +1457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saasPlans: DEFAULT_SAAS_PLANS,
         switchStoreBranch,
         addStoreBranch,
+        completeStoreBranchSetup,
         upgradeSaaSPlan,
 
         products,

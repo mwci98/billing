@@ -234,6 +234,19 @@ export interface SaaSStore {
   branchCode: string;
   city: string;
   status: 'Active' | 'Inactive';
+  onboardingCompleted?: boolean;
+  configuration?: {
+    ownerName?: string;
+    businessType?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    gstNumber?: string;
+    website?: string;
+    currency?: string;
+    receiptHeader?: string;
+    receiptFooter?: string;
+  };
 }
 
 export interface SaaSPlan {
