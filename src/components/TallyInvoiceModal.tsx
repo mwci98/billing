@@ -431,11 +431,23 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         <tbody>
           <tr>
             <td className="w-3/5 p-1.5 align-top">
-              <p className="font-bold underline">Company's Bank Details:</p>
-              <p>Bank Name: <span className="font-semibold">HDFC Bank Ltd</span></p>
-              <p>A/c No.: <span className="font-semibold font-mono">50100293810239</span></p>
-              <p>Branch & IFSC: <span className="font-semibold font-mono">HDFC0000240</span></p>
-              <p className="mt-1 font-bold underline">Declaration:</p>
+              {settings.showBankDetailsOnInvoice && (
+                <div className="mb-1">
+                  <p className="font-bold underline">Company's Bank Details:</p>
+                  {settings.bankAccountHolder && (
+                    <p>Account Holder: <span className="font-semibold">{settings.bankAccountHolder}</span></p>
+                  )}
+                  <p>Bank Name: <span className="font-semibold">{settings.bankName}</span></p>
+                  <p>A/c No.: <span className="font-semibold font-mono">{settings.bankAccountNumber}</span></p>
+                  <p>
+                    Branch & IFSC:{' '}
+                    <span className="font-semibold font-mono">
+                      {[settings.bankBranch, settings.bankIfsc].filter(Boolean).join(' / ')}
+                    </span>
+                  </p>
+                </div>
+              )}
+              <p className="font-bold underline">Declaration:</p>
               <p className="text-[8.5px] leading-tight text-gray-800">
                 We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
               </p>

@@ -190,6 +190,12 @@ export interface StoreSettings {
   receiptHeader: string;
   receiptFooter: string;
   invoiceSignature?: string;
+  showBankDetailsOnInvoice?: boolean;
+  bankAccountHolder?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
   loyaltyPointsPerDollar: number; // conversion rate
   planTier?: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
   tenantId?: string;

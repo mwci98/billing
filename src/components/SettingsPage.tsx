@@ -46,6 +46,12 @@ export const SettingsPage: React.FC = () => {
   const [receiptHeader, setReceiptHeader] = useState<string>(settings.receiptHeader);
   const [receiptFooter, setReceiptFooter] = useState<string>(settings.receiptFooter);
   const [invoiceSignature, setInvoiceSignature] = useState<string>(settings.invoiceSignature || '');
+  const [showBankDetailsOnInvoice, setShowBankDetailsOnInvoice] = useState<boolean>(settings.showBankDetailsOnInvoice ?? false);
+  const [bankAccountHolder, setBankAccountHolder] = useState<string>(settings.bankAccountHolder || '');
+  const [bankName, setBankName] = useState<string>(settings.bankName || '');
+  const [bankAccountNumber, setBankAccountNumber] = useState<string>(settings.bankAccountNumber || '');
+  const [bankBranch, setBankBranch] = useState<string>(settings.bankBranch || '');
+  const [bankIfsc, setBankIfsc] = useState<string>(settings.bankIfsc || '');
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
   const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidgetSettings>(() => ({
     ...DEFAULT_DASHBOARD_WIDGETS,
@@ -57,6 +63,10 @@ export const SettingsPage: React.FC = () => {
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (showBankDetailsOnInvoice && (!bankName.trim() || !bankAccountNumber.trim() || !bankIfsc.trim())) {
+      triggerToast('Complete the bank name, account number, and IFSC before showing bank details on invoices.', 'warning');
+      return;
+    }
     updateSettings({
       ...settings,
       storeName,
@@ -68,6 +78,12 @@ export const SettingsPage: React.FC = () => {
       receiptHeader,
       receiptFooter,
       invoiceSignature,
+      showBankDetailsOnInvoice,
+      bankAccountHolder: bankAccountHolder.trim(),
+      bankName: bankName.trim(),
+      bankAccountNumber: bankAccountNumber.trim(),
+      bankBranch: bankBranch.trim(),
+      bankIfsc: bankIfsc.trim().toUpperCase(),
       businessType,
       dashboardWidgets
     });
@@ -451,6 +467,87 @@ export const SettingsPage: React.FC = () => {
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-white"
                 />
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">
+              <label className="flex cursor-pointer items-center justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-200">
+                    <Landmark className="h-4 w-4 text-emerald-500" />
+                    Show Bank Details on Invoice
+                  </p>
+                  <p className="mt-1 text-[10px] font-normal text-gray-400">
+                    Enable this only when customers should see your settlement account on printed and PDF invoices.
+                  </p>
+                </div>
+                <input
+                  id="set-show-bank-details"
+                  type="checkbox"
+                  checked={showBankDetailsOnInvoice}
+                  onChange={(event) => setShowBankDetailsOnInvoice(event.target.checked)}
+                  className="h-4 w-4 shrink-0 accent-emerald-500"
+                />
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">Account Holder</label>
+                  <input
+                    type="text"
+                    value={bankAccountHolder}
+                    onChange={(event) => setBankAccountHolder(event.target.value)}
+                    placeholder="Company or account holder name"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">Bank Name</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(event) => setBankName(event.target.value)}
+                    placeholder="e.g. HDFC Bank"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">Account Number</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={bankAccountNumber}
+                    onChange={(event) => setBankAccountNumber(event.target.value.replace(/\s/g, ''))}
+                    placeholder="Bank account number"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs font-mono text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">IFSC Code</label>
+                  <input
+                    type="text"
+                    value={bankIfsc}
+                    onChange={(event) => setBankIfsc(event.target.value.toUpperCase())}
+                    placeholder="e.g. HDFC0000240"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs font-mono uppercase text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">Branch</label>
+                  <input
+                    type="text"
+                    value={bankBranch}
+                    onChange={(event) => setBankBranch(event.target.value)}
+                    placeholder="Bank branch name or location"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {showBankDetailsOnInvoice && (!bankName.trim() || !bankAccountNumber.trim() || !bankIfsc.trim()) && (
+                <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                  Complete the bank name, account number, and IFSC before enabling invoice display.
+                </p>
+              )}
             </div>
 
             <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-4">
