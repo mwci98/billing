@@ -9,21 +9,23 @@ import {
   ShoppingBag, ClipboardList, Info, FileSpreadsheet, Search, Edit2, Trash2, X
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
-import { Sale } from '../types';
+import { Sale, SaleItem } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { productUsesImeiTracking } from '../lib/serializedInventory';
 
 export const ReportsView: React.FC = () => {
-  const { sales, purchases, products, settings, editSale, deleteSale, triggerToast } = useAppState();
+  const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
 
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
   const [salesSearch, setSalesSearch] = useState('');
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerId, setEditCustomerId] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editPaymentMethod, setEditPaymentMethod] = useState<Sale['paymentMethod']>('Cash');
-  const [editTaxAmount, setEditTaxAmount] = useState('');
-  const [editTotal, setEditTotal] = useState('');
+  const [editDiscount, setEditDiscount] = useState('');
+  const [editItems, setEditItems] = useState<SaleItem[]>([]);
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
@@ -62,32 +64,109 @@ export const ReportsView: React.FC = () => {
   const openSaleEditor = (sale: Sale) => {
     setEditingSale(sale);
     setEditCustomerName(sale.customerName || '');
+    setEditCustomerId(sale.customerId || '');
     const localDate = new Date(sale.date);
     localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
     setEditDate(localDate.toISOString().slice(0, 16));
     setEditPaymentMethod(sale.paymentMethod);
-    setEditTaxAmount(sale.taxAmount.toString());
-    setEditTotal(sale.total.toString());
+    setEditDiscount(sale.discount.toString());
+    setEditItems(sale.items.map(item => ({...item, serializedUnits: item.serializedUnits?.map(unit => ({...unit}))})));
   };
 
   const saveSaleEdits = () => {
     if (!editingSale) return;
-    const nextTotal = Number(editTotal);
-    const nextTax = Number(editTaxAmount);
-    if (!editCustomerName.trim() || !editDate || !Number.isFinite(nextTotal) || nextTotal < 0 || !Number.isFinite(nextTax) || nextTax < 0) {
-      triggerToast('Enter a client, date, total, and tax amount that are valid.', 'warning');
+    const discount = Math.max(0, Number(editDiscount) || 0);
+    if (!editCustomerName.trim() || !editDate || editItems.length === 0) {
+      triggerToast('An invoice needs a client, date, and at least one line item.', 'warning');
       return;
     }
+    const invalidLine = editItems.some(item => !item.name.trim() || item.quantity <= 0 || item.price < 0 || item.taxRate < 0);
+    if (invalidLine) {
+      triggerToast('Each line needs a description, positive quantity, valid rate, and GST percentage.', 'warning');
+      return;
+    }
+    const stockConflict = editItems.find(item => {
+      const product = products.find(entry => entry.id === item.productId);
+      if (!product || product.itemType === 'Service' || productUsesImeiTracking(product)) return false;
+      const originallyBilled = editingSale.items
+        .filter(originalItem => originalItem.productId === item.productId)
+        .reduce((sum, originalItem) => sum + originalItem.quantity, 0);
+      const newlyBilled = editItems
+        .filter(editItem => editItem.productId === item.productId)
+        .reduce((sum, editItem) => sum + editItem.quantity, 0);
+      return newlyBilled > product.stock + originallyBilled;
+    });
+    if (stockConflict) {
+      triggerToast(`Not enough stock is available for ${stockConflict.name}.`, 'warning');
+      return;
+    }
+    const normalizedItems = editItems.map(item => {
+      const taxableValue = item.price * item.quantity;
+      const taxAmount = taxableValue * item.taxRate / 100;
+      return {...item, taxAmount, total: taxableValue + taxAmount};
+    });
+    const subtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const taxAmount = normalizedItems.reduce((sum, item) => sum + item.taxAmount, 0);
+    const total = Math.max(0, subtotal + taxAmount - discount);
+    const selectedCustomer = customers.find(customer => customer.id === editCustomerId);
     editSale(editingSale.id, {
-      customerName: editCustomerName.trim(),
+      ...(selectedCustomer ? {
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customerCompanyName: selectedCustomer.companyName,
+        customerPhone: selectedCustomer.phone,
+        customerEmail: selectedCustomer.email,
+        customerGstNumber: selectedCustomer.gstNumber,
+        customerState: selectedCustomer.state,
+        customerStateCode: selectedCustomer.stateCode,
+        customerBillingAddress: selectedCustomer.billingAddress,
+        customerShippingAddress: selectedCustomer.shippingAddress
+      } : {
+        customerId: '',
+        customerName: editCustomerName.trim(),
+        customerCompanyName: '',
+        customerPhone: '',
+        customerEmail: '',
+        customerGstNumber: '',
+        customerState: '',
+        customerStateCode: '',
+        customerBillingAddress: '',
+        customerShippingAddress: ''
+      }),
       date: new Date(editDate).toISOString(),
       paymentMethod: editPaymentMethod,
-      taxAmount: nextTax,
-      total: nextTotal,
-      subtotal: Math.max(0, nextTotal - nextTax + editingSale.discount)
+      items: normalizedItems,
+      subtotal,
+      taxAmount,
+      discount,
+      total
     });
     triggerToast(`Invoice ${editingSale.id} updated.`, 'success');
     setEditingSale(null);
+  };
+
+  const updateEditItem = (index: number, changes: Partial<SaleItem>) => {
+    setEditItems(items => items.map((item, itemIndex) => itemIndex === index ? {...item, ...changes} : item));
+  };
+
+  const addInvoiceLine = (productId: string) => {
+    const product = products.find(entry => entry.id === productId);
+    if (!product) return;
+    if (productUsesImeiTracking(product)) {
+      triggerToast('Serialized/IMEI products can only be reduced from the original invoice. Create a new invoice to add another handset.', 'warning');
+      return;
+    }
+    setEditItems(items => [...items, {
+      productId: product.id,
+      name: product.name,
+      sku: product.sku,
+      barcode: product.barcode,
+      price: product.sellingPrice,
+      quantity: 1,
+      taxRate: product.taxRate,
+      taxAmount: product.sellingPrice * product.taxRate / 100,
+      total: product.sellingPrice * (1 + product.taxRate / 100)
+    }]);
   };
 
   // --- Export to CSV utilities ---
@@ -432,24 +511,44 @@ export const ReportsView: React.FC = () => {
 
       {editingSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="relative w-full max-w-lg rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 text-gray-950 dark:text-white shadow-2xl">
+          <div className="relative w-full max-w-5xl max-h-[94vh] overflow-y-auto rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 text-gray-950 dark:text-white shadow-2xl">
             <button
               onClick={() => setEditingSale(null)}
               className="absolute right-4 top-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900"
             >
               <X className="h-5 w-5" />
             </button>
-            <h3 className="text-xl font-black">Edit Sales Record</h3>
-            <p className="mt-1 text-xs text-gray-400">Invoice {editingSale.id}. Item quantities cannot be changed after billing.</p>
+            <h3 className="text-xl font-black">Edit Complete Invoice</h3>
+            <p className="mt-1 text-xs text-gray-400">Invoice {editingSale.id}. Totals and inventory are recalculated automatically.</p>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-semibold">Client / Customer</label>
-                <input
-                  value={editCustomerName}
-                  onChange={(event) => setEditCustomerName(event.target.value)}
+                <select
+                  value={editCustomerId}
+                  onChange={(event) => {
+                    const customerId = event.target.value;
+                    setEditCustomerId(customerId);
+                    const customer = customers.find(entry => entry.id === customerId);
+                    if (customer) setEditCustomerName(customer.name);
+                  }}
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
-                />
+                >
+                  <option value="">Walk-in / manually entered client</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.companyName ? `${customer.companyName} - ${customer.name}` : customer.name} ({customer.phone})
+                    </option>
+                  ))}
+                </select>
+                {!editCustomerId && (
+                  <input
+                    value={editCustomerName}
+                    onChange={(event) => setEditCustomerName(event.target.value)}
+                    placeholder="Customer or client name"
+                    className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                  />
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold">Invoice Date & Time</label>
@@ -474,27 +573,128 @@ export const ReportsView: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold">GST Amount ({settings.currency})</label>
+                <label className="mb-1 block text-xs font-semibold">Discount ({settings.currency})</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={editTaxAmount}
-                  onChange={(event) => setEditTaxAmount(event.target.value)}
+                  value={editDiscount}
+                  onChange={(event) => setEditDiscount(event.target.value)}
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold">Invoice Total ({settings.currency})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editTotal}
-                  onChange={(event) => setEditTotal(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono"
-                />
+                <label className="mb-1 block text-xs font-semibold">Add Service / Material</label>
+                <select
+                  defaultValue=""
+                  onChange={(event) => {
+                    addInvoiceLine(event.target.value);
+                    event.target.value = '';
+                  }}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs"
+                >
+                  <option value="" disabled>Select catalog item...</option>
+                  {products.map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - {settings.currency}{product.sellingPrice.toFixed(2)}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </div>
+
+            <div className="mt-5 overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-900">
+              <table className="w-full min-w-[760px] text-left text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-900/60 text-[9px] uppercase tracking-wider text-gray-400">
+                  <tr>
+                    <th className="p-3">Description</th>
+                    <th className="p-3">SKU</th>
+                    <th className="p-3 w-24">Quantity</th>
+                    <th className="p-3 w-32">Rate</th>
+                    <th className="p-3 w-24">GST %</th>
+                    <th className="p-3 text-right">Line Total</th>
+                    <th className="p-3 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-900">
+                  {editItems.map((item, index) => {
+                    const lineTotal = item.price * item.quantity * (1 + item.taxRate / 100);
+                    const isSerialized = Boolean(item.serializedUnits?.length);
+                    return (
+                      <tr key={`${item.productId}-${index}`}>
+                        <td className="p-2">
+                          <input
+                            value={item.name}
+                            onChange={(event) => updateEditItem(index, {name: event.target.value})}
+                            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2"
+                          />
+                        </td>
+                        <td className="p-2 font-mono text-[10px] text-gray-400">{item.sku}</td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max={isSerialized ? item.serializedUnits!.length : undefined}
+                            value={item.quantity}
+                            onChange={(event) => {
+                              const quantity = Math.max(1, Number(event.target.value) || 1);
+                              const cappedQuantity = isSerialized ? Math.min(quantity, item.serializedUnits!.length) : quantity;
+                              updateEditItem(index, {
+                                quantity: cappedQuantity,
+                                ...(isSerialized ? {serializedUnits: item.serializedUnits!.slice(0, cappedQuantity)} : {})
+                              });
+                            }}
+                            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 font-mono"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.price}
+                            onChange={(event) => updateEditItem(index, {price: Math.max(0, Number(event.target.value) || 0)})}
+                            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 font-mono"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.taxRate}
+                            onChange={(event) => updateEditItem(index, {taxRate: Math.max(0, Number(event.target.value) || 0)})}
+                            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 font-mono"
+                          />
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold">{settings.currency}{lineTotal.toFixed(2)}</td>
+                        <td className="p-2 text-right">
+                          <button
+                            onClick={() => setEditItems(items => items.filter((_, itemIndex) => itemIndex !== index))}
+                            className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500"
+                            title="Remove invoice line"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 ml-auto grid max-w-sm grid-cols-2 gap-y-2 text-xs">
+              <span className="text-gray-400">Taxable subtotal</span>
+              <span className="text-right font-mono">{settings.currency}{editItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}</span>
+              <span className="text-gray-400">GST</span>
+              <span className="text-right font-mono">{settings.currency}{editItems.reduce((sum, item) => sum + item.price * item.quantity * item.taxRate / 100, 0).toFixed(2)}</span>
+              <span className="text-gray-400">Discount</span>
+              <span className="text-right font-mono">-{settings.currency}{(Number(editDiscount) || 0).toFixed(2)}</span>
+              <span className="border-t border-gray-200 dark:border-gray-800 pt-2 text-sm font-black">Invoice Total</span>
+              <span className="border-t border-gray-200 dark:border-gray-800 pt-2 text-right font-mono text-sm font-black text-emerald-500">
+                {settings.currency}{Math.max(0, editItems.reduce((sum, item) => sum + item.price * item.quantity * (1 + item.taxRate / 100), 0) - (Number(editDiscount) || 0)).toFixed(2)}
+              </span>
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button onClick={() => setEditingSale(null)} className="rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900">

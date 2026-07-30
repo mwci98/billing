@@ -1044,13 +1044,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveLocalAndState('sales', updatedSales, setSales);
     setDoc(doc(db, 'users', scope, 'sales', id), changedSale)
       .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/sales`));
-    if (originalSale?.customerId && originalSale.customerId === changedSale.customerId && originalSale.total !== changedSale.total) {
+    if (changes.items && originalSale) {
+      setProducts((currentProducts) => {
+        const adjustedProducts = currentProducts.map((product) => {
+          if (product.itemType === 'Service') return product;
+          const oldLines = originalSale.items.filter(item => item.productId === product.id);
+          const newLines = changedSale!.items.filter(item => item.productId === product.id);
+          const oldQuantity = oldLines.reduce((sum, item) => sum + item.quantity, 0);
+          const newQuantity = newLines.reduce((sum, item) => sum + item.quantity, 0);
+          if (oldQuantity === newQuantity) return product;
+
+          let serializedUnits = product.serializedUnits;
+          let nextStock = product.stock + oldQuantity - newQuantity;
+          if (productUsesImeiTracking(product)) {
+            const retainedSoldIds = new Set(
+              newLines.flatMap(item => item.serializedUnits?.map(unit => unit.unitId) || [])
+            );
+            const originallySoldIds = new Set(
+              oldLines.flatMap(item => item.serializedUnits?.map(unit => unit.unitId) || [])
+            );
+            serializedUnits = getSerializedUnits(product).map(unit => {
+              if (retainedSoldIds.has(unit.id)) {
+                return {...unit, status: 'Sold' as const, saleId: id, soldAt: changedSale!.date};
+              }
+              if (originallySoldIds.has(unit.id) && unit.saleId === id) {
+                const {saleId: _saleId, soldAt: _soldAt, ...availableUnit} = unit;
+                return {...availableUnit, status: 'Returned' as const};
+              }
+              return unit;
+            });
+            nextStock = serializedUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length;
+          }
+
+          const adjustedProduct = omitUndefinedFields({
+            ...product,
+            stock: Math.max(0, nextStock),
+            serializedUnits,
+            ...(serializedUnits ? {
+              imeiNumbers: serializedUnits
+                .filter(unit => unit.status !== 'Sold')
+                .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])
+            } : {}),
+            updatedAt: new Date().toISOString()
+          }) as Product;
+          setDoc(doc(db, 'users', scope, 'products', product.id), adjustedProduct)
+            .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/products`));
+          addTransaction(
+            product.id,
+            product.name,
+            product.sku,
+            'Adjustment',
+            oldQuantity - newQuantity,
+            product.stock,
+            adjustedProduct.stock,
+            `Invoice ${id} edited; stock reconciled.`
+          );
+          return adjustedProduct;
+        });
+        localStorage.setItem(`pos_${scope}_products`, JSON.stringify(adjustedProducts));
+        return adjustedProducts;
+      });
+    }
+    if (originalSale && (
+      originalSale.customerId !== changedSale.customerId ||
+      originalSale.total !== changedSale.total
+    )) {
       const updatedCustomers = customers.map(customer => {
-        if (customer.id !== originalSale.customerId) return customer;
-        const updatedCustomer = {
-          ...customer,
-          totalSpent: Math.max(0, customer.totalSpent + changedSale!.total - originalSale.total)
-        };
+        let updatedCustomer = customer;
+        if (originalSale.customerId && customer.id === originalSale.customerId) {
+          updatedCustomer = {
+            ...updatedCustomer,
+            totalSpent: Math.max(0, updatedCustomer.totalSpent - originalSale.total),
+            loyaltyPoints: originalSale.customerId === changedSale!.customerId
+              ? updatedCustomer.loyaltyPoints
+              : Math.max(0, updatedCustomer.loyaltyPoints - originalSale.loyaltyPointsEarned)
+          };
+        }
+        if (changedSale!.customerId && customer.id === changedSale!.customerId) {
+          updatedCustomer = {
+            ...updatedCustomer,
+            totalSpent: updatedCustomer.totalSpent + changedSale!.total,
+            loyaltyPoints: originalSale.customerId === changedSale!.customerId
+              ? updatedCustomer.loyaltyPoints
+              : updatedCustomer.loyaltyPoints + changedSale!.loyaltyPointsEarned
+          };
+        }
+        if (updatedCustomer === customer) return customer;
         setDoc(doc(db, 'users', scope, 'customers', customer.id), updatedCustomer)
           .catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/customers`));
         return updatedCustomer;
