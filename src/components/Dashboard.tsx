@@ -12,6 +12,7 @@ import {
 import { useAppState } from '../lib/stateContext';
 import { Sale, UserRole } from '../types';
 import {TallyInvoiceModal} from './TallyInvoiceModal';
+import {getBusinessMode} from '../lib/businessMode';
 
 const DEFAULT_DASHBOARD_WIDGETS = {
   revenue: true,
@@ -32,6 +33,7 @@ export const Dashboard: React.FC = () => {
     customers, 
     purchases, 
     settings, 
+    activeStore,
     notifications, 
     setActiveTab, 
     currentUser,
@@ -40,6 +42,7 @@ export const Dashboard: React.FC = () => {
   } = useAppState();
   const [invoiceToReprint, setInvoiceToReprint] = useState<Sale | null>(null);
   const canViewFinancials = hasPermission('canViewFinancials');
+  const isServiceBusiness = getBusinessMode(activeStore.configuration?.businessType || settings.businessType) === 'Service';
   const dashboardWidgets = {
     ...DEFAULT_DASHBOARD_WIDGETS,
     ...settings.dashboardWidgets
@@ -179,7 +182,7 @@ export const Dashboard: React.FC = () => {
             className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-500/10 transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
           >
             <ShoppingCart className="h-4 w-4 shrink-0" />
-            <span>Fast Billing POS</span>
+            <span>{isServiceBusiness ? 'Create Service Invoice' : 'Fast Billing POS'}</span>
           </button>
         </div>
       </div>

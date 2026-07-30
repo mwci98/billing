@@ -27,6 +27,7 @@ import { SubscriptionGate } from './components/SubscriptionGate';
 import { BusinessOnboarding } from './components/BusinessOnboarding';
 import { LandingPage } from './components/LandingPage';
 import {isInternalTestingAccount} from './lib/internalEntitlements';
+import {getBusinessMode} from './lib/businessMode';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -99,6 +100,8 @@ const AppContent: React.FC = () => {
 
   // Check role authorization flags
   const isAdmin = currentUser.role === UserRole.ADMIN;
+  const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
+  const isServiceBusiness = businessMode === 'Service';
 
   // Custom Sidebar navigation list
   const sidebarItems: Array<{
@@ -109,8 +112,8 @@ const AppContent: React.FC = () => {
     adminOnly?: boolean;
   }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
-    { id: 'pos', name: 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
-    { id: 'products', name: 'Add Products', icon: ListChecks, permission: 'canManageProducts' },
+    { id: 'pos', name: isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
+    { id: 'products', name: isServiceBusiness ? 'Services & Materials' : 'Add Products', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
@@ -426,7 +429,7 @@ const AppContent: React.FC = () => {
           }`}
         >
           <ShoppingCart className="h-5 w-5 stroke-[2.2]" />
-          <span className="text-[10px] mt-1 font-semibold">POS Billing</span>
+          <span className="text-[10px] mt-1 font-semibold">{isServiceBusiness ? 'Billing' : 'POS Billing'}</span>
         </button>
         )}
 

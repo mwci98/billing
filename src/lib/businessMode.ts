@@ -1,7 +1,8 @@
-export type BusinessMode = 'Retail' | 'Manufacturing' | 'Hybrid';
+export type BusinessMode = 'Retail' | 'Manufacturing' | 'Hybrid' | 'Service';
 
 export const getBusinessMode = (value?: string): BusinessMode => {
   const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('service')) return 'Service';
   if (normalized.includes('hybrid') || normalized.includes('both')) return 'Hybrid';
   if (normalized.includes('manufactur') || normalized.includes('production')) return 'Manufacturing';
   return 'Retail';

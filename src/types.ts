@@ -45,6 +45,7 @@ export interface Product {
   name: string;
   sku: string;
   barcode: string;
+  itemType?: 'Material' | 'Service';
   imeiNumbers?: string[];
   trackInventoryByImei?: boolean;
   serializedUnits?: SerializedInventoryUnit[];

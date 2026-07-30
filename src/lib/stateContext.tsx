@@ -932,6 +932,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updatedProducts = prevProducts.map((prod) => {
         const soldItems = s.items.filter((item) => item.productId === prod.id);
         if (soldItems.length > 0) {
+          if (prod.itemType === 'Service') return prod;
           const totalSoldQty = soldItems.reduce((acc, item) => acc + item.quantity, 0);
           const soldUnitIds = new Set(
             soldItems.flatMap(item => item.serializedUnits?.map(unit => unit.unitId) || [])

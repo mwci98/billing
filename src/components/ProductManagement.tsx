@@ -55,7 +55,7 @@ const PRODUCT_BRANDS = [
 ];
 
 export const ProductManagement: React.FC = () => {
-  const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, triggerToast } = useAppState();
+  const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, activeStore, triggerToast } = useAppState();
 
   // Search & Filter states
   const [search, setSearch] = useState<string>('');
@@ -106,8 +106,9 @@ export const ProductManagement: React.FC = () => {
   const [productionNotes, setProductionNotes] = useState<string>('');
   const [imeiInput, setImeiInput] = useState<string>('');
   const [trackInventoryByImei, setTrackInventoryByImei] = useState<boolean>(false);
+  const [itemType, setItemType] = useState<'Material' | 'Service'>('Material');
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
-  const businessMode = getBusinessMode(settings.businessType);
+  const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
   const effectiveSourcingType = businessMode === 'Hybrid'
     ? sourcingType
     : sourcingForBusinessMode(businessMode);
@@ -310,6 +311,7 @@ export const ProductManagement: React.FC = () => {
     setProductionNotes('');
     setImeiInput('');
     setTrackInventoryByImei(false);
+    setItemType(businessMode === 'Service' ? 'Service' : 'Material');
     setIsFormOpen(true);
   };
 
@@ -334,6 +336,7 @@ export const ProductManagement: React.FC = () => {
     setProductionNotes(p.productionNotes || '');
     const units = getSerializedUnits(p);
     setTrackInventoryByImei(productUsesImeiTracking(p));
+    setItemType(p.itemType || 'Material');
     setImeiInput(
       units
         .filter(unit => unit.status !== 'Sold')
@@ -345,7 +348,7 @@ export const ProductManagement: React.FC = () => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !sku || !barcode || !sellingPrice) {
+    if (!name || !sku || (itemType === 'Material' && !barcode) || !sellingPrice) {
       triggerToast("Please fill in all core fields!", "warning");
       return;
     }
@@ -389,14 +392,17 @@ export const ProductManagement: React.FC = () => {
       return makeSerializedUnit(unit.imei1, unit.imei2, existing);
     });
     const serializedUnits = trackInventoryByImei ? [...retainedSoldUnits, ...availableUnits] : undefined;
-    const availableStock = trackInventoryByImei
-      ? availableUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
-      : (parseInt(stock) || 0);
+    const availableStock = itemType === 'Service'
+      ? 0
+      : trackInventoryByImei
+        ? availableUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+        : (parseInt(stock) || 0);
 
     const payload = {
       name,
       sku,
       barcode,
+      itemType,
       imeiNumbers: trackInventoryByImei ? enteredImeis : undefined,
       trackInventoryByImei,
       serializedUnits,
@@ -792,6 +798,37 @@ export const ProductManagement: React.FC = () => {
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                {businessMode === 'Service' && (
+                  <div className="col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-3.5 dark:border-gray-800 dark:bg-gray-900/60">
+                    <label className="block text-xs font-bold">Billing item type</label>
+                    <p className="mt-1 text-[11px] text-gray-400">Services are invoiced without stock deduction. Materials continue using inventory.</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {(['Service', 'Material'] as const).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setItemType(type);
+                            if (type === 'Service') {
+                              setTrackInventoryByImei(false);
+                              setStock('0');
+                              setCategory('Services');
+                              setUnit('Job');
+                            }
+                          }}
+                          className={`rounded-xl border p-3 text-xs font-bold transition ${
+                            itemType === type
+                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                              : 'border-gray-200 bg-white text-gray-500 dark:border-gray-800 dark:bg-gray-950'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Sourcing / Origin Selection */}
                 {businessMode === 'Hybrid' && <div className="col-span-2 p-3.5 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
                   <label className="block text-xs font-bold text-gray-900 dark:text-white">Product Origin & Sourcing Mode</label>
@@ -852,7 +889,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>
 
-                <div className="col-span-2">
+                {itemType === 'Material' && <div className="col-span-2">
                   <label className="mb-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs font-semibold dark:border-gray-800 dark:bg-gray-900">
                     <span>
                       Track every handset by IMEI
@@ -903,7 +940,7 @@ export const ProductManagement: React.FC = () => {
                       </p>
                     </>
                   )}
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">SKU identifier Code</label>
@@ -1005,7 +1042,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>
 
-                <div>
+                {itemType === 'Material' && <div>
                   <label className="block text-xs font-semibold mb-1">
                     Stock on Hand {trackInventoryByImei && <span className="text-emerald-500">(automatic)</span>}
                   </label>
@@ -1018,9 +1055,9 @@ export const ProductManagement: React.FC = () => {
                     placeholder={trackInventoryByImei ? 'Calculated from IMEIs' : 'Enter opening stock'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white disabled:opacity-50"
                   />
-                </div>
+                </div>}
 
-                <div>
+                {itemType === 'Material' && <div>
                   <label className="block text-xs font-semibold mb-1">
                     {effectiveSourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price incl. GST (${settings.currency})`}
                   </label>
@@ -1033,7 +1070,7 @@ export const ProductManagement: React.FC = () => {
                     placeholder="Enter purchase price"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
-                </div>
+                </div>}
 
                 {(effectiveSourcingType === 'Manufactured' || effectiveSourcingType === 'Both') && (
                   <>
@@ -1077,7 +1114,9 @@ export const ProductManagement: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">POS Selling Price incl. GST ({settings.currency})</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    {itemType === 'Service' ? 'Service Fee incl. GST' : 'POS Selling Price incl. GST'} ({settings.currency})
+                  </label>
                   <input
                     id="form-prod-selling-price"
                     type="number"
@@ -1106,7 +1145,7 @@ export const ProductManagement: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
+                {itemType === 'Material' && <div>
                   <label className="block text-xs font-semibold mb-1">Low Stock Warning Limits</label>
                   <input
                     id="form-prod-low-stock"
@@ -1116,9 +1155,9 @@ export const ProductManagement: React.FC = () => {
                     placeholder="Optional warning quantity"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
-                </div>
+                </div>}
 
-                <div>
+                {itemType === 'Material' && <div>
                   <label className="block text-xs font-semibold mb-1">Expiry Date (Optional)</label>
                   <input
                     id="form-prod-expiry"
@@ -1127,7 +1166,7 @@ export const ProductManagement: React.FC = () => {
                     onChange={(e) => setExpiryDate(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-mono"
                   />
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-xs font-semibold mb-2">Display Icon/Emoji</label>

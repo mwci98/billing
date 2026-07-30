@@ -113,7 +113,7 @@ export const POSBilling: React.FC = () => {
       .find(match => match.unit);
     const p = imeiMatch?.product || products.find(prod => prod.barcode === cleanCode || prod.sku.toLowerCase() === cleanCode.toLowerCase());
     if (p) {
-      if (p.stock <= 0) {
+      if (p.itemType !== 'Service' && p.stock <= 0) {
         triggerToast(`Product "${p.name}" is completely out of stock!`, 'error');
         return;
       }
@@ -139,13 +139,14 @@ export const POSBilling: React.FC = () => {
   // 3. Cart Mutators
   const addToCart = (product: Product, requestedUnitId?: string) => {
     const currentProduct = products.find(p => p.id === product.id) || product;
-    if (currentProduct.stock <= 0) {
+    const isService = currentProduct.itemType === 'Service';
+    if (!isService && currentProduct.stock <= 0) {
       triggerToast(`Product "${currentProduct.name}" is completely out of stock!`, 'error');
       return;
     }
 
     const existing = cart.find(item => item.product.id === currentProduct.id);
-    const trackedByImei = productUsesImeiTracking(currentProduct);
+    const trackedByImei = !isService && productUsesImeiTracking(currentProduct);
     const availableUnits = getAvailableSerializedUnits(currentProduct);
     const alreadySelected = existing?.selectedUnitIds || [];
     const nextUnit = requestedUnitId
@@ -156,7 +157,7 @@ export const POSBilling: React.FC = () => {
       return;
     }
     if (existing) {
-      if (existing.quantity >= currentProduct.stock) {
+      if (!isService && existing.quantity >= currentProduct.stock) {
         triggerToast(`Cannot add more. Max stock available: ${currentProduct.stock}`, 'warning');
         return;
       }
@@ -178,7 +179,7 @@ export const POSBilling: React.FC = () => {
 
   const updateCartQuantity = (productId: string, newQty: number) => {
     const currentProduct = products.find(p => p.id === productId);
-    const maxStock = currentProduct ? currentProduct.stock : 99999;
+    const maxStock = currentProduct?.itemType === 'Service' ? 99999 : currentProduct ? currentProduct.stock : 99999;
 
     if (newQty <= 0) {
       removeFromCart(productId);
@@ -254,7 +255,7 @@ export const POSBilling: React.FC = () => {
                            p.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
                            p.barcode.includes(productSearch);
         const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
-        const matchStock = showOutOfStock || p.stock > 0;
+        const matchStock = p.itemType === 'Service' || showOutOfStock || p.stock > 0;
         return matchQuery && matchCategory && matchStock;
       })
     : [];
@@ -466,8 +467,8 @@ export const POSBilling: React.FC = () => {
           >
             {categoriesList.map((cat) => {
               const count = cat === 'All' 
-                ? products.filter(p => showOutOfStock || p.stock > 0).length 
-                : products.filter(p => (showOutOfStock || p.stock > 0) && p.category === cat).length;
+                ? products.filter(p => p.itemType === 'Service' || showOutOfStock || p.stock > 0).length
+                : products.filter(p => (p.itemType === 'Service' || showOutOfStock || p.stock > 0) && p.category === cat).length;
               return (
                 <button
                   key={cat}
@@ -573,8 +574,8 @@ export const POSBilling: React.FC = () => {
         ) : (
           <div id="pos-product-catalog" className="flex flex-col gap-2.5 overflow-y-auto max-h-[35rem] pr-1.5 font-sans">
             {filteredProducts.map((p) => {
-              const outOfStock = p.stock <= 0;
-              const nearLowStock = p.stock <= p.lowStockAlert;
+              const outOfStock = p.itemType !== 'Service' && p.stock <= 0;
+              const nearLowStock = p.itemType !== 'Service' && p.stock <= p.lowStockAlert;
               return (
                 <button
                   key={p.id}
@@ -606,7 +607,7 @@ export const POSBilling: React.FC = () => {
                         ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
                         : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                     }`}>
-                      {outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
+                      {p.itemType === 'Service' ? 'Service' : outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
                     </span>
 
                     <div className="text-right min-w-[70px]">
@@ -734,7 +735,9 @@ export const POSBilling: React.FC = () => {
                     <input
                       type="number"
                       min={1}
-                      max={products.find(p => p.id === item.product.id)?.stock || 99999}
+                      max={products.find(p => p.id === item.product.id)?.itemType === 'Service'
+                        ? 99999
+                        : products.find(p => p.id === item.product.id)?.stock || 99999}
                       value={item.quantity}
                       onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 0)}
                       className="w-12 text-center font-mono text-xs font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-0.5 focus:border-emerald-500 focus:outline-none"
