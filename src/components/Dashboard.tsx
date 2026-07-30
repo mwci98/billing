@@ -84,8 +84,8 @@ export const Dashboard: React.FC = () => {
   const totalCustomers = customers.length;
   
   // Low Stock & Expiry counts
-  const lowStockProducts = products.filter((p) => p.stock <= p.lowStockAlert);
-  const outOfStockProducts = products.filter((p) => p.stock === 0);
+  const lowStockProducts = products.filter((p) => p.itemType !== 'Service' && p.stock <= p.lowStockAlert);
+  const outOfStockProducts = products.filter((p) => p.itemType !== 'Service' && p.stock === 0);
   
   const unreadNotifications = notifications.filter(n => !n.read);
 
@@ -361,7 +361,7 @@ export const Dashboard: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-bold text-gray-900 dark:text-white">{item.name}</p>
                         <p className="truncate text-[9px] font-mono text-gray-400">
-                          SKU: {item.sku} · Stock: {product?.stock ?? 0}
+                          SKU: {item.sku} · {product?.itemType === 'Service' ? 'Service · no stock tracking' : `Stock: ${product?.stock ?? 0}`}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">

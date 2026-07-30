@@ -545,6 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const tenDaysFromNow = new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000);
 
     products.forEach((prod) => {
+      if (prod.itemType === 'Service') return;
       // 1. Out of stock alert
       if (prod.stock === 0) {
         list.push({

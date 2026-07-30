@@ -456,8 +456,8 @@ export const ProductManagement: React.FC = () => {
       {/* 1. Header controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-950 p-6 rounded-3xl border border-gray-100 dark:border-gray-900 shadow-sm">
         <div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white">Active Product Catalog</h2>
-          <p className="text-xs text-gray-400">Total stored listings: {products.length} standard items</p>
+          <h2 className="text-2xl font-black text-gray-950 dark:text-white">Services & Materials Catalog</h2>
+          <p className="text-xs text-gray-400">Total billable catalog items: {products.length}</p>
         </div>
 
         <button
@@ -466,7 +466,7 @@ export const ProductManagement: React.FC = () => {
           className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-xs font-semibold text-white shadow-md shadow-emerald-500/10 cursor-pointer transition active:scale-95"
         >
           <Plus className="h-4 w-4 stroke-[3px]" />
-          <span>Register New SKU</span>
+          <span>Add Service / Material</span>
         </button>
       </div>
 
@@ -481,7 +481,7 @@ export const ProductManagement: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by SKU, barcode, title..."
+              placeholder="Search services, materials, SKU or barcode..."
               className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-2.5 pl-10 text-xs focus:border-emerald-500 focus:outline-none"
             />
           </div>
@@ -598,14 +598,18 @@ export const ProductManagement: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-900/35">
               {filtered.map((p) => {
-                const nearLowStock = p.stock <= p.lowStockAlert;
+                const nearLowStock = p.itemType !== 'Service' && p.stock <= p.lowStockAlert;
                 const src = p.sourcingType || 'Purchased';
                 return (
                   <tr key={p.id} className="text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
                     <td className="py-3 px-2 text-2xl">{p.imageUrl || '📦'}</td>
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Brand: {p.brand} • Unit: {p.unit}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        {p.itemType === 'Service'
+                          ? `${p.brand ? `Provider: ${p.brand} · ` : ''}Billing unit: ${p.unit}`
+                          : `Brand: ${p.brand || 'Unbranded'} · Unit: ${p.unit}`}
+                      </p>
                       {productUsesImeiTracking(p) && (
                         <p className="text-[9px] text-emerald-500 mt-0.5">
                           {getSerializedUnits(p).filter(unit => unit.status !== 'Sold').length} available ·{' '}
@@ -620,7 +624,11 @@ export const ProductManagement: React.FC = () => {
                       </p>
                     </td>
                     <td className="hidden xl:table-cell py-3">
-                      {src === 'Manufactured' ? (
+                      {p.itemType === 'Service' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
+                          Service
+                        </span>
+                      ) : src === 'Manufactured' ? (
                         <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
                           🏭 In-House
                         </span>
@@ -640,7 +648,7 @@ export const ProductManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 font-mono text-gray-400">
-                      {settings.currency}{p.purchasePrice.toFixed(2)}
+                      {p.itemType === 'Service' ? '—' : `${settings.currency}${p.purchasePrice.toFixed(2)}`}
                       {p.sourcingType === 'Manufactured' && p.manufacturingCost && (
                         <span className="block text-[9px] text-amber-500 font-bold">Mat: {settings.currency}{p.manufacturingCost.toFixed(2)}</span>
                       )}
@@ -650,6 +658,11 @@ export const ProductManagement: React.FC = () => {
                       <p className="text-[10px] text-gray-400 mt-0.5">Incl. {p.taxRate}% GST</p>
                     </td>
                     <td className="py-3">
+                      {p.itemType === 'Service' ? (
+                        <span className="inline-flex rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-500">
+                          Not tracked
+                        </span>
+                      ) : (
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
@@ -745,6 +758,7 @@ export const ProductManagement: React.FC = () => {
                           +
                         </button>
                       </div>
+                      )}
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -1322,8 +1336,8 @@ export const ProductManagement: React.FC = () => {
       {/* Confirm Delete Modal */}
       <ConfirmDeleteModal
         isOpen={!!productToDelete}
-        title="Delete Product"
-        message={`Are you sure you want to permanently delete product "${productToDelete?.name}"?`}
+        title="Delete Catalog Item"
+        message={`Are you sure you want to permanently delete "${productToDelete?.name}" from the catalog?`}
         itemName={productToDelete?.name}
         onConfirm={() => {
           if (productToDelete) {
