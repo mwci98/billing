@@ -23,6 +23,7 @@ export interface Staff {
   name: string;
   role: UserRole;
   tenantId: string;
+  workspaceScope?: string;
   permissions: StaffPermissions;
   passcodeHash: string;
   active: boolean;
@@ -35,6 +36,7 @@ export interface AppUser {
   name: string;
   role: UserRole;
   tenantId?: string;
+  workspaceScope?: string;
   permissions?: StaffPermissions;
 }
 

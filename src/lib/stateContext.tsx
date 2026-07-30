@@ -205,10 +205,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return user.email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
   };
 
+  // The primary workspace keeps the legacy tenant path so existing data is
+  // preserved. Every additional store receives its own isolated data scope.
+  const getWorkspaceScope = (): string => {
+    if (currentUser?.workspaceScope) return currentUser.workspaceScope;
+    const ownerScope = getUserScope(currentUser);
+    const primaryStoreId = settings.tenantId || ownerScope;
+    const storeId = activeStore?.id;
+    if (!storeId || storeId === 'primary-store' || storeId === primaryStoreId || storeId === ownerScope) {
+      return ownerScope;
+    }
+    const safeStoreId = storeId.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `${ownerScope}__store__${safeStoreId}`;
+  };
+
   // 1. User Tenant Data Scope Hydration & Live Firestore Snapshot Listeners
   useEffect(() => {
-    const scope = getUserScope(currentUser);
+    const ownerScope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const scopeKey = (key: string) => `pos_${scope}_${key}`;
+    const ownerScopeKey = (key: string) => `pos_${ownerScope}_${key}`;
 
     // Initialize darkmode
     const savedTheme = localStorage.getItem('pos_dark_mode');
@@ -224,7 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localSales = localStorage.getItem(scopeKey('sales'));
     const localPurchases = localStorage.getItem(scopeKey('purchases'));
     const localTransactions = localStorage.getItem(scopeKey('transactions'));
-    const localSettings = localStorage.getItem(scopeKey('settings'));
+    const localSettings = localStorage.getItem(ownerScopeKey('settings'));
     const localStaff = localStorage.getItem(scopeKey('staff'));
 
     if (localProducts) {
@@ -271,7 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (localSettings) {
       const parsed = migrateLegacyQposBranding(JSON.parse(localSettings) as StoreSettings);
-      parsed.tenantId = parsed.tenantId || scope;
+      parsed.tenantId = parsed.tenantId || ownerScope;
       parsed.onboardingCompleted = parsed.onboardingCompleted ?? false;
       if (!parsed.trialStartedAt && parsed.subscriptionStatus !== 'active') {
         const trialStartedAt = new Date();
@@ -279,17 +295,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         parsed.trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString();
         parsed.subscriptionStatus = 'trialing';
         parsed.planTier = 'Basic';
-        setDoc(doc(db, 'users', scope, 'store_settings', 'active'), parsed, {merge: true})
-          .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${scope}/store_settings`));
+        setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), parsed, {merge: true})
+          .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${ownerScope}/store_settings`));
       }
       if (parsed.currency === '$' || !parsed.currency) parsed.currency = '₹';
       setSettings(parsed);
-      localStorage.setItem(scopeKey('settings'), JSON.stringify(parsed));
+      localStorage.setItem(ownerScopeKey('settings'), JSON.stringify(parsed));
     } else {
       const trialStartedAt = new Date();
       const userCustomSettings: StoreSettings = {
         ...INITIAL_SETTINGS,
-        tenantId: scope,
+        tenantId: ownerScope,
         planTier: 'Basic',
         subscriptionStatus: 'trialing',
         trialStartedAt: trialStartedAt.toISOString(),
@@ -300,26 +316,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currency: '₹'
       };
       setSettings(userCustomSettings);
-      localStorage.setItem(scopeKey('settings'), JSON.stringify(userCustomSettings));
-      getDoc(doc(db, 'users', scope, 'store_settings', 'active'))
+      localStorage.setItem(ownerScopeKey('settings'), JSON.stringify(userCustomSettings));
+      getDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'))
         .then(existing => {
           if (existing.exists()) {
             const remote = existing.data() as StoreSettings;
             const remoteSettings = migrateLegacyQposBranding({
               ...remote,
-              tenantId: remote.tenantId || scope,
+              tenantId: remote.tenantId || ownerScope,
               onboardingCompleted: remote.onboardingCompleted ?? false
             });
             setSettings(remoteSettings);
-            localStorage.setItem(scopeKey('settings'), JSON.stringify(remoteSettings));
+            localStorage.setItem(ownerScopeKey('settings'), JSON.stringify(remoteSettings));
             if (!remote.tenantId || remote.onboardingCompleted === undefined || remoteSettings.storeName !== remote.storeName) {
-              setDoc(doc(db, 'users', scope, 'store_settings', 'active'), remoteSettings, {merge: true});
+              setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), remoteSettings, {merge: true});
             }
           } else {
-            setDoc(doc(db, 'users', scope, 'store_settings', 'active'), userCustomSettings);
+            setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), userCustomSettings);
           }
         })
-        .catch(error => handleFirestoreError(error, OperationType.GET, `users/${scope}/store_settings`));
+        .catch(error => handleFirestoreError(error, OperationType.GET, `users/${ownerScope}/store_settings`));
     }
 
     if (localStaff) {
@@ -377,8 +393,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/suppliers`)
     );
 
+    const unsubPurchases = onSnapshot(
+      collection(db, 'users', scope, 'purchases'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Purchase[] = snapshot.docs.map(purchaseDoc => purchaseDoc.data() as Purchase);
+          setPurchases(list);
+          localStorage.setItem(scopeKey('purchases'), JSON.stringify(list));
+        }
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/purchases`)
+    );
+
+    const unsubTransactions = onSnapshot(
+      collection(db, 'users', scope, 'inventory_transactions'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: InventoryTransaction[] = snapshot.docs.map(transactionDoc => transactionDoc.data() as InventoryTransaction);
+          setTransactions(list);
+          localStorage.setItem(scopeKey('transactions'), JSON.stringify(list));
+        }
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/inventory_transactions`)
+    );
+
     const unsubSettings = onSnapshot(
-      collection(db, 'users', scope, 'store_settings'),
+      collection(db, 'users', ownerScope, 'store_settings'),
       (snapshot) => {
         if (!snapshot.empty) {
           const sDoc = snapshot.docs.find(d => d.id === 'active');
@@ -386,18 +426,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const remote = sDoc.data() as StoreSettings;
             const data = migrateLegacyQposBranding({
               ...remote,
-              tenantId: remote.tenantId || scope,
+              tenantId: remote.tenantId || ownerScope,
               onboardingCompleted: remote.onboardingCompleted ?? false
             });
             setSettings(data);
-            localStorage.setItem(scopeKey('settings'), JSON.stringify(data));
+            localStorage.setItem(ownerScopeKey('settings'), JSON.stringify(data));
             if (!remote.tenantId || remote.onboardingCompleted === undefined || data.storeName !== remote.storeName) {
-              setDoc(doc(db, 'users', scope, 'store_settings', 'active'), data, {merge: true});
+              setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), data, {merge: true});
             }
           }
         }
       },
-      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/store_settings`)
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${ownerScope}/store_settings`)
     );
 
     const unsubStaff = onSnapshot(
@@ -415,10 +455,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSales();
       unsubCustomers();
       unsubSuppliers();
+      unsubPurchases();
+      unsubTransactions();
       unsubSettings();
       unsubStaff();
     };
-  }, [currentUser]);
+  }, [currentUser, activeStore.id]);
 
   // Firebase Auth state listener
   useEffect(() => {
@@ -454,6 +496,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           email: firebaseEmail,
           role: directoryStaff ? UserRole.STAFF : UserRole.ADMIN,
           tenantId: directoryStaff?.tenantId || firebaseEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+          workspaceScope: directoryStaff?.workspaceScope,
           permissions: directoryStaff?.permissions
         };
         setCurrentUser(session);
@@ -471,7 +514,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Sync state mutations helper
   const saveLocalAndState = <T,>(keyName: string, data: T, setter: React.Dispatch<React.SetStateAction<T>>) => {
     setter(data);
-    const scope = getUserScope(currentUser);
+    const scope = keyName === 'settings' ? getUserScope(currentUser) : getWorkspaceScope();
     localStorage.setItem(`pos_${scope}_${keyName}`, JSON.stringify(data));
   };
 
@@ -622,6 +665,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: staffAccount.name,
         role: UserRole.STAFF,
         tenantId: staffAccount.tenantId,
+        workspaceScope: staffAccount.workspaceScope,
         permissions: staffAccount.permissions
       };
       saveLocalAndState('active_user', staffSession, setCurrentUser);
@@ -663,13 +707,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerToast('A staff account with this email already exists.', 'error');
       return false;
     }
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
+    const ownerScope = getUserScope(currentUser);
     const newStaff: Staff = {
       ...staffInput,
       id: `staff-${Date.now()}`,
       email,
       role: UserRole.STAFF,
-      tenantId: scope,
+      tenantId: ownerScope,
+      workspaceScope: scope,
       passcodeHash: await hashPasscode(passcode),
       createdAt: new Date().toISOString()
     };
@@ -691,7 +737,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     passcode?: string
   ) => {
     if (currentUser?.role !== UserRole.ADMIN) return;
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const existing = staff.find(member => member.id === id);
     if (!existing) return;
     const updatedMember: Staff = {
@@ -712,7 +758,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteStaff = async (id: string) => {
     if (currentUser?.role !== UserRole.ADMIN) return;
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const existing = staff.find(member => member.id === id);
     if (!existing) return;
     const updated = staff.filter(member => member.id !== id);
@@ -741,7 +787,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 4. Product mutators with direct Firestore Cloud persistence
   const addProduct = (p: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const newProd = omitUndefinedFields({
       ...p,
       id: `prod-${Date.now()}`,
@@ -774,7 +820,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const editProduct = (id: string, p: Partial<Product>) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     setProducts((prev) => {
       const updated = prev.map((prod) => {
         if (prod.id === id) {
@@ -808,7 +854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = (id: string) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     setProducts((prev) => {
       const updated = prev.filter((p) => p.id !== id);
       localStorage.setItem(`pos_${scope}_products`, JSON.stringify(updated));
@@ -828,7 +874,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     next: number,
     desc: string
   ) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const newTx: InventoryTransaction = {
       id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       productId,
@@ -855,7 +901,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 6. POS Sales Billing Compiler
   const addSale = (s: Omit<Sale, 'id' | 'date'>): Sale => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const saleId = `sale-${Math.floor(100000 + Math.random() * 900000)}`;
     const newSale: Sale = {
       ...s,
@@ -958,7 +1004,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 7. Purchase entry restock catalog
   const addPurchase = (p: Omit<Purchase, 'id' | 'date'>) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const purchaseId = `pur-${Math.floor(2000 + Math.random() * 8000)}`;
     const newPurchase: Purchase = {
       ...p,
@@ -1052,7 +1098,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Stock Adjuster helper
   const adjustStock = (productId: string, quantity: number, type: 'Stock In' | 'Stock Out' | 'Adjustment' | 'In-House Production', description: string) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
 
     setProducts((prevProducts) => {
       const targetProduct = prevProducts.find((prod) => prod.id === productId);
@@ -1103,7 +1149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 8. Contact management list controllers
   const addCustomer = (c: Omit<Customer, 'id' | 'totalSpent' | 'outstandingDue' | 'createdAt'>): Customer => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const newCust: Customer = {
       ...c,
       id: `cust-${Date.now()}`,
@@ -1119,7 +1165,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const editCustomer = (id: string, c: Partial<Customer>) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     let updatedC: Customer | null = null;
     const updated = customers.map((cust) => {
       if (cust.id === id) {
@@ -1136,7 +1182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCustomer = (id: string) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const updated = customers.filter((cust) => cust.id !== id);
     saveLocalAndState('customers', updated, setCustomers);
 
@@ -1144,7 +1190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addSupplier = (s: Omit<Supplier, 'id' | 'outstandingBalance' | 'createdAt'>): Supplier => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const newSupp: Supplier = {
       ...s,
       id: `supp-${Date.now()}`,
@@ -1159,7 +1205,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const editSupplier = (id: string, s: Partial<Supplier>) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     let updatedS: Supplier | null = null;
     const updated = suppliers.map((supp) => {
       if (supp.id === id) {
@@ -1176,7 +1222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteSupplier = (id: string) => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
     const updated = suppliers.filter((supp) => supp.id !== id);
     saveLocalAndState('suppliers', updated, setSuppliers);
 
@@ -1191,7 +1237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteAllMockupData = async () => {
-    const scope = getUserScope(currentUser);
+    const scope = getWorkspaceScope();
 
     // Clear React states
     setProducts([]);
@@ -1263,15 +1309,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const batch = writeBatch(db);
+      const scope = getWorkspaceScope();
 
-      // Back up settings
-      const settingsRef = doc(db, 'store_settings', 'active');
-      batch.set(settingsRef, { ...settings, updatedAt: new Date().toISOString() });
-
-      // Back up products (take up to first 25 for batch security limit)
+      // Back up this workspace's operational data without mixing store branches.
       products.slice(0, 25).forEach(prod => {
-        const prodRef = doc(db, 'products', prod.id);
+        const prodRef = doc(db, 'users', scope, 'products', prod.id);
         batch.set(prodRef, prod);
+      });
+      customers.slice(0, 25).forEach(customer => {
+        batch.set(doc(db, 'users', scope, 'customers', customer.id), customer);
+      });
+      suppliers.slice(0, 25).forEach(supplier => {
+        batch.set(doc(db, 'users', scope, 'suppliers', supplier.id), supplier);
+      });
+      sales.slice(0, 25).forEach(sale => {
+        batch.set(doc(db, 'users', scope, 'sales', sale.id), sale);
       });
 
       // Synchronize batch
@@ -1299,6 +1351,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchStoreBranch = (storeId: string) => {
     const target = saasStores.find(s => s.id === storeId);
     if (target) {
+      // Never leave the previous workspace's figures visible while the new
+      // workspace cache and Firestore listeners are being attached.
+      setProducts([]);
+      setCustomers([]);
+      setSuppliers([]);
+      setSales([]);
+      setPurchases([]);
+      setTransactions([]);
+      setStaff([]);
+      setNotifications([]);
       setActiveStore(target);
       updateSettings({...settings, activeStoreId: target.id});
       triggerToast(`Switched workspace branch to ${target.name}`, 'info');
@@ -1323,6 +1385,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'Active'
     };
     const storeBranches = [...existingBranches, newStore];
+    setProducts([]);
+    setCustomers([]);
+    setSuppliers([]);
+    setSales([]);
+    setPurchases([]);
+    setTransactions([]);
+    setStaff([]);
+    setNotifications([]);
     setSaaSStores(storeBranches);
     setActiveStore(newStore);
     updateSettings({
