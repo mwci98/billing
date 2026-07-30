@@ -220,6 +220,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `${ownerScope}__store__${safeStoreId}`;
   };
 
+  const getStoreWorkspaceScope = (storeId: string): string => {
+    const ownerScope = getUserScope(currentUser);
+    const primaryStoreId = settings.tenantId || ownerScope;
+    if (!storeId || storeId === 'primary-store' || storeId === primaryStoreId || storeId === ownerScope) {
+      return ownerScope;
+    }
+    const safeStoreId = storeId.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `${ownerScope}__store__${safeStoreId}`;
+  };
+
+  const initialiseEmptyStoreCache = (storeId: string) => {
+    const scope = getStoreWorkspaceScope(storeId);
+    ['products', 'customers', 'suppliers', 'sales', 'purchases', 'transactions', 'staff'].forEach(key => {
+      localStorage.setItem(`pos_${scope}_${key}`, JSON.stringify([]));
+    });
+  };
+
   // 1. User Tenant Data Scope Hydration & Live Firestore Snapshot Listeners
   useEffect(() => {
     const ownerScope = getUserScope(currentUser);
@@ -1352,6 +1369,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchStoreBranch = (storeId: string) => {
     const target = saasStores.find(s => s.id === storeId);
     if (target) {
+      if (target.onboardingCompleted !== true && getStoreWorkspaceScope(target.id) !== getUserScope(currentUser)) {
+        initialiseEmptyStoreCache(target.id);
+      }
       // Never leave the previous workspace's figures visible while the new
       // workspace cache and Firestore listeners are being attached.
       setProducts([]);
@@ -1387,6 +1407,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       onboardingCompleted: false
     };
     const storeBranches = [...existingBranches, newStore];
+    initialiseEmptyStoreCache(newStore.id);
     setProducts([]);
     setCustomers([]);
     setSuppliers([]);

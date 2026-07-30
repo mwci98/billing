@@ -18,16 +18,26 @@ export const BusinessOnboarding: React.FC = () => {
   const branchConfiguration = activeStore.configuration;
   const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState(isPrimaryWorkspace ? settings.storeName || '' : activeStore.name || '');
-  const [ownerName, setOwnerName] = useState(branchConfiguration?.ownerName || settings.ownerName || currentUser?.name || '');
-  const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(branchConfiguration?.businessType || settings.businessType));
+  const [ownerName, setOwnerName] = useState(
+    branchConfiguration?.ownerName || (isPrimaryWorkspace ? settings.ownerName : '') || currentUser?.name || ''
+  );
+  const [businessType, setBusinessType] = useState<BusinessMode>(
+    getBusinessMode(branchConfiguration?.businessType || (isPrimaryWorkspace ? settings.businessType : 'Retail'))
+  );
   const [phone, setPhone] = useState(branchConfiguration?.phone || (isPrimaryWorkspace ? settings.phone : '') || '');
-  const [email, setEmail] = useState(branchConfiguration?.email || settings.email || currentUser?.email || '');
+  const [email, setEmail] = useState(
+    branchConfiguration?.email || (isPrimaryWorkspace ? settings.email : '') || ''
+  );
   const [address, setAddress] = useState(branchConfiguration?.address || (isPrimaryWorkspace ? settings.address : activeStore.city) || '');
   const [gstNumber, setGstNumber] = useState(branchConfiguration?.gstNumber || (isPrimaryWorkspace ? settings.gstNumber : '') || '');
   const [website, setWebsite] = useState(branchConfiguration?.website || (isPrimaryWorkspace ? settings.website : '') || '');
-  const [currency, setCurrency] = useState(branchConfiguration?.currency || settings.currency || '₹');
-  const [receiptHeader, setReceiptHeader] = useState(branchConfiguration?.receiptHeader || settings.receiptHeader || '');
-  const [receiptFooter, setReceiptFooter] = useState(branchConfiguration?.receiptFooter || settings.receiptFooter || '');
+  const [currency, setCurrency] = useState(branchConfiguration?.currency || (isPrimaryWorkspace ? settings.currency : '₹') || '₹');
+  const [receiptHeader, setReceiptHeader] = useState(
+    branchConfiguration?.receiptHeader || (isPrimaryWorkspace ? settings.receiptHeader : '') || ''
+  );
+  const [receiptFooter, setReceiptFooter] = useState(
+    branchConfiguration?.receiptFooter || (isPrimaryWorkspace ? settings.receiptFooter : '') || ''
+  );
 
   const completeSetup = () => {
     if (!isPrimaryWorkspace) {
