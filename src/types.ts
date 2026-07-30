@@ -44,6 +44,8 @@ export interface Product {
   sku: string;
   barcode: string;
   imeiNumbers?: string[];
+  trackInventoryByImei?: boolean;
+  serializedUnits?: SerializedInventoryUnit[];
   category: string;
   brand: string;
   unit: string;
@@ -62,6 +64,16 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface SerializedInventoryUnit {
+  id: string;
+  imei1: string;
+  imei2?: string;
+  status: 'In Stock' | 'Sold' | 'Returned' | 'Damaged';
+  addedAt: string;
+  soldAt?: string;
+  saleId?: string;
+}
+
 export interface SaleItem {
   productId: string;
   name: string;
@@ -72,6 +84,11 @@ export interface SaleItem {
   taxRate: number;
   taxAmount: number;
   total: number;
+  serializedUnits?: Array<{
+    unitId: string;
+    imei1: string;
+    imei2?: string;
+  }>;
 }
 
 export interface Sale {
@@ -105,6 +122,7 @@ export interface PurchaseItem {
   taxRate: number;
   taxAmount: number;
   total: number;
+  serializedUnits?: SerializedInventoryUnit[];
 }
 
 export interface Purchase {

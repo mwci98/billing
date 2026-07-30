@@ -14,6 +14,7 @@ import { Product, SaleItem, Customer } from '../types';
 import { CameraScanner } from './CameraScanner';
 import { BarcodeGenerator } from './BarcodeGenerator';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
+import { getAvailableSerializedUnits, getSerializedUnits, productUsesImeiTracking } from '../lib/serializedInventory';
 
 export const POSBilling: React.FC = () => {
   const { 
@@ -40,7 +41,12 @@ export const POSBilling: React.FC = () => {
   const [newCustPhone, setNewCustPhone] = useState<string>('');
 
   // Cart Active State
-  const [cart, setCart] = useState<{ product: Product; quantity: number; customPrice?: number }[]>([]);
+  const [cart, setCart] = useState<{
+    product: Product;
+    quantity: number;
+    customPrice?: number;
+    selectedUnitIds?: string[];
+  }[]>([]);
   const [discountInput, setDiscountInput] = useState<string>('0');
   const [paymentOption, setPaymentOption] = useState<'Cash' | 'UPI' | 'Card' | 'Split'>('Cash');
 
@@ -93,13 +99,20 @@ export const POSBilling: React.FC = () => {
   };
 
   const injectItemByBarcode = (code: string) => {
-    const p = products.find(prod => prod.barcode === code.trim() || prod.sku.toLowerCase() === code.trim().toLowerCase());
+    const cleanCode = code.trim();
+    const imeiMatch = products
+      .map(product => ({
+        product,
+        unit: getAvailableSerializedUnits(product).find(unit => unit.imei1 === cleanCode || unit.imei2 === cleanCode)
+      }))
+      .find(match => match.unit);
+    const p = imeiMatch?.product || products.find(prod => prod.barcode === cleanCode || prod.sku.toLowerCase() === cleanCode.toLowerCase());
     if (p) {
       if (p.stock <= 0) {
         triggerToast(`Product "${p.name}" is completely out of stock!`, 'error');
         return;
       }
-      addToCart(p);
+      addToCart(p, imeiMatch?.unit?.id);
       triggerToast(`Added ${p.name} to transaction cart via barcode scan ✔`, 'success');
     } else {
       triggerToast(`No product matched with barcode or SKU: ${code}`, 'error');
@@ -119,7 +132,7 @@ export const POSBilling: React.FC = () => {
   };
 
   // 3. Cart Mutators
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, requestedUnitId?: string) => {
     const currentProduct = products.find(p => p.id === product.id) || product;
     if (currentProduct.stock <= 0) {
       triggerToast(`Product "${currentProduct.name}" is completely out of stock!`, 'error');
@@ -127,14 +140,34 @@ export const POSBilling: React.FC = () => {
     }
 
     const existing = cart.find(item => item.product.id === currentProduct.id);
+    const trackedByImei = productUsesImeiTracking(currentProduct);
+    const availableUnits = getAvailableSerializedUnits(currentProduct);
+    const alreadySelected = existing?.selectedUnitIds || [];
+    const nextUnit = requestedUnitId
+      ? availableUnits.find(unit => unit.id === requestedUnitId && !alreadySelected.includes(unit.id))
+      : availableUnits.find(unit => !alreadySelected.includes(unit.id));
+    if (trackedByImei && !nextUnit) {
+      triggerToast('No unselected, in-stock IMEI is available for this product.', 'warning');
+      return;
+    }
     if (existing) {
       if (existing.quantity >= currentProduct.stock) {
         triggerToast(`Cannot add more. Max stock available: ${currentProduct.stock}`, 'warning');
         return;
       }
-      setCart(cart.map(item => item.product.id === currentProduct.id ? { ...item, product: currentProduct, quantity: item.quantity + 1 } : item));
+      setCart(cart.map(item => item.product.id === currentProduct.id ? {
+        ...item,
+        product: currentProduct,
+        quantity: item.quantity + 1,
+        selectedUnitIds: trackedByImei ? [...(item.selectedUnitIds || []), nextUnit!.id] : item.selectedUnitIds
+      } : item));
     } else {
-      setCart([...cart, { product: currentProduct, quantity: 1, customPrice: currentProduct.sellingPrice }]);
+      setCart([...cart, {
+        product: currentProduct,
+        quantity: 1,
+        customPrice: currentProduct.sellingPrice,
+        ...(trackedByImei ? { selectedUnitIds: [nextUnit!.id] } : {})
+      }]);
     }
   };
 
@@ -153,14 +186,27 @@ export const POSBilling: React.FC = () => {
       return;
     }
 
-    setCart(cart.map(item => item.product.id === productId ? { ...item, quantity: newQty } : item));
+    setCart(cart.map(item => {
+      if (item.product.id !== productId) return item;
+      if (!productUsesImeiTracking(item.product)) return { ...item, quantity: newQty };
+      const retained = (item.selectedUnitIds || []).slice(0, newQty);
+      const additions = getAvailableSerializedUnits(currentProduct!)
+        .filter(unit => !retained.includes(unit.id))
+        .slice(0, Math.max(0, newQty - retained.length))
+        .map(unit => unit.id);
+      return { ...item, quantity: newQty, selectedUnitIds: [...retained, ...additions] };
+    }));
   };
 
   const deductFromCart = (productId: string) => {
     const item = cart.find(i => i.product.id === productId);
     if (!item) return;
     if (item.quantity > 1) {
-      setCart(cart.map(i => i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i));
+      setCart(cart.map(i => i.product.id === productId ? {
+        ...i,
+        quantity: i.quantity - 1,
+        selectedUnitIds: i.selectedUnitIds?.slice(0, -1)
+      } : i));
     } else {
       removeFromCart(productId);
     }
@@ -168,6 +214,19 @@ export const POSBilling: React.FC = () => {
 
   const removeFromCart = (productId: string) => {
     setCart(cart.filter(i => i.product.id !== productId));
+  };
+
+  const updateSelectedUnit = (productId: string, index: number, unitId: string) => {
+    setCart(current => current.map(item => {
+      if (item.product.id !== productId) return item;
+      const selected = [...(item.selectedUnitIds || [])];
+      if (selected.some((id, selectedIndex) => id === unitId && selectedIndex !== index)) {
+        triggerToast('That IMEI is already selected for this sale.', 'warning');
+        return item;
+      }
+      selected[index] = unitId;
+      return { ...item, selectedUnitIds: selected };
+    }));
   };
 
   const clearCart = () => {
@@ -245,6 +304,13 @@ export const POSBilling: React.FC = () => {
       triggerToast("No items inside point of sale catalog cart!", "warning");
       return;
     }
+    const incompleteSerializedItem = cart.find(item =>
+      productUsesImeiTracking(item.product) && (item.selectedUnitIds?.length || 0) !== item.quantity
+    );
+    if (incompleteSerializedItem) {
+      triggerToast(`Select one available IMEI for every "${incompleteSerializedItem.product.name}" handset.`, 'error');
+      return;
+    }
 
     // Prepare sale structures
     const saleItems: SaleItem[] = cart.map((item) => {
@@ -253,6 +319,12 @@ export const POSBilling: React.FC = () => {
       const totalCost = rawPrice * item.quantity;
       const taxableUnitPrice = rawPrice / (1 + rate / 100);
       const tAmount = totalCost - (taxableUnitPrice * item.quantity);
+      const serializedUnits = productUsesImeiTracking(item.product)
+        ? (item.selectedUnitIds || []).map(unitId => {
+            const unit = getSerializedUnits(item.product).find(candidate => candidate.id === unitId)!;
+            return { unitId: unit.id, imei1: unit.imei1, ...(unit.imei2 ? { imei2: unit.imei2 } : {}) };
+          })
+        : undefined;
       return {
         productId: item.product.id,
         name: item.product.name,
@@ -262,7 +334,8 @@ export const POSBilling: React.FC = () => {
         quantity: item.quantity,
         taxRate: rate,
         taxAmount: tAmount,
-        total: taxableUnitPrice * item.quantity
+        total: taxableUnitPrice * item.quantity,
+        ...(serializedUnits?.length ? { serializedUnits } : {})
       };
     });
 
@@ -610,6 +683,32 @@ export const POSBilling: React.FC = () => {
                         </button>
                       )}
                     </div>
+                    {productUsesImeiTracking(item.product) && (
+                      <div className="mt-2 space-y-1">
+                        {(item.selectedUnitIds || []).map((selectedId, index) => (
+                          <label key={`${item.product.id}-${index}`} className="flex items-center gap-2">
+                            <span className="w-12 text-[9px] font-bold uppercase text-gray-400">Unit {index + 1}</span>
+                            <select
+                              value={selectedId}
+                              onChange={(event) => updateSelectedUnit(item.product.id, index, event.target.value)}
+                              className="min-w-0 flex-1 rounded-lg border border-emerald-500/25 bg-white px-2 py-1 text-[10px] font-mono text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                            >
+                              {getAvailableSerializedUnits(
+                                products.find(product => product.id === item.product.id) || item.product
+                              ).map(unit => (
+                                <option
+                                  key={unit.id}
+                                  value={unit.id}
+                                  disabled={(item.selectedUnitIds || []).some((id, selectedIndex) => id === unit.id && selectedIndex !== index)}
+                                >
+                                  IMEI {unit.imei1}{unit.imei2 ? ` / ${unit.imei2}` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">

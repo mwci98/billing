@@ -16,6 +16,7 @@ import {
 import { db, auth, authPersistenceReady, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc } from 'firebase/firestore';
+import { getSerializedUnits, productUsesImeiTracking } from './serializedInventory';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
   { id: 'primary-store', name: 'Primary Store', branchCode: 'MAIN', city: 'Primary location', status: 'Active' }
@@ -868,7 +869,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const soldItems = s.items.filter((item) => item.productId === prod.id);
         if (soldItems.length > 0) {
           const totalSoldQty = soldItems.reduce((acc, item) => acc + item.quantity, 0);
-          const nextStock = Math.max(0, prod.stock - totalSoldQty);
+          const soldUnitIds = new Set(
+            soldItems.flatMap(item => item.serializedUnits?.map(unit => unit.unitId) || [])
+          );
+          const serializedUnits = productUsesImeiTracking(prod)
+            ? getSerializedUnits(prod).map(unit => soldUnitIds.has(unit.id) ? {
+                ...unit,
+                status: 'Sold' as const,
+                soldAt: newSale.date,
+                saleId
+              } : unit)
+            : prod.serializedUnits;
+          const nextStock = productUsesImeiTracking(prod)
+            ? (serializedUnits || []).filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+            : Math.max(0, prod.stock - totalSoldQty);
           
           addTransaction(
             prod.id,
@@ -884,6 +898,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const updatedP = {
             ...prod,
             stock: nextStock,
+            ...(serializedUnits ? {
+              serializedUnits,
+              imeiNumbers: serializedUnits
+                .filter(unit => unit.status !== 'Sold')
+                .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])
+            } : {}),
             updatedAt: new Date().toISOString()
           };
           
@@ -952,7 +972,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const purchasedItems = p.items.filter((item) => item.productId === prod.id);
         if (purchasedItems.length > 0) {
           const totalPurchasedQty = purchasedItems.reduce((acc, item) => acc + item.quantity, 0);
-          const nextStock = prod.stock + totalPurchasedQty;
+          const incomingSerializedUnits = purchasedItems.flatMap(item => item.serializedUnits || []);
+          const serializedUnits = incomingSerializedUnits.length
+            ? [...getSerializedUnits(prod), ...incomingSerializedUnits]
+            : prod.serializedUnits;
+          const nextStock = serializedUnits
+            ? serializedUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+            : prod.stock + totalPurchasedQty;
           
           addTransaction(
             prod.id,
@@ -971,6 +997,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const updatedP = {
             ...prod,
             stock: nextStock,
+            ...(serializedUnits ? {
+              trackInventoryByImei: true,
+              serializedUnits,
+              imeiNumbers: serializedUnits
+                .filter(unit => unit.status !== 'Sold')
+                .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])
+            } : {}),
             purchasePrice: lastPurchased.purchasePrice || prod.purchasePrice,
             updatedAt: new Date().toISOString()
           };
@@ -1024,6 +1057,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProducts((prevProducts) => {
       const targetProduct = prevProducts.find((prod) => prod.id === productId);
       if (!targetProduct) return prevProducts;
+      if (productUsesImeiTracking(targetProduct)) {
+        return prevProducts;
+      }
 
       let delta = quantity;
       if (type === 'Stock Out') {

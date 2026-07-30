@@ -14,6 +14,12 @@ import { BarcodeGenerator, QRGenerator } from './BarcodeGenerator';
 import { CameraScanner } from './CameraScanner';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
+import {
+  getSerializedUnits,
+  makeSerializedUnit,
+  parseSerializedUnitLines,
+  productUsesImeiTracking
+} from '../lib/serializedInventory';
 
 const PRODUCT_BRANDS = [
   'Apple',
@@ -97,6 +103,7 @@ export const ProductManagement: React.FC = () => {
   const [batchNo, setBatchNo] = useState<string>('');
   const [productionNotes, setProductionNotes] = useState<string>('');
   const [imeiInput, setImeiInput] = useState<string>('');
+  const [trackInventoryByImei, setTrackInventoryByImei] = useState<boolean>(false);
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
   const businessMode = getBusinessMode(settings.businessType);
   const effectiveSourcingType = businessMode === 'Hybrid'
@@ -300,6 +307,7 @@ export const ProductManagement: React.FC = () => {
     setBatchNo('');
     setProductionNotes('');
     setImeiInput('');
+    setTrackInventoryByImei(false);
     setIsFormOpen(true);
   };
 
@@ -322,7 +330,14 @@ export const ProductManagement: React.FC = () => {
     setManufacturingCost(p.manufacturingCost ? p.manufacturingCost.toString() : '');
     setBatchNo(p.batchNo || '');
     setProductionNotes(p.productionNotes || '');
-    setImeiInput((p.imeiNumbers || []).join('\n'));
+    const units = getSerializedUnits(p);
+    setTrackInventoryByImei(productUsesImeiTracking(p));
+    setImeiInput(
+      units
+        .filter(unit => unit.status !== 'Sold')
+        .map(unit => [unit.imei1, unit.imei2].filter(Boolean).join(', '))
+        .join('\n')
+    );
     setIsFormOpen(true);
   };
 
@@ -333,40 +348,63 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
-    const enteredImeis = imeiInput
-      .split(/[\s,;]+/)
-      .map(value => value.replace(/\D/g, ''))
-      .filter(Boolean);
-    if (enteredImeis.some(imei => imei.length !== 15)) {
-      triggerToast('Every IMEI must contain exactly 15 digits.', 'warning');
+    const parsedUnits = parseSerializedUnitLines(imeiInput);
+    const imeiLines = imeiInput.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    const invalidImeiLine = imeiLines.find(line => {
+      const matches = line.match(/\d{15}/g) || [];
+      return matches.length < 1 || matches.length > 2;
+    });
+    if (trackInventoryByImei && invalidImeiLine) {
+      triggerToast('Each handset line must contain one or two valid 15-digit IMEIs.', 'warning');
       return;
     }
-    const imeiNumbers = Array.from(new Set(enteredImeis));
-    if (imeiNumbers.length !== enteredImeis.length) {
+    const enteredImeis = parsedUnits.flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[]);
+    if (trackInventoryByImei && parsedUnits.length === 0 && !editingItem) {
+      triggerToast('Add one handset per line with its 15-digit IMEI before saving.', 'warning');
+      return;
+    }
+    if (new Set(enteredImeis).size !== enteredImeis.length) {
       triggerToast('The same IMEI was entered more than once.', 'warning');
       return;
     }
     const duplicateProduct = products.find(product =>
       product.id !== editingItem?.id &&
-      product.imeiNumbers?.some(imei => imeiNumbers.includes(imei))
+      getSerializedUnits(product).some(unit =>
+        enteredImeis.includes(unit.imei1) || Boolean(unit.imei2 && enteredImeis.includes(unit.imei2))
+      )
     );
     if (duplicateProduct) {
       triggerToast(`An IMEI is already registered under "${duplicateProduct.name}".`, 'error');
       return;
     }
 
+    const previousUnits = editingItem ? getSerializedUnits(editingItem) : [];
+    const retainedSoldUnits = previousUnits.filter(unit => unit.status === 'Sold');
+    const availableUnits = parsedUnits.map(unit => {
+      const existing = previousUnits.find(previous =>
+        previous.imei1 === unit.imei1 || previous.imei2 === unit.imei1
+      );
+      return makeSerializedUnit(unit.imei1, unit.imei2, existing);
+    });
+    const serializedUnits = trackInventoryByImei ? [...retainedSoldUnits, ...availableUnits] : undefined;
+    const availableStock = trackInventoryByImei
+      ? availableUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+      : (parseInt(stock) || 0);
+
     const payload = {
       name,
       sku,
       barcode,
-      imeiNumbers: imeiNumbers.length ? imeiNumbers : undefined,
+      imeiNumbers: trackInventoryByImei ? enteredImeis : undefined,
+      trackInventoryByImei,
+      serializedUnits,
       category,
       brand,
       unit,
       purchasePrice: parseFloat(purchasePrice) || 0,
       sellingPrice: parseFloat(sellingPrice) || 0,
       taxRate: parseFloat(taxRate) || 0,
-      stock: parseInt(stock) || 0,
+      stock: availableStock,
       lowStockAlert: parseInt(lowStockAlert) || 0,
       expiryDate: expiryDate || undefined,
       imageUrl,
@@ -394,7 +432,10 @@ export const ProductManagement: React.FC = () => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.sku.toLowerCase().includes(search.toLowerCase()) ||
                           p.barcode.includes(search) ||
-                          Boolean(p.imeiNumbers?.some(imei => imei.includes(search.replace(/\D/g, ''))));
+                          Boolean(getSerializedUnits(p).some(unit =>
+                            unit.imei1.includes(search.replace(/\D/g, '')) ||
+                            Boolean(unit.imei2?.includes(search.replace(/\D/g, '')))
+                          ));
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     const itemSourcing = p.sourcingType || 'Purchased';
     const matchesSourcing = businessMode !== 'Hybrid' || sourcingFilter === 'All' || itemSourcing === sourcingFilter;
@@ -557,8 +598,11 @@ export const ProductManagement: React.FC = () => {
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">Brand: {p.brand} • Unit: {p.unit}</p>
-                      {Boolean(p.imeiNumbers?.length) && (
-                        <p className="text-[9px] text-emerald-500 mt-0.5">{p.imeiNumbers?.length} IMEI registered</p>
+                      {productUsesImeiTracking(p) && (
+                        <p className="text-[9px] text-emerald-500 mt-0.5">
+                          {getSerializedUnits(p).filter(unit => unit.status !== 'Sold').length} available ·{' '}
+                          {getSerializedUnits(p).filter(unit => unit.status === 'Sold').length} sold
+                        </p>
                       )}
                     </td>
                     <td className="hidden xl:table-cell py-3 font-mono max-w-[6rem] truncate pr-2">
@@ -807,18 +851,39 @@ export const ProductManagement: React.FC = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold mb-1">IMEI Numbers (Optional)</label>
-                  <textarea
-                    id="form-prod-imei"
-                    rows={3}
-                    value={imeiInput}
-                    onChange={(e) => setImeiInput(e.target.value)}
-                    placeholder={'Enter one 15-digit IMEI per line\nIMEI 1\nIMEI 2'}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-                  />
-                  <p className="mt-1 text-[10px] text-gray-400">
-                    Use the EAN/UPC above for the phone model. Add each handset's unique IMEI here for serial tracking.
-                  </p>
+                  <label className="mb-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs font-semibold dark:border-gray-800 dark:bg-gray-900">
+                    <span>
+                      Track every handset by IMEI
+                      <span className="mt-0.5 block text-[10px] font-normal text-gray-400">Recommended for phones and cellular devices</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={trackInventoryByImei}
+                      onChange={(event) => setTrackInventoryByImei(event.target.checked)}
+                      className="h-4 w-4 accent-emerald-500"
+                    />
+                  </label>
+                  {trackInventoryByImei && (
+                    <>
+                      <div className="mb-1 flex items-center justify-between">
+                        <label className="text-xs font-semibold">Handset IMEI inventory</label>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
+                          {parseSerializedUnitLines(imeiInput).length} handsets
+                        </span>
+                      </div>
+                      <textarea
+                        id="form-prod-imei"
+                        rows={5}
+                        value={imeiInput}
+                        onChange={(e) => setImeiInput(e.target.value)}
+                        placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                      />
+                      <p className="mt-1 text-[10px] text-gray-400">
+                        Each line is one physical device. Stock is calculated automatically from available handset records. Sold IMEIs cannot be removed here.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div>
@@ -919,12 +984,14 @@ export const ProductManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Stock on Hand</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    Stock on Hand {trackInventoryByImei && <span className="text-emerald-500">(automatic)</span>}
+                  </label>
                   <input
                     id="form-prod-stock"
                     type="number"
-                    disabled={!!editingItem} // Use inventory stock in/out panel to adjust active accounts
-                    value={stock}
+                    disabled={Boolean(editingItem || trackInventoryByImei)} // Serialized stock is derived from handset records.
+                    value={trackInventoryByImei ? parseSerializedUnitLines(imeiInput).length : stock}
                     onChange={(e) => setStock(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white disabled:opacity-50"
                   />

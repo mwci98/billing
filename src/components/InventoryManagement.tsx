@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
+import { getSerializedUnits, makeSerializedUnit, parseSerializedUnitLines, productUsesImeiTracking } from '../lib/serializedInventory';
+import { SerializedInventoryUnit } from '../types';
 
 export const InventoryManagement: React.FC = () => {
   const { 
@@ -66,10 +68,16 @@ export const InventoryManagement: React.FC = () => {
       ? 'supplier'
       : restockSource;
   const [buySupplierId, setBuySupplierId] = useState<string>('');
-  const [buyItems, setBuyItems] = useState<{ productId: string; quantity: number; purchasePrice: number }[]>([]);
+  const [buyItems, setBuyItems] = useState<{
+    productId: string;
+    quantity: number;
+    purchasePrice: number;
+    serializedUnits?: SerializedInventoryUnit[];
+  }[]>([]);
   const [activeAddProdId, setActiveAddProdId] = useState<string>('');
   const [activeAddQty, setActiveAddQty] = useState<string>('10');
   const [activeAddCost, setActiveAddCost] = useState<string>('1.00');
+  const [activeAddImeis, setActiveAddImeis] = useState<string>('');
   const [payStatus, setPayStatus] = useState<'Paid' | 'Partially Paid' | 'Unpaid'>('Paid');
   const [balanceDue, setBalanceDue] = useState<string>('0');
 
@@ -92,6 +100,11 @@ export const InventoryManagement: React.FC = () => {
       triggerToast("Quantity must be greater than zero!", "warning");
       return;
     }
+    const selectedProduct = products.find(product => product.id === selectedProdId);
+    if (selectedProduct && productUsesImeiTracking(selectedProduct)) {
+      triggerToast('IMEI-tracked stock cannot be changed as a number. Add incoming handset IMEIs through Restock Purchase.', 'warning');
+      return;
+    }
     adjustStock(selectedProdId, qty, adjustType, adjustDesc);
     triggerToast("Inventory adjustment registered successfully! Stock is corrected. ✔", "success");
     setSelectedProdId('');
@@ -107,16 +120,47 @@ export const InventoryManagement: React.FC = () => {
     }
     const p = products.find(prod => prod.id === activeAddProdId);
     if (!p) return;
+    const parsedUnits = parseSerializedUnitLines(activeAddImeis);
+    const invalidImeiLine = activeAddImeis
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .find(line => {
+        const matches = line.match(/\d{15}/g) || [];
+        return matches.length < 1 || matches.length > 2;
+      });
+    if (productUsesImeiTracking(p) && invalidImeiLine) {
+      triggerToast('Each handset line must contain one or two valid 15-digit IMEIs.', 'warning');
+      return;
+    }
+    if (productUsesImeiTracking(p) && parsedUnits.length !== (parseInt(activeAddQty) || 0)) {
+      triggerToast('For IMEI-tracked products, enter one handset line for every incoming unit.', 'warning');
+      return;
+    }
+    const incomingImeis = parsedUnits.flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[]);
+    const duplicateImei = products.some(product =>
+      getSerializedUnits(product).some(unit => incomingImeis.includes(unit.imei1) || Boolean(unit.imei2 && incomingImeis.includes(unit.imei2)))
+    ) || buyItems.some(item =>
+      (item.serializedUnits || []).some(unit => incomingImeis.includes(unit.imei1) || Boolean(unit.imei2 && incomingImeis.includes(unit.imei2)))
+    );
+    if (duplicateImei || new Set(incomingImeis).size !== incomingImeis.length) {
+      triggerToast('One or more incoming IMEIs are duplicated or already registered.', 'error');
+      return;
+    }
 
     setBuyItems([...buyItems, {
       productId: activeAddProdId,
       quantity: parseInt(activeAddQty) || 1,
-      purchasePrice: parseFloat(activeAddCost) || p.purchasePrice
+      purchasePrice: parseFloat(activeAddCost) || p.purchasePrice,
+      ...(parsedUnits.length ? {
+        serializedUnits: parsedUnits.map(unit => makeSerializedUnit(unit.imei1, unit.imei2))
+      } : {})
     }]);
 
     setActiveAddProdId('');
     setActiveAddQty('10');
     setActiveAddCost('1.00');
+    setActiveAddImeis('');
   };
 
   const handleRemoveTempPurchaseLine = (idx: number) => {
@@ -163,6 +207,7 @@ export const InventoryManagement: React.FC = () => {
         taxRate: rate,
         taxAmount: itemTax,
         total: itemGross
+        ,...(item.serializedUnits?.length ? { serializedUnits: item.serializedUnits } : {})
       };
     });
 
@@ -648,6 +693,27 @@ export const InventoryManagement: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                  {productUsesImeiTracking(products.find(product => product.id === activeAddProdId) || ({
+                    trackInventoryByImei: false
+                  } as any)) && (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                      <div className="mb-1 flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                          Incoming handset IMEIs
+                        </label>
+                        <span className="text-[10px] font-mono text-gray-400">
+                          {parseSerializedUnitLines(activeAddImeis).length}/{parseInt(activeAddQty) || 0} units
+                        </span>
+                      </div>
+                      <textarea
+                        value={activeAddImeis}
+                        onChange={(event) => setActiveAddImeis(event.target.value)}
+                        rows={4}
+                        placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
+                        className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-mono text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                      />
+                    </div>
+                  )}
 
                   {/* Temp details tabular list */}
                   <div className="border-t border-gray-100 dark:border-gray-850 pt-3">

@@ -310,6 +310,12 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                 <td className="p-1 font-medium">
                   <span className="font-bold">{item.name}</span>
                   {item.sku && <span className="block text-[8.5px] text-gray-700">SKU: {item.sku}</span>}
+                  {item.serializedUnits?.map((unit, unitIndex) => (
+                    <span key={unit.unitId} className="block text-[8px] font-mono text-gray-700">
+                      IMEI{item.serializedUnits!.length > 1 ? ` ${unitIndex + 1}` : ''}: {unit.imei1}
+                      {unit.imei2 ? ` / ${unit.imei2}` : ''}
+                    </span>
+                  ))}
                 </td>
                 <td className="p-1 text-center font-mono">{hsnCode}</td>
                 <td className="p-1 text-center font-bold">{item.quantity}</td>
