@@ -785,7 +785,7 @@ export const ProductManagement: React.FC = () => {
       {/* MODAL: Add/Edit Product registration */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto">
-          <div className="my-auto w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-3xl bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-4 sm:p-6 relative">
+          <div className="my-auto w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-3xl bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-100 dark:border-gray-900 shadow-2xl p-4 sm:p-6 relative">
             <button
               onClick={() => setIsFormOpen(false)}
               className="absolute top-4 right-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-white transition"
@@ -793,12 +793,14 @@ export const ProductManagement: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="text-xl font-black mb-1">{editingItem ? 'Edit Product SKU' : 'Register New Inventory SKU'}</h3>
-            <p className="text-xs text-gray-400 mb-5">Fill in standard retail criteria definitions below</p>
+            <h3 className="text-xl font-black mb-1">
+              {editingItem ? 'Edit Billing Item' : 'Add Service or Material'}
+            </h3>
+            <p className="text-xs text-gray-400 mb-5">Choose the item type so only relevant information is requested.</p>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {businessMode === 'Service' && (
+                {(
                   <div className="col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-3.5 dark:border-gray-800 dark:bg-gray-900/60">
                     <label className="block text-xs font-bold">Billing item type</label>
                     <p className="mt-1 text-[11px] text-gray-400">Services are invoiced without stock deduction. Materials continue using inventory.</p>
@@ -877,14 +879,16 @@ export const ProductManagement: React.FC = () => {
                 </div>}
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold mb-1">Product Title</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    {itemType === 'Service' ? 'Service Description' : 'Product Title'}
+                  </label>
                   <input
                     id="form-prod-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Organic Whole Wheat Bread..."
+                    placeholder={itemType === 'Service' ? 'e.g. Website development or repair labour' : 'e.g. Organic Whole Wheat Bread...'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
@@ -954,7 +958,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>
 
-                <div>
+                {itemType === 'Material' && <div>
                   <label className="block text-xs font-semibold mb-1 flex items-center justify-between">
                     <span>EAN Barcode Code</span>
                     <span className="text-[10px] text-gray-400 font-mono">Webcam or simulated scan</span>
@@ -998,7 +1002,7 @@ export const ProductManagement: React.FC = () => {
                       <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-500/10 animate-pulse">Catalog Match</span>
                     )}
                   </div>
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">Category</label>
@@ -1013,31 +1017,44 @@ export const ProductManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Brand Name</label>
-                  <select
-                    id="form-prod-brand"
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
-                  >
-                    <option value="">Select brand</option>
-                    {brand && !PRODUCT_BRANDS.includes(brand) && (
-                      <option value={brand}>{brand}</option>
-                    )}
-                    {PRODUCT_BRANDS.map((brandName) => (
-                      <option key={brandName} value={brandName}>{brandName}</option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-semibold mb-1">
+                    {itemType === 'Service' ? 'Department / Service Provider (Optional)' : 'Brand Name'}
+                  </label>
+                  {itemType === 'Service' ? (
+                    <input
+                      id="form-prod-brand"
+                      type="text"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      placeholder="e.g. Web Team, Workshop, Consultant"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
+                    />
+                  ) : (
+                    <select
+                      id="form-prod-brand"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select brand</option>
+                      {brand && !PRODUCT_BRANDS.includes(brand) && <option value={brand}>{brand}</option>}
+                      {PRODUCT_BRANDS.map((brandName) => (
+                        <option key={brandName} value={brandName}>{brandName}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Unit Weight/Size</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    {itemType === 'Service' ? 'Billing Unit' : 'Unit Weight/Size'}
+                  </label>
                   <input
                     id="form-prod-unit"
                     type="text"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    placeholder="Loaf (400g), Bottle (1L)..."
+                    placeholder={itemType === 'Service' ? 'Job, Hour, Visit, Month...' : 'Loaf (400g), Bottle (1L)...'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
