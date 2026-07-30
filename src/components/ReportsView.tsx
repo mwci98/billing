@@ -6,12 +6,13 @@
 import React, { useState } from 'react';
 import { 
   FileDown, BarChart2, Calendar, Coins, TrendingUp, Landmark, ShieldCheck,
-  ShoppingBag, ClipboardList, Info, FileSpreadsheet, Search, Edit2, Trash2, X
+  ShoppingBag, ClipboardList, Info, FileSpreadsheet, Search, Edit2, Trash2, X, Printer
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Sale, SaleItem } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { productUsesImeiTracking } from '../lib/serializedInventory';
+import { TallyInvoiceModal } from './TallyInvoiceModal';
 
 export const ReportsView: React.FC = () => {
   const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
@@ -19,6 +20,7 @@ export const ReportsView: React.FC = () => {
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
   const [salesSearch, setSalesSearch] = useState('');
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [printingSale, setPrintingSale] = useState<Sale | null>(null);
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [editCustomerName, setEditCustomerName] = useState('');
   const [editCustomerId, setEditCustomerId] = useState('');
@@ -141,8 +143,8 @@ export const ReportsView: React.FC = () => {
       discount,
       total
     });
-    triggerToast(`Invoice ${editingSale.id} updated.`, 'success');
     setEditingSale(null);
+    triggerToast('Invoice updated successfully.', 'success');
   };
 
   const updateEditItem = (index: number, changes: Partial<SaleItem>) => {
@@ -370,6 +372,13 @@ export const ReportsView: React.FC = () => {
                       <td className="py-3 uppercase text-[10px] text-gray-400 font-semibold">{s.employeeName}</td>
                       <td className="py-3">
                         <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => setPrintingSale(s)}
+                            title="Print or download invoice"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-emerald-500/10 hover:text-emerald-500"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </button>
                           <button
                             onClick={() => openSaleEditor(s)}
                             title="Edit sales record"
@@ -721,6 +730,14 @@ export const ReportsView: React.FC = () => {
         }}
         onClose={() => setSaleToDelete(null)}
       />
+
+      {printingSale && (
+        <TallyInvoiceModal
+          activeReceipt={printingSale}
+          settings={settings}
+          onClose={() => setPrintingSale(null)}
+        />
+      )}
     </div>
   );
 };
