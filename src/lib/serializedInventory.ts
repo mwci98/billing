@@ -34,3 +34,12 @@ export const makeSerializedUnit = (
   status: 'In Stock',
   addedAt: new Date().toISOString()
 };
+
+export const normalizeScannerValue = (value: string) => {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  // Hardware scanners can prepend symbology identifiers such as ]C1.
+  // IMEIs are always 15 digits, so use the final 15 numeric characters.
+  if (digits.length >= 15) return digits.slice(-15);
+  return trimmed;
+};

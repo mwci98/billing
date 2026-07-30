@@ -14,7 +14,12 @@ import { Product, SaleItem, Customer } from '../types';
 import { CameraScanner } from './CameraScanner';
 import { BarcodeGenerator } from './BarcodeGenerator';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
-import { getAvailableSerializedUnits, getSerializedUnits, productUsesImeiTracking } from '../lib/serializedInventory';
+import {
+  getAvailableSerializedUnits,
+  getSerializedUnits,
+  normalizeScannerValue,
+  productUsesImeiTracking
+} from '../lib/serializedInventory';
 
 export const POSBilling: React.FC = () => {
   const { 
@@ -99,7 +104,7 @@ export const POSBilling: React.FC = () => {
   };
 
   const injectItemByBarcode = (code: string) => {
-    const cleanCode = code.trim();
+    const cleanCode = normalizeScannerValue(code);
     const imeiMatch = products
       .map(product => ({
         product,
@@ -405,6 +410,13 @@ export const POSBilling: React.FC = () => {
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Tab' && barcodeInput) {
+                    event.preventDefault();
+                    injectItemByBarcode(barcodeInput);
+                    setBarcodeInput('');
+                  }
+                }}
                 placeholder="Scan / Type Barcode SKU..."
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 py-2.5 pl-10 pr-4 text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:border-emerald-500 focus:outline-none"
               />

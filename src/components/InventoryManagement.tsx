@@ -708,6 +708,12 @@ export const InventoryManagement: React.FC = () => {
                       <textarea
                         value={activeAddImeis}
                         onChange={(event) => setActiveAddImeis(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Tab') {
+                            event.preventDefault();
+                            setActiveAddImeis(current => `${current.trimEnd()}\n`);
+                          }
+                        }}
                         rows={4}
                         placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
                         className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-mono text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-white"

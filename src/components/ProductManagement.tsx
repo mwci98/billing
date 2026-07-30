@@ -17,6 +17,7 @@ import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 import {
   getSerializedUnits,
   makeSerializedUnit,
+  normalizeScannerValue,
   parseSerializedUnitLines,
   productUsesImeiTracking
 } from '../lib/serializedInventory';
@@ -82,6 +83,7 @@ export const ProductManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [activeLabels, setActiveLabels] = useState<Product | null>(null);
   const [isBarcodeCameraOpen, setIsBarcodeCameraOpen] = useState<boolean>(false);
+  const [scannerTarget, setScannerTarget] = useState<'barcode' | 'imei'>('barcode');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Form inputs
@@ -876,9 +878,26 @@ export const ProductManagement: React.FC = () => {
                         rows={5}
                         value={imeiInput}
                         onChange={(e) => setImeiInput(e.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Tab') {
+                            event.preventDefault();
+                            setImeiInput(current => `${current.trimEnd()}\n`);
+                          }
+                        }}
                         placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
                         className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScannerTarget('imei');
+                          setIsBarcodeCameraOpen(true);
+                        }}
+                        className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+                      >
+                        <Camera className="h-3.5 w-3.5" />
+                        Scan handset IMEI
+                      </button>
                       <p className="mt-1 text-[10px] text-gray-400">
                         Each line is one physical device. Stock is calculated automatically from available handset records. Sold IMEIs cannot be removed here.
                       </p>
@@ -918,7 +937,10 @@ export const ProductManagement: React.FC = () => {
                     <button
                       type="button"
                       id="scan-barcode-modal-btn"
-                      onClick={() => setIsBarcodeCameraOpen(true)}
+                      onClick={() => {
+                        setScannerTarget('barcode');
+                        setIsBarcodeCameraOpen(true);
+                      }}
                       className="absolute right-2 top-1/2 -track-y-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 hover:text-emerald-400 hover:bg-white/5 active:scale-95 transition cursor-pointer"
                       title="Scan Barcode via Camera"
                     >
@@ -1211,10 +1233,27 @@ export const ProductManagement: React.FC = () => {
       {isBarcodeCameraOpen && (
         <CameraScanner
           onScanSuccess={(scannedCode) => {
-            setBarcode(scannedCode);
+            const normalizedCode = normalizeScannerValue(scannedCode);
+            if (scannerTarget === 'imei') {
+              if (!/^\d{15}$/.test(normalizedCode)) {
+                triggerToast('The scanned value is not a valid 15-digit IMEI.', 'warning');
+                return;
+              }
+              const existingImeis = parseSerializedUnitLines(imeiInput)
+                .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean));
+              if (existingImeis.includes(normalizedCode)) {
+                triggerToast('That IMEI is already entered for this product.', 'warning');
+                setIsBarcodeCameraOpen(false);
+                return;
+              }
+              setImeiInput(current => `${current.trimEnd()}${current.trim() ? '\n' : ''}${normalizedCode}`);
+              triggerToast(`IMEI ${normalizedCode} added as a handset.`, 'success');
+            } else {
+              setBarcode(normalizedCode);
+              // Immediately pull metadata upon successful product barcode scan
+              void handleLiveBarcodeLookup(normalizedCode);
+            }
             setIsBarcodeCameraOpen(false);
-            // Immediately pull metadata upon successful scan
-            void handleLiveBarcodeLookup(scannedCode);
           }}
           onClose={() => setIsBarcodeCameraOpen(false)}
         />
