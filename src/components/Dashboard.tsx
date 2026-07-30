@@ -20,6 +20,8 @@ const DEFAULT_DASHBOARD_WIDGETS = {
   lowStock: false,
   customers: false,
   profit: true,
+  weeklyRevenue: false,
+  topSellingSkus: false,
   salesRegister: true
 };
 
@@ -103,6 +105,34 @@ export const Dashboard: React.FC = () => {
   });
 
   const maxWeeklyVal = Math.max(...weeklyChartData.map((d) => d.value), 100);
+  const weeklyRevenueTotal = weeklyChartData.reduce((sum, day) => sum + day.value, 0);
+
+  const topSellingSkus = Object.values(
+    sales
+      .filter(sale => sale.status === 'Completed')
+      .flatMap(sale => sale.items)
+      .reduce((acc, item) => {
+        const current = acc[item.productId] || {
+          productId: item.productId,
+          name: item.name,
+          sku: item.sku,
+          quantity: 0,
+          revenue: 0
+        };
+        current.quantity += item.quantity;
+        current.revenue += (item.price * item.quantity) + (item.taxAmount || 0);
+        acc[item.productId] = current;
+        return acc;
+      }, {} as Record<string, {
+        productId: string;
+        name: string;
+        sku: string;
+        quantity: number;
+        revenue: number;
+      }>)
+  )
+    .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
+    .slice(0, 3);
 
   // Category breakdown counts
   const categoriesMap = products.reduce((acc: { [key: string]: number }, prod) => {
@@ -274,6 +304,86 @@ export const Dashboard: React.FC = () => {
         </div>
         )}
       </div>
+
+      {canViewFinancials && (dashboardWidgets.weeklyRevenue || dashboardWidgets.topSellingSkus) && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {dashboardWidgets.weeklyRevenue && (
+            <section className={`${dashboardWidgets.topSellingSkus ? 'lg:col-span-2' : 'lg:col-span-3'} rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-900 dark:bg-gray-950`}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    Weekly Revenue Trend
+                  </h3>
+                  <p className="text-xs text-gray-400">Completed sales across the last seven days</p>
+                </div>
+                <span className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-500">
+                  7-Day Total: {formatWholeCurrency(weeklyRevenueTotal)}
+                </span>
+              </div>
+
+              <div className="mt-8 flex h-48 items-end justify-between gap-3 border-b border-gray-100 px-2 pb-8 dark:border-gray-900">
+                {weeklyChartData.map(day => (
+                  <div key={day.label} className="relative flex h-full flex-1 items-end justify-center">
+                    <div
+                      className="min-h-2 w-full max-w-9 rounded-t-lg bg-emerald-500/80 transition-all hover:bg-emerald-500"
+                      style={{ height: `${Math.max(5, (day.value / maxWeeklyVal) * 100)}%` }}
+                      title={`${day.label}: ${formatWholeCurrency(day.value)}`}
+                    />
+                    <span className="absolute -bottom-6 text-[10px] font-bold uppercase text-gray-400">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {dashboardWidgets.topSellingSkus && (
+            <section className={`${dashboardWidgets.weeklyRevenue ? 'lg:col-span-1' : 'lg:col-span-3'} rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-900 dark:bg-gray-950`}>
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
+                  <Package className="h-4 w-4 text-emerald-500" />
+                  Top-Selling SKUs
+                </h3>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">By volume</span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {topSellingSkus.length ? topSellingSkus.map((item, index) => {
+                  const product = products.find(candidate => candidate.id === item.productId);
+                  return (
+                    <div key={item.productId} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-900 dark:bg-gray-900/30">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-black text-emerald-500">
+                        #{index + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-gray-900 dark:text-white">{item.name}</p>
+                        <p className="truncate text-[9px] font-mono text-gray-400">
+                          SKU: {item.sku} · Stock: {product?.stock ?? 0}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[10px] font-bold text-emerald-500">{item.quantity} Sold</p>
+                        <p className="text-[9px] font-mono text-gray-400">{formatWholeCurrency(item.revenue)}</p>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center text-xs text-gray-400 dark:border-gray-800">
+                    Top-selling products will appear after completed sales.
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('products')}
+                className="mt-5 w-full border-t border-gray-100 pt-4 text-right text-xs font-bold text-emerald-500 dark:border-gray-900"
+              >
+                View Catalog →
+              </button>
+            </section>
+          )}
+        </div>
+      )}
 
 
 

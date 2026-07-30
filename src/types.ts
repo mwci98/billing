@@ -221,6 +221,8 @@ export interface DashboardWidgetSettings {
   lowStock: boolean;
   customers: boolean;
   profit: boolean;
+  weeklyRevenue: boolean;
+  topSellingSkus: boolean;
   salesRegister: boolean;
 }
 

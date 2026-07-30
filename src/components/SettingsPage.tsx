@@ -19,6 +19,8 @@ const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetSettings = {
   lowStock: false,
   customers: false,
   profit: true,
+  weeklyRevenue: false,
+  topSellingSkus: false,
   salesRegister: true
 };
 
@@ -29,6 +31,8 @@ const DASHBOARD_WIDGET_OPTIONS: Array<{ key: keyof DashboardWidgetSettings; labe
   { key: 'lowStock', label: 'Low Stock Alert' },
   { key: 'customers', label: 'Total Customers' },
   { key: 'profit', label: 'Estimated Profit' },
+  { key: 'weeklyRevenue', label: 'Weekly Revenue Trend' },
+  { key: 'topSellingSkus', label: 'Top-Selling SKUs' },
   { key: 'salesRegister', label: 'Sales Register' }
 ];
 
