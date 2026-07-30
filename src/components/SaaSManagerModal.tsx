@@ -4,6 +4,7 @@ import {
   Layers, Check, X, Sparkles, Globe, MapPin, CreditCard, Plus, Loader2
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+import {isInternalTestingAccount} from '../lib/internalEntitlements';
 
 async function loadRazorpayCheckout() {
   if (window.Razorpay) return true;
@@ -53,9 +54,15 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
   const [storeCity, setStoreCity] = useState('');
 
   if (!isOpen) return null;
+  const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
 
   const purchaseStoreAddon = async () => {
     if (!currentUser || isBuyingStore) return;
+    if (hasInternalAccess) {
+      setShowStoreForm(true);
+      triggerToast('Internal testing access: add another store without payment.', 'info');
+      return;
+    }
     setIsBuyingStore(true);
     try {
       const checkoutLoaded = await loadRazorpayCheckout();
@@ -145,7 +152,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                   SaaS Workspace & Subscription
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {settings.subscriptionStatus === 'active' ? 'Basic' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
+                  {hasInternalAccess ? 'Internal' : settings.subscriptionStatus === 'active' ? 'Basic' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-white/60 mt-0.5">
@@ -205,7 +212,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                   className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-600 disabled:opacity-50"
                 >
                   {isBuyingStore ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Add Store · ₹500 once
+                  {hasInternalAccess ? 'Add Store · No charge' : 'Add Store · ₹500 once'}
                 </button>
               </div>
 
@@ -299,13 +306,17 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
             <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Basic Subscription</h3>
-                <p className="text-xs text-gray-500 dark:text-white/50">Five-day free trial followed by ₹6,000 yearly recurring billing through Razorpay.</p>
+                <p className="text-xs text-gray-500 dark:text-white/50">
+                  {hasInternalAccess
+                    ? 'Internal testing access has no trial expiry or subscription charge.'
+                    : 'Five-day free trial followed by ₹6,000 yearly recurring billing through Razorpay.'}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {saasPlans.map((plan) => {
                   const isCurrent = true;
-                  const isSubscribed = settings.subscriptionStatus === 'active';
+                  const isSubscribed = hasInternalAccess || settings.subscriptionStatus === 'active';
                   const canUpgradeTrial = !isSubscribed;
                   return (
                     <div 
@@ -321,7 +332,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                           <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{plan.name} Plan</h4>
                           {isCurrent && (
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500 text-white uppercase tracking-wider">
-                              {settings.subscriptionStatus === 'active' ? 'Active' : 'Trial'}
+                              {hasInternalAccess ? 'Internal' : settings.subscriptionStatus === 'active' ? 'Active' : 'Trial'}
                             </span>
                           )}
                         </div>

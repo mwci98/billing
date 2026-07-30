@@ -5,11 +5,13 @@ import {
 } from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {BusinessMode, getBusinessMode} from '../lib/businessMode';
+import {isInternalTestingAccount} from '../lib/internalEntitlements';
 
 const steps = ['Business', 'Compliance', 'POS setup'];
 
 export const BusinessOnboarding: React.FC = () => {
   const {settings, currentUser, updateSettings} = useAppState();
+  const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
   const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState(settings.storeName || '');
   const [ownerName, setOwnerName] = useState(settings.ownerName || currentUser?.name || '');
@@ -59,7 +61,7 @@ export const BusinessOnboarding: React.FC = () => {
             Complete these details once to prepare your isolated POS workspace.
           </p>
           <span className="mt-3 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            Your 5-day Basic trial starts now
+            {hasInternalAccess ? 'Internal testing access · no trial expiry' : 'Your 5-day Basic trial starts now'}
           </span>
         </div>
 

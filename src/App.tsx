@@ -26,6 +26,7 @@ import { StaffPermissions } from './types';
 import { SubscriptionGate } from './components/SubscriptionGate';
 import { BusinessOnboarding } from './components/BusinessOnboarding';
 import { LandingPage } from './components/LandingPage';
+import {isInternalTestingAccount} from './lib/internalEntitlements';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -44,6 +45,7 @@ const AppContent: React.FC = () => {
     toast,
     hasPermission
   } = useAppState();
+  const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
@@ -321,7 +323,9 @@ const AppContent: React.FC = () => {
                 <Building2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="max-w-[120px] truncate hidden md:inline">{activeStore.name}</span>
                 <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider">
-                  {settings.subscriptionStatus === 'active'
+                  {hasInternalAccess
+                    ? 'Internal'
+                    : settings.subscriptionStatus === 'active'
                     ? 'Basic'
                     : settings.subscriptionStatus === 'trialing'
                       ? 'Trial'
