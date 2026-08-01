@@ -83,6 +83,7 @@ export const ProductManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [activeLabels, setActiveLabels] = useState<Product | null>(null);
   const [isBarcodeCameraOpen, setIsBarcodeCameraOpen] = useState<boolean>(false);
+  const [isBarcodeTouchKeypadOpen, setIsBarcodeTouchKeypadOpen] = useState<boolean>(false);
   const [scannerTarget, setScannerTarget] = useState<'barcode' | 'imei'>('barcode');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -985,11 +986,20 @@ export const ProductManagement: React.FC = () => {
                     <input
                       id="form-prod-barcode"
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      enterKeyHint="done"
                       required
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
                       onFocus={(e) => e.currentTarget.select()}
                       onClick={(e) => e.currentTarget.select()}
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === 'Tab') && barcode) {
+                          e.preventDefault();
+                          void handleLiveBarcodeLookup(barcode);
+                        }
+                      }}
                       placeholder="e.g. 101010"
                       className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 pr-10 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                     />
@@ -1015,6 +1025,13 @@ export const ProductManagement: React.FC = () => {
                       className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 transition active:scale-95 cursor-pointer bg-emerald-500/10 dark:bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-500/20 shadow-sm"
                     >
                       {isBarcodeLookupLoading ? 'Looking up…' : '⚡ Pull Info from Barcode'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsBarcodeTouchKeypadOpen(true)}
+                      className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-2.5 py-1 text-[10px] font-bold text-gray-600 dark:text-gray-300"
+                    >
+                      Touch keypad
                     </button>
                     {barcode && products.some(p => p.barcode === barcode) && (
                       <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-500/10 animate-pulse">Catalog Match</span>
@@ -1303,6 +1320,52 @@ export const ProductManagement: React.FC = () => {
                 Close View
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isBarcodeTouchKeypadOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-3 sm:items-center">
+          <div className="w-full max-w-sm rounded-3xl border border-gray-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h4 className="text-base font-black">Barcode touch keypad</h4>
+                <p className="mt-1 text-xs text-gray-400">Use this when a connected scanner hides your device keyboard.</p>
+              </div>
+              <button type="button" onClick={() => setIsBarcodeTouchKeypadOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-lg tracking-wider dark:border-gray-800 dark:bg-gray-900 min-h-12 break-all">
+              {barcode || <span className="text-gray-400">Enter barcode</span>}
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '⌫'].map(key => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    if (key === 'Clear') setBarcode('');
+                    else if (key === '⌫') setBarcode(current => current.slice(0, -1));
+                    else setBarcode(current => `${current}${key}`);
+                  }}
+                  className="rounded-xl border border-gray-200 bg-gray-50 py-3 text-sm font-black hover:border-emerald-500 hover:bg-emerald-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-emerald-950/30"
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={!barcode || isBarcodeLookupLoading}
+              onClick={() => {
+                setIsBarcodeTouchKeypadOpen(false);
+                void handleLiveBarcodeLookup(barcode);
+              }}
+              className="mt-4 w-full rounded-xl bg-emerald-500 py-3 text-sm font-black text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Use barcode
+            </button>
           </div>
         </div>
       )}
