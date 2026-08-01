@@ -54,6 +54,21 @@ const PRODUCT_BRANDS = [
   'Generic / Unbranded',
 ];
 
+type TouchEntryField =
+  | 'name'
+  | 'sku'
+  | 'barcode'
+  | 'category'
+  | 'brand'
+  | 'unit'
+  | 'stock'
+  | 'purchasePrice'
+  | 'sellingPrice'
+  | 'lowStockAlert'
+  | 'manufacturingCost'
+  | 'batchNo'
+  | 'productionNotes';
+
 export const ProductManagement: React.FC = () => {
   const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, activeStore, triggerToast } = useAppState();
 
@@ -84,6 +99,9 @@ export const ProductManagement: React.FC = () => {
   const [activeLabels, setActiveLabels] = useState<Product | null>(null);
   const [isBarcodeCameraOpen, setIsBarcodeCameraOpen] = useState<boolean>(false);
   const [isBarcodeTouchKeypadOpen, setIsBarcodeTouchKeypadOpen] = useState<boolean>(false);
+  const [touchEntryField, setTouchEntryField] = useState<TouchEntryField>('name');
+  const [isTouchEntryOpen, setIsTouchEntryOpen] = useState<boolean>(false);
+  const [isTouchKeyboardUppercase, setIsTouchKeyboardUppercase] = useState<boolean>(false);
   const [scannerTarget, setScannerTarget] = useState<'barcode' | 'imei'>('barcode');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -113,6 +131,42 @@ export const ProductManagement: React.FC = () => {
   const effectiveSourcingType = businessMode === 'Hybrid'
     ? sourcingType
     : sourcingForBusinessMode(businessMode);
+
+  const touchEntryValue = (): string => {
+    switch (touchEntryField) {
+      case 'name': return name;
+      case 'sku': return sku;
+      case 'barcode': return barcode;
+      case 'category': return category;
+      case 'brand': return brand;
+      case 'unit': return unit;
+      case 'stock': return stock;
+      case 'purchasePrice': return purchasePrice;
+      case 'sellingPrice': return sellingPrice;
+      case 'lowStockAlert': return lowStockAlert;
+      case 'manufacturingCost': return manufacturingCost;
+      case 'batchNo': return batchNo;
+      case 'productionNotes': return productionNotes;
+    }
+  };
+
+  const setTouchEntryValue = (value: string) => {
+    switch (touchEntryField) {
+      case 'name': setName(value); break;
+      case 'sku': setSku(value); break;
+      case 'barcode': setBarcode(value); break;
+      case 'category': setCategory(value); break;
+      case 'brand': setBrand(value); break;
+      case 'unit': setUnit(value); break;
+      case 'stock': setStock(value); break;
+      case 'purchasePrice': setPurchasePrice(value); break;
+      case 'sellingPrice': setSellingPrice(value); break;
+      case 'lowStockAlert': setLowStockAlert(value); break;
+      case 'manufacturingCost': setManufacturingCost(value); break;
+      case 'batchNo': setBatchNo(value); break;
+      case 'productionNotes': setProductionNotes(value); break;
+    }
+  };
 
   const handleLiveBarcodeLookup = async (barcodeToLookup: string) => {
     const cleanBarcode = barcodeToLookup.replace(/\D/g, '');
@@ -815,7 +869,16 @@ export const ProductManagement: React.FC = () => {
             <h3 className="text-xl font-black mb-1">
               {editingItem ? 'Edit Billing Item' : 'Add Service or Material'}
             </h3>
-            <p className="text-xs text-gray-400 mb-5">Choose the item type so only relevant information is requested.</p>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-gray-400">Choose the item type so only relevant information is requested.</p>
+              <button
+                type="button"
+                onClick={() => setIsTouchEntryOpen(true)}
+                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+              >
+                Touch typing
+              </button>
+            </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -1319,6 +1382,74 @@ export const ProductManagement: React.FC = () => {
               >
                 Close View
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTouchEntryOpen && (
+        <div className="fixed inset-0 z-[65] flex items-end justify-center bg-black/60 p-2 sm:items-center sm:p-4">
+          <div className="max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-4 text-gray-900 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-white sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h4 className="text-base font-black">Touch typing</h4>
+                <p className="mt-1 text-xs text-gray-400">Use this keyboard for product details when a connected scanner hides the device keyboard.</p>
+              </div>
+              <button type="button" onClick={() => setIsTouchEntryOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900" aria-label="Close touch keyboard">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {([
+                ['name', itemType === 'Service' ? 'Service name' : 'Product name'],
+                ['category', 'Category'],
+                ['unit', 'Unit'],
+                ['sellingPrice', 'Sell price'],
+                ...(itemType === 'Material' ? [['purchasePrice', 'Buy price'], ['stock', 'Stock'], ['lowStockAlert', 'Low stock']] : []),
+                ['sku', 'SKU'],
+                ...(itemType === 'Material' ? [['barcode', 'Barcode']] : []),
+                ...(itemType === 'Service' ? [['brand', 'Provider']] : []),
+              ] as Array<[TouchEntryField, string]>).map(([field, label]) => (
+                <button
+                  key={field}
+                  type="button"
+                  onClick={() => setTouchEntryField(field)}
+                  className={`shrink-0 rounded-lg border px-3 py-2 text-[10px] font-bold ${touchEntryField === field ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 min-h-12 break-all rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-3 font-mono text-sm">
+              {touchEntryValue() || <span className="text-gray-400">Start typing…</span>}
+            </div>
+            <div className="mt-4 space-y-2 text-center">
+              {['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map((row) => (
+                <div key={row} className="flex justify-center gap-1">
+                  {row.split('').map(key => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setTouchEntryValue(`${touchEntryValue()}${isTouchKeyboardUppercase ? key.toUpperCase() : key}`)}
+                      className="min-w-7 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2.5 text-xs font-bold hover:border-emerald-500 dark:border-gray-800 dark:bg-gray-900 sm:min-w-10"
+                    >
+                      {isTouchKeyboardUppercase ? key.toUpperCase() : key}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              <div className="flex justify-center gap-1">
+                <button type="button" onClick={() => setIsTouchKeyboardUppercase(current => !current)} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs font-bold dark:border-gray-800 dark:bg-gray-900">⇧</button>
+                {'1234567890.-'.split('').map(key => (
+                  <button key={key} type="button" onClick={() => setTouchEntryValue(`${touchEntryValue()}${key}`)} className="min-w-7 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2.5 text-xs font-bold hover:border-emerald-500 dark:border-gray-800 dark:bg-gray-900 sm:min-w-10">{key}</button>
+                ))}
+                <button type="button" onClick={() => setTouchEntryValue(touchEntryValue().slice(0, -1))} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs font-bold dark:border-gray-800 dark:bg-gray-900">⌫</button>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setTouchEntryValue('')} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-bold text-red-500 dark:border-gray-800">Clear</button>
+                <button type="button" onClick={() => setTouchEntryValue(`${touchEntryValue()} `)} className="flex-[2] rounded-xl border border-gray-200 py-2.5 text-xs font-bold dark:border-gray-800">Space</button>
+                <button type="button" onClick={() => setIsTouchEntryOpen(false)} className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-xs font-black text-white">Done</button>
+              </div>
             </div>
           </div>
         </div>
