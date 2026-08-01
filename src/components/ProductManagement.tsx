@@ -870,7 +870,11 @@ export const ProductManagement: React.FC = () => {
               {editingItem ? 'Edit Billing Item' : 'Add Service or Material'}
             </h3>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-gray-400">Choose the item type so only relevant information is requested.</p>
+              <p className="text-xs text-gray-400">
+                {businessMode === 'Service'
+                  ? 'Choose whether this billing entry is a service or a material.'
+                  : 'Only fields relevant to this workspace are shown.'}
+              </p>
               <button
                 type="button"
                 onClick={() => setIsTouchEntryOpen(true)}
@@ -882,7 +886,7 @@ export const ProductManagement: React.FC = () => {
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {(
+                {businessMode === 'Service' && (
                   <div className="col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-3.5 dark:border-gray-800 dark:bg-gray-900/60">
                     <label className="block text-xs font-bold">Billing item type</label>
                     <p className="mt-1 text-[11px] text-gray-400">Services are invoiced without stock deduction. Materials continue using inventory.</p>
