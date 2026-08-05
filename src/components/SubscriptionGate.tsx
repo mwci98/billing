@@ -67,6 +67,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
           tenantId: currentUser.tenantId || settings.tenantId,
           email: currentUser.email,
           name: currentUser.name,
+          storeName: settings.storeName,
         }),
       });
       const subscription = await readApiResponse(createResponse);

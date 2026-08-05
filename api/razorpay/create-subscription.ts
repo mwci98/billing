@@ -13,7 +13,7 @@ export default async function handler(request: any, response: any) {
     });
   }
 
-  const {tenantId, email, name} = request.body || {};
+  const {tenantId, email, name, storeName} = request.body || {};
   if (!tenantId || !email) {
     return response.status(400).json({error: 'Tenant and owner email are required.'});
   }
@@ -34,6 +34,7 @@ export default async function handler(request: any, response: any) {
         tenantId,
         ownerEmail: email,
         ownerName: name || '',
+        storeName: storeName || '',
         planTier: 'Basic',
       },
     }),

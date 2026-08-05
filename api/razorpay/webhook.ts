@@ -13,6 +13,56 @@ async function readRawBody(request: any) {
   return Buffer.concat(chunks);
 }
 
+async function createAndEmailCrmSubscriptionInvoice(event: any, subscription: any) {
+  if (event.event !== 'subscription.charged') return;
+
+  const endpoint = process.env.CRM_QPOS_WEBHOOK_URL;
+  const apiKey = process.env.CRM_API_KEY;
+  const sharedSecret = process.env.CRM_WEBHOOK_SECRET;
+  if (!endpoint || !apiKey || !sharedSecret) {
+    console.warn('QPOS CRM invoice integration is not configured; subscription invoice was not sent to CRM.');
+    return;
+  }
+
+  const payment = event.payload?.payment?.entity;
+  const paymentId = String(payment?.id || '');
+  const amountPaise = Number(payment?.amount || subscription?.plan?.item?.amount || 0);
+  const ownerEmail = String(subscription?.notes?.ownerEmail || '');
+  if (!paymentId || !amountPaise || !ownerEmail) {
+    console.warn('QPOS CRM invoice integration skipped because the Razorpay webhook payload is incomplete.');
+    return;
+  }
+
+  const payload = {
+    eventId: `${event.event}:${subscription.id}:${paymentId}`,
+    subscriptionId: String(subscription.id),
+    paymentId,
+    tenantId: String(subscription.notes?.tenantId || ''),
+    ownerEmail,
+    ownerName: String(subscription.notes?.ownerName || ''),
+    storeName: String(subscription.notes?.storeName || subscription.notes?.ownerName || ''),
+    planName: 'QPOS Basic Annual Subscription',
+    amountPaise,
+    currency: String(payment?.currency || subscription?.plan?.item?.currency || 'INR'),
+    paidAt: payment?.created_at ? new Date(payment.created_at * 1000).toISOString() : new Date().toISOString(),
+  };
+  const body = JSON.stringify(payload);
+  const signature = createHmac('sha256', sharedSecret).update(body).digest('hex');
+  const crmResponse = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'x-neospec-signature': signature,
+    },
+    body,
+  });
+
+  if (!crmResponse.ok) {
+    throw new Error(`CRM subscription invoice request failed (${crmResponse.status}): ${await crmResponse.text()}`);
+  }
+}
+
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {
     return response.status(405).json({error: 'Method not allowed'});
@@ -61,6 +111,8 @@ export default async function handler(request: any, response: any) {
       subscriptionUpdatedAt: new Date().toISOString(),
     });
   }
+
+  await createAndEmailCrmSubscriptionInvoice(event, subscription);
 
   return response.status(200).json({received: true});
 }
