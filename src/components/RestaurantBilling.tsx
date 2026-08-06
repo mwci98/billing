@@ -35,7 +35,6 @@ export const RestaurantBilling: React.FC = () => {
   const itemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const restaurantOrders = sales.filter(sale => Boolean(sale.orderType));
   const openOrders = restaurantOrders.filter(sale => sale.status === 'Pending');
-  const recentSettledOrders = restaurantOrders.filter(sale => sale.status === 'Completed').slice(0, 5);
 
   function addItem(product: Product) {
     if (product.menuVariants?.length) {
@@ -152,21 +151,6 @@ export const RestaurantBilling: React.FC = () => {
     triggerToast(`${order.customerName} settled by ${method}.`, 'success');
   }
 
-  function reopenSettledOrder(order: Sale) {
-    const reopened: Sale = {...order, status: 'Pending', paymentDetails: {}};
-    editSale(order.id, reopened);
-    editOpenOrder(reopened);
-    triggerToast(`${order.customerName} reopened for editing. Settle it again after saving changes.`, 'info');
-  }
-
-  function changePaymentMethod(order: Sale, method: 'Cash' | 'UPI' | 'Card') {
-    const paymentDetails = method === 'Cash' ? {cashAmount: order.total} : method === 'Card' ? {cardAmount: order.total} : {upiAmount: order.total};
-    const updated: Sale = {...order, paymentMethod: method, paymentDetails};
-    editSale(order.id, updated);
-    setCompletedOrder(updated);
-    triggerToast(`Payment method updated to ${method}.`, 'success');
-  }
-
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -177,8 +161,6 @@ export const RestaurantBilling: React.FC = () => {
           <OrderTypeButton active={orderType === 'Delivery'} icon={Truck} label="Delivery" onClick={() => setOrderType('Delivery')} />
         </div>
       </header>
-
-      {openOrders.length > 0 && <OrderShelf title="Open orders" subtitle="Edit the ticket or settle it by payment method" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} onSettle={settleSavedOrder} emptyText="No open orders" />}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="space-y-4">
@@ -196,7 +178,7 @@ export const RestaurantBilling: React.FC = () => {
         </div></aside>
       </div>
 
-      {recentSettledOrders.length > 0 && <OrderShelf title="Recent settled" subtitle="Reprint, correct payment method, or reopen a completed ticket" orders={recentSettledOrders} currency={settings.currency} actionLabel="Print receipt" onAction={setCompletedOrder} secondaryActionLabel="Edit / reopen" onSecondaryAction={reopenSettledOrder} onSettle={changePaymentMethod} paymentLabel="Payment method" emptyText="No settled orders yet" />}
+      <OrderShelf title="Open orders" subtitle="Pending tickets disappear from this queue after settlement" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} onSettle={settleSavedOrder} emptyText="No open orders. New unpaid tickets will appear here." />
 
       {variantProduct && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center">
