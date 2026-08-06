@@ -234,7 +234,7 @@ function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, f
 
   return <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm sm:items-center">
     <div className="max-h-[95vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-gray-100 p-3 shadow-2xl">
-      <div className="mb-3 flex items-center justify-between px-2 text-gray-900"><div className="flex items-center gap-2"><ReceiptText className="h-4 w-4" /><span className="text-sm font-black">Thermal receipt</span></div><button onClick={onClose} className="rounded-lg p-2 hover:bg-gray-200"><X className="h-4 w-4" /></button></div>
+      <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 !text-[#111827] shadow-sm"><div className="flex items-center gap-2 !text-[#111827]"><ReceiptText className="h-4 w-4" /><span className="text-sm font-black !text-[#111827]">Thermal receipt</span></div><button onClick={onClose} aria-label="Close thermal receipt" className="flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-xs font-black !text-[#111827] transition hover:bg-gray-200"><X className="h-4 w-4" /><span>Close</span></button></div>
       <div className="thermal-receipt mx-auto w-[80mm] max-w-full bg-white px-[5mm] py-[5mm] font-mono text-[10px] leading-tight text-black">
         <div className="text-center"><h2 className="text-base font-black uppercase">{storeName}</h2>{address && <p className="mt-1 whitespace-pre-line">{address}</p>}{phone && <p>Phone: {phone}</p>}{gstNumber && <p>GSTIN: {gstNumber}</p>}</div>
         <div className="my-3 border-t border-dashed border-black" />
