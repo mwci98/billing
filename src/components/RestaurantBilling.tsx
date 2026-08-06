@@ -142,6 +142,16 @@ export const RestaurantBilling: React.FC = () => {
     clearEditor();
   }
 
+  function settleSavedOrder(order: Sale, method: 'Cash' | 'UPI' | 'Card') {
+    if (order.status !== 'Pending') return triggerToast('This order has already been settled.', 'warning');
+    const paymentDetails = method === 'Cash' ? {cashAmount: order.total} : method === 'Card' ? {cardAmount: order.total} : {upiAmount: order.total};
+    const completed: Sale = {...order, paymentMethod: method, paymentDetails, status: 'Completed'};
+    editSale(order.id, completed);
+    if (editingOrder?.id === order.id) clearEditor();
+    setCompletedOrder(completed);
+    triggerToast(`${order.customerName} settled by ${method}.`, 'success');
+  }
+
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -153,7 +163,7 @@ export const RestaurantBilling: React.FC = () => {
         </div>
       </header>
 
-      {openOrders.length > 0 && <OrderShelf title="Open orders" subtitle="Unpaid tickets that can still be changed" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} emptyText="No open orders" />}
+      {openOrders.length > 0 && <OrderShelf title="Open orders" subtitle="Edit the ticket or settle it by payment method" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} onSettle={settleSavedOrder} emptyText="No open orders" />}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="space-y-4">
@@ -203,14 +213,15 @@ function OrderTypeButton({active, icon: Icon, label, onClick}: {active: boolean;
 function Field({icon: Icon, label, children}: {icon: typeof Armchair; label: string; children: React.ReactNode}) { return <label><span className="mb-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400"><Icon className="h-3.5 w-3.5" />{label}</span>{children}</label>; }
 function TotalRow({label, value, currency}: {label: string; value: number; currency: string}) { return <div className="flex justify-between text-gray-500"><span>{label}</span><span className="font-mono font-bold text-gray-800 dark:text-gray-200">{currency}{value.toFixed(2)}</span></div>; }
 
-function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, emptyText}: {title: string; subtitle: string; orders: Sale[]; currency: string; actionLabel: string; onAction: (sale: Sale) => void; emptyText: string}) {
+function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, onSettle, emptyText}: {title: string; subtitle: string; orders: Sale[]; currency: string; actionLabel: string; onAction: (sale: Sale) => void; onSettle?: (sale: Sale, method: 'Cash' | 'UPI' | 'Card') => void; emptyText: string}) {
   return <div className="rounded-3xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#141416] sm:p-5">
     <div className="flex items-end justify-between gap-3"><div><h2 className="font-black">{title}</h2><p className="mt-1 text-xs text-gray-500">{subtitle}</p></div><span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-black text-gray-500 dark:bg-white/5">{orders.length}</span></div>
     <div className="mt-4 grid gap-2 sm:grid-cols-2">
-      {orders.length ? orders.map(order => <button key={order.id} onClick={() => onAction(order)} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 p-3 text-left transition hover:border-emerald-500/50 hover:bg-emerald-500/5 dark:border-white/10">
-        <span className="min-w-0"><span className="block truncate text-sm font-black">{order.tableNumber ? `Table ${order.tableNumber}` : order.orderType}</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">{order.items.reduce((sum, item) => sum + item.quantity, 0)} items · {new Date(order.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</span></span>
-        <span className="shrink-0 text-right"><span className="block font-mono text-sm font-black text-emerald-500">{currency}{order.total.toFixed(2)}</span><span className="mt-1 block text-[10px] font-black uppercase text-gray-400">{actionLabel}</span></span>
-      </button>) : <p className="py-4 text-sm text-gray-400">{emptyText}</p>}
+      {orders.length ? orders.map(order => <div key={order.id} className="rounded-2xl border border-gray-200 p-3 dark:border-white/10">
+        <div className="flex items-center justify-between gap-3"><span className="min-w-0"><span className="block truncate text-sm font-black">{order.tableNumber ? `Table ${order.tableNumber}` : order.orderType}</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">{order.items.reduce((sum, item) => sum + item.quantity, 0)} items · {new Date(order.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</span></span><span className="shrink-0 font-mono text-sm font-black text-emerald-500">{currency}{order.total.toFixed(2)}</span></div>
+        <button onClick={() => onAction(order)} className="mt-3 w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-black uppercase text-gray-500 transition hover:border-emerald-500/50 hover:text-emerald-500 dark:border-white/10">{actionLabel}</button>
+        {onSettle && <div className="mt-2"><p className="mb-1.5 text-[9px] font-black uppercase tracking-widest text-gray-400">Settle payment</p><div className="grid grid-cols-3 gap-1.5">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => onSettle(order, method)} className="rounded-lg bg-emerald-500/10 px-2 py-2 text-[10px] font-black uppercase text-emerald-500 transition hover:bg-emerald-500 hover:text-[#07110D]">{method}</button>)}</div></div>}
+      </div>) : <p className="py-4 text-sm text-gray-400">{emptyText}</p>}
     </div>
   </div>;
 }
