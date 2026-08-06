@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   ArrowRight,
   BadgeIndianRupee,
@@ -26,6 +26,8 @@ import {
   CreditCard,
   Printer,
   Wrench,
+  Menu,
+  X,
 } from 'lucide-react';
 
 type LandingPageProps = {
@@ -94,6 +96,8 @@ const workflow = [
 ];
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   return (
     <div className="landing-page min-h-screen overflow-x-hidden bg-[#09090A] text-white">
       <div className="pointer-events-none fixed inset-0 opacity-70" aria-hidden="true">
@@ -107,7 +111,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-500 text-[#07110D] shadow-[0_0_30px_rgba(16,185,129,0.18)]">
               <Store className="h-5 w-5" strokeWidth={2.5} />
             </span>
-            <span>
+            <span className="hidden min-[360px]:block">
               <span className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</span>
               <span className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400">Smart business terminal</span>
             </span>
@@ -129,13 +133,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </button>
             <button
               onClick={onGetStarted}
-              className="group flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-[#06130E] shadow-[0_10px_35px_rgba(16,185,129,0.2)] transition hover:bg-emerald-400"
+              className="group hidden items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-[#06130E] shadow-[0_10px_35px_rgba(16,185,129,0.2)] transition hover:bg-emerald-400 sm:flex"
             >
               Start free
               <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </button>
+            <button onClick={() => setMobileNavOpen(open => !open)} aria-expanded={mobileNavOpen} aria-label="Toggle navigation" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white md:hidden">{mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>
         </div>
+        {mobileNavOpen && <nav className="absolute inset-x-0 top-full border-b border-white/10 bg-[#09090A]/98 px-5 py-4 shadow-2xl backdrop-blur-xl md:hidden"><div className="mx-auto grid max-w-7xl gap-1">{[['Business modes', '#business-modes'], ['Features', '#features'], ['How it works', '#how-it-works'], ['Pricing', '#pricing']].map(([label, href]) => <a key={href} href={href} onClick={() => setMobileNavOpen(false)} className="rounded-xl px-4 py-3 text-sm font-bold text-white/65 transition hover:bg-white/5 hover:text-white">{label}</a>)}<div className="mt-2 grid grid-cols-2 gap-2"><button onClick={() => {setMobileNavOpen(false); onGetStarted();}} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white">Sign in</button><button onClick={() => {setMobileNavOpen(false); onGetStarted();}} className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-[#06130E]">Start free</button></div></div></nav>}
       </header>
 
       <main id="top" className="relative z-10 flex flex-col pt-[4.75rem]">
@@ -344,12 +350,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         <section className="order-first relative mx-auto w-full max-w-5xl px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
           <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.11),transparent_42%),#121214] shadow-[0_32px_90px_rgba(0,0,0,0.4)]">
             <div>
-              <div className="flex flex-col items-center justify-center px-7 py-14 text-center sm:px-12 sm:py-16">
+              <div className="flex flex-col items-center justify-center px-5 py-11 text-center sm:px-12 sm:py-16">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   Cloud business operating system
                 </div>
-                <h1 className="mt-5 max-w-3xl text-[2.65rem] font-extrabold leading-[1.04] tracking-[-0.06em] sm:text-5xl lg:text-[3.75rem]">
+                <h1 className="mt-5 max-w-3xl text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.055em] min-[420px]:text-[2.65rem] sm:text-5xl lg:text-[3.75rem]">
                   Billing and inventory,
                   <span className="block text-emerald-400">made simple.</span>
                 </h1>
