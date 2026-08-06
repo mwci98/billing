@@ -14,6 +14,7 @@ import { UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { Dashboard } from './components/Dashboard';
 import { POSBilling } from './components/POSBilling';
+import { RestaurantBilling } from './components/RestaurantBilling';
 import { ProductManagement } from './components/ProductManagement';
 import { InventoryManagement } from './components/InventoryManagement';
 import { CustomerManagement } from './components/CustomerManagement';
@@ -102,6 +103,7 @@ const AppContent: React.FC = () => {
   const isAdmin = currentUser.role === UserRole.ADMIN;
   const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
   const isServiceBusiness = businessMode === 'Service';
+  const isRestaurantBusiness = businessMode === 'Restaurant';
 
   // Custom Sidebar navigation list
   const sidebarItems: Array<{
@@ -112,7 +114,7 @@ const AppContent: React.FC = () => {
     adminOnly?: boolean;
   }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
-    { id: 'pos', name: isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
+    { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
     { id: 'products', name: isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
@@ -137,7 +139,7 @@ const AppContent: React.FC = () => {
         return <Dashboard />;
       case 'pos':
         if (!canAccessTab('pos')) return <SecurityBarrier />;
-        return <POSBilling />;
+        return isRestaurantBusiness ? <RestaurantBilling /> : <POSBilling />;
       case 'products':
         if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
@@ -429,7 +431,7 @@ const AppContent: React.FC = () => {
           }`}
         >
           <ShoppingCart className="h-5 w-5 stroke-[2.2]" />
-          <span className="text-[10px] mt-1 font-semibold">{isServiceBusiness ? 'Billing' : 'POS Billing'}</span>
+          <span className="text-[10px] mt-1 font-semibold">{isRestaurantBusiness ? 'Orders' : isServiceBusiness ? 'Billing' : 'POS Billing'}</span>
         </button>
         )}
 

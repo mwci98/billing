@@ -4,6 +4,16 @@
 /* Use the application's theme class consistently in every browser. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer components {
+  .restaurant-input {
+    @apply w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm font-semibold outline-none transition focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/[0.035] dark:text-white;
+  }
+
+  .ticket-button {
+    @apply flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-emerald-500/40 hover:text-emerald-500 dark:border-white/10;
+  }
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;

@@ -138,6 +138,7 @@ export const BusinessOnboarding: React.FC = () => {
                     <option value="Manufacturing">Manufacturing — produce items in-house</option>
                     <option value="Hybrid">Hybrid — purchase and manufacture</option>
                     <option value="Service">Service + Material — invoice labour/services with supplied materials</option>
+                    <option value="Restaurant">Restaurant / Cafe — tables, menu orders, kitchen notes, and settlement</option>
                   </select>
                   <span className="mt-1.5 block text-[10px] font-medium leading-4 text-gray-500">
                     QPOS will hide tools that are not relevant to this mode.

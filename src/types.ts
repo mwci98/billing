@@ -123,6 +123,10 @@ export interface Sale {
   authId: string;
   employeeName: string;
   status: 'Completed' | 'Pending' | 'Cancelled';
+  orderType?: 'Dine In' | 'Takeaway' | 'Delivery';
+  tableNumber?: string;
+  guestCount?: number;
+  kitchenNotes?: string;
 }
 
 export interface PurchaseItem {

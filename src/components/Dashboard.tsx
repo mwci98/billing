@@ -42,7 +42,9 @@ export const Dashboard: React.FC = () => {
   } = useAppState();
   const [invoiceToReprint, setInvoiceToReprint] = useState<Sale | null>(null);
   const canViewFinancials = hasPermission('canViewFinancials');
-  const isServiceBusiness = getBusinessMode(activeStore.configuration?.businessType || settings.businessType) === 'Service';
+  const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
+  const isServiceBusiness = businessMode === 'Service';
+  const isRestaurantBusiness = businessMode === 'Restaurant';
   const dashboardWidgets = {
     ...DEFAULT_DASHBOARD_WIDGETS,
     ...settings.dashboardWidgets
@@ -182,7 +184,7 @@ export const Dashboard: React.FC = () => {
             className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-500/10 transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
           >
             <ShoppingCart className="h-4 w-4 shrink-0" />
-            <span>{isServiceBusiness ? 'Create Service Invoice' : 'Fast Billing POS'}</span>
+            <span>{isRestaurantBusiness ? 'New Restaurant Order' : isServiceBusiness ? 'Create Service Invoice' : 'Fast Billing POS'}</span>
           </button>
         </div>
       </div>

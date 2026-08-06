@@ -337,6 +337,8 @@ export const SettingsPage: React.FC = () => {
               <option value="Retail">Retail</option>
               <option value="Manufacturing">Manufacturing</option>
               <option value="Hybrid">Hybrid</option>
+              <option value="Service">Service + Material</option>
+              <option value="Restaurant">Restaurant / Cafe</option>
             </select>
             <p className="mt-1 text-[9px] font-medium text-gray-400">Controls which inventory and sourcing tools are shown.</p>
           </div>
