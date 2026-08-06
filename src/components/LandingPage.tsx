@@ -101,7 +101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         <div className="absolute right-[-18rem] top-[34rem] h-[34rem] w-[34rem] rounded-full bg-teal-400/8 blur-[120px]" />
       </div>
 
-      <header className="relative z-30 border-b border-white/[0.06] bg-[#09090A]/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090A]/90 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
           <a href="#top" className="flex items-center gap-3" aria-label="QPOS home">
             <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-500 text-[#07110D] shadow-[0_0_30px_rgba(16,185,129,0.18)]">
