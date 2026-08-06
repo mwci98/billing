@@ -126,6 +126,7 @@ export const ProductManagement: React.FC = () => {
   const [imeiInput, setImeiInput] = useState<string>('');
   const [trackInventoryByImei, setTrackInventoryByImei] = useState<boolean>(false);
   const [itemType, setItemType] = useState<'Material' | 'Service'>('Material');
+  const [menuVariants, setMenuVariants] = useState<Array<{id: string; name: string; price: string}>>([]);
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
   const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
   const isRestaurantBusiness = businessMode === 'Restaurant';
@@ -368,6 +369,7 @@ export const ProductManagement: React.FC = () => {
     setImeiInput('');
     setTrackInventoryByImei(false);
     setItemType(businessMode === 'Service' || isRestaurantBusiness ? 'Service' : 'Material');
+    setMenuVariants([]);
     setIsFormOpen(true);
   };
 
@@ -393,6 +395,7 @@ export const ProductManagement: React.FC = () => {
     const units = getSerializedUnits(p);
     setTrackInventoryByImei(productUsesImeiTracking(p));
     setItemType(p.itemType || 'Material');
+    setMenuVariants((p.menuVariants || []).map(variant => ({...variant, price: String(variant.price)})));
     setImeiInput(
       units
         .filter(unit => unit.status !== 'Sold')
@@ -475,7 +478,12 @@ export const ProductManagement: React.FC = () => {
       sourcingType: effectiveSourcingType,
       manufacturingCost: effectiveSourcingType !== 'Purchased' && manufacturingCost ? parseFloat(manufacturingCost) : undefined,
       batchNo: effectiveSourcingType !== 'Purchased' && batchNo ? batchNo : undefined,
-      productionNotes: effectiveSourcingType !== 'Purchased' && productionNotes ? productionNotes : undefined
+      productionNotes: effectiveSourcingType !== 'Purchased' && productionNotes ? productionNotes : undefined,
+      menuVariants: isRestaurantBusiness
+        ? menuVariants
+            .filter(variant => variant.name.trim() && Number(variant.price) > 0)
+            .map(variant => ({id: variant.id, name: variant.name.trim(), price: Number(variant.price)}))
+        : undefined
     };
 
     if (editingItem) {
@@ -661,6 +669,9 @@ export const ProductManagement: React.FC = () => {
                     <td className="py-3 px-2 text-2xl">{p.imageUrl || '📦'}</td>
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
+                      {isRestaurantBusiness && Boolean(p.menuVariants?.length) && (
+                        <p className="mt-0.5 text-[10px] font-bold text-emerald-500">{p.menuVariants?.length} variants</p>
+                      )}
                       <p className="text-[10px] text-gray-400 mt-0.5">
                         {p.itemType === 'Service'
                           ? `${p.brand ? `Provider: ${p.brand} · ` : ''}Billing unit: ${p.unit}`
@@ -1252,6 +1263,48 @@ export const ProductManagement: React.FC = () => {
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
                 </div>
+
+                {isRestaurantBusiness && (
+                  <div className="col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <label className="block text-xs font-bold">Variants (optional)</label>
+                        <p className="mt-1 text-[10px] text-gray-400">Use variants for choices such as Veg, Chicken, Pork, Small, or Large.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMenuVariants(current => [...current, {id: `variant-${Date.now()}`, name: '', price: sellingPrice}])}
+                        className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold text-emerald-500"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add variant
+                      </button>
+                    </div>
+                    {menuVariants.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {menuVariants.map((variant, index) => (
+                          <div key={variant.id} className="grid grid-cols-[1fr_130px_36px] gap-2">
+                            <input
+                              value={variant.name}
+                              onChange={event => setMenuVariants(current => current.map((item, itemIndex) => itemIndex === index ? {...item, name: event.target.value} : item))}
+                              placeholder="Variant name, e.g. Chicken"
+                              className="rounded-xl border border-gray-200 bg-white p-2.5 text-xs dark:border-gray-800 dark:bg-gray-950"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={variant.price}
+                              onChange={event => setMenuVariants(current => current.map((item, itemIndex) => itemIndex === index ? {...item, price: event.target.value} : item))}
+                              placeholder="Price"
+                              className="rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-mono dark:border-gray-800 dark:bg-gray-950"
+                            />
+                            <button type="button" onClick={() => setMenuVariants(current => current.filter((_, itemIndex) => itemIndex !== index))} className="flex items-center justify-center rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">GST/Tax Rate (%)</label>

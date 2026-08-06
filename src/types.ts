@@ -65,6 +65,11 @@ export interface Product {
   productionNotes?: string; // Assembly or recipe notes
   createdAt: string;
   updatedAt: string;
+  menuVariants?: Array<{
+    id: string;
+    name: string;
+    price: number;
+  }>;
 }
 
 export interface SerializedInventoryUnit {
