@@ -101,7 +101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         <div className="absolute right-[-18rem] top-[34rem] h-[34rem] w-[34rem] rounded-full bg-teal-400/8 blur-[120px]" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090A]/90 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-[100] border-b border-white/[0.06] bg-[#09090A]/95 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
           <a href="#top" className="flex items-center gap-3" aria-label="QPOS home">
             <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-500 text-[#07110D] shadow-[0_0_30px_rgba(16,185,129,0.18)]">
@@ -138,7 +138,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         </div>
       </header>
 
-      <main id="top" className="relative z-10 flex flex-col">
+      <main id="top" className="relative z-10 flex flex-col pt-[4.75rem]">
         <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
           <div className="relative mx-auto max-w-5xl">
             <div className="absolute -inset-7 rounded-[3rem] bg-emerald-500/[0.06] blur-3xl" />
