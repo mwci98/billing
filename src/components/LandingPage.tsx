@@ -260,25 +260,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="hidden">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">A dashboard for every workspace</span><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Three businesses. Three focused views.</h2></div><p className="max-w-md text-sm leading-6 text-white/40">Each workspace keeps its own configuration, operations and reporting instead of mixing everything into one dashboard.</p></div>
-          <div className="mt-9 grid gap-4 lg:grid-cols-3">
-            {[
-              {icon: ShoppingCart, name: 'Retail dashboard', place: 'Dimapur store', metric: '₹38,640', metricLabel: 'Today’s revenue', secondary: '486 products', rows: [['POS invoices', '12'], ['Low stock', '8'], ['Customers', '1,284']], bars: [42, 68, 54, 82, 64, 92, 76]},
-              {icon: ChefHat, name: 'Restaurant dashboard', place: 'Kohima restaurant', metric: '6 open', metricLabel: 'Pending orders', secondary: '₹18,240 today', rows: [['Table 04 · 3 items', '₹850'], ['Table 01 · 2 items', '₹450'], ['Takeaway · 4 items', '₹720']], bars: [70, 46, 88, 58, 94, 72, 84]},
-              {icon: Wrench, name: 'Services dashboard', place: 'Remote services', metric: '₹1.8L', metricLabel: 'Monthly billing', secondary: '24 active clients', rows: [['Invoices due', '7'], ['Services', '18'], ['Payments received', '31']], bars: [38, 52, 74, 61, 86, 78, 96]},
-            ].map(({icon: Icon, name, place, metric, metricLabel, secondary, rows, bars}, cardIndex) => <article key={name} className="group overflow-hidden rounded-[1.5rem] border border-white/[0.08] bg-[#111113] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-emerald-400/20">
-              <div className="rounded-[1.1rem] border border-white/[0.06] bg-[#0C0C0E]">
-                <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3"><div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400"><Icon className="h-4 w-4" /></span><div><h3 className="text-[11px] font-extrabold">{name}</h3><p className="text-[7px] font-bold uppercase tracking-wide text-white/25">{place}</p></div></div><span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" /></div>
-                <div className="p-4"><div className="grid grid-cols-2 gap-2"><div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><p className="text-[8px] text-white/35">{metricLabel}</p><strong className="mt-2 block text-xl tracking-tight text-white">{metric}</strong></div><div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><p className="text-[8px] text-white/35">Workspace</p><strong className="mt-2 block text-xs text-emerald-400">{secondary}</strong></div></div>
-                  <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><div className="flex h-16 items-end gap-1.5">{bars.map((height, index) => <span key={index} className="flex-1 rounded-t bg-gradient-to-t from-emerald-700/25 to-emerald-400" style={{height: `${height}%`, opacity: 0.55 + index / 20}} />)}</div></div>
-                  <div className="mt-2 space-y-1">{rows.map(([label, value]) => <div key={label} className="flex items-center justify-between rounded-lg border border-white/[0.05] px-3 py-2"><span className="text-[8px] font-semibold text-white/45">{label}</span><span className={`text-[8px] font-mono font-bold ${cardIndex === 1 ? 'text-emerald-400' : 'text-white/65'}`}>{value}</span></div>)}</div>
-                </div>
-              </div>
-            </article>)}
-          </div>
-        </section>
-
         <section className="border-y border-white/[0.06] bg-white/[0.018]">
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px px-5 py-8 sm:grid-cols-4 sm:px-8">
             {[
@@ -307,7 +288,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section id="features" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
+        <section id="features" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="max-w-2xl">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Everything in one place</span>
             <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">
@@ -338,7 +319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         </section>
 
         <section id="how-it-works" className="border-y border-white/[0.06] bg-[#0D0D0F]">
-          <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
+          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
             <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Simple from day one</span>
@@ -428,7 +409,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
+        <section id="pricing" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Straightforward pricing</span>
             <h2 className="mt-4 text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QPOS.</h2>
@@ -486,7 +467,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="px-5 pb-24 sm:px-8 lg:pb-32">
+        <section className="px-5 pb-20 sm:px-8 lg:pb-24">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-emerald-400/15 bg-emerald-500 px-6 py-14 text-center text-[#06130E] sm:px-12 sm:py-16">
             <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
               <div className="absolute -right-16 -top-28 h-64 w-64 rounded-full border-[40px] border-[#06130E]" />
