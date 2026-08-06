@@ -340,22 +340,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="order-first mx-auto w-full max-w-[96rem] px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-12 lg:px-8 lg:pb-20">
-          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
-            <div className="grid lg:min-h-[42rem] lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
-              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14 xl:p-16">
+        <section className="order-first mx-auto w-full max-w-[96rem] px-4 py-6 sm:px-6 sm:py-8 lg:h-[calc(100vh-4.75rem)] lg:min-h-[40rem] lg:max-h-[48rem] lg:px-8">
+          <div className="h-full overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
+            <div className="grid h-full lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
+              <div className="flex flex-col justify-center p-7 sm:p-9 lg:p-10 xl:p-12">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   Cloud business operating system
                 </div>
-                <h1 className="mt-7 text-[2.9rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-6xl xl:text-[4.6rem]">
+                <h1 className="mt-5 text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-5xl xl:text-[4rem]">
                   Bill. Track. Settle.
                   <span className="block text-emerald-400">Run it all with QPOS.</span>
                 </h1>
-                <p className="mt-6 max-w-lg text-sm leading-7 text-white/45 sm:text-base">
+                <p className="mt-4 max-w-lg text-sm leading-6 text-white/45 sm:text-[15px]">
                   One cloud platform for retail stores, service businesses, mixed operations and restaurants. Keep every workspace isolated while billing, inventory and reporting stay connected.
                 </p>
-                <div className="mt-8 grid grid-cols-2 gap-3 text-[10px] font-bold text-white/55">
+                <div className="mt-5 grid grid-cols-2 gap-2 text-[10px] font-bold text-white/55">
                   {[
                     [ScanBarcode, 'Barcode + IMEI'],
                     [Printer, 'GST + thermal print'],
@@ -371,11 +371,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     );
                   })}
                 </div>
-                <p className="mt-6 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/35">
+                <p className="mt-4 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/35">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   Retail · Service · Hybrid · Restaurant
                 </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={onGetStarted}
                     className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
@@ -391,7 +391,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <ChevronRight className="h-4 w-4" />
                   </a>
                 </div>
-                <div className="mt-6 flex flex-wrap items-center gap-3 text-[10px] font-bold text-white/45">
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold text-white/45">
                   <span className="uppercase tracking-[0.12em] text-white/28">Use QPOS on</span>
                   <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5 text-emerald-400" /> Mobile</span>
                   <span className="h-1 w-1 rounded-full bg-white/15" />
