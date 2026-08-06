@@ -139,8 +139,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </header>
 
       <main id="top" className="relative z-10 flex flex-col">
-        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
-          <div className="relative mx-auto max-w-6xl">
+        <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+          <div className="relative mx-auto max-w-5xl">
             <div className="absolute -inset-7 rounded-[3rem] bg-emerald-500/[0.06] blur-3xl" />
             <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111113] p-2 shadow-[0_40px_100px_rgba(0,0,0,0.55)] sm:p-3">
               <div className="overflow-hidden rounded-[1.25rem] border border-white/[0.06] bg-[#0D0D0F]">
@@ -161,19 +161,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   </div>
                 </div>
 
-                <div className="grid min-h-[26rem] grid-cols-1 md:grid-cols-[12rem_1fr]">
+                <div className="grid min-h-[22rem] grid-cols-1 md:grid-cols-[11rem_1fr]">
                   <aside className="hidden border-r border-white/[0.06] bg-[#101012] p-4 md:block">
-                    <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2.5">
+                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.07] p-2">
                       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-[11px] font-black text-[#07110D]">Q</span>
                       <span>
-                        <span className="block text-[10px] font-extrabold">QPOS</span>
-                        <span className="block text-[7px] font-bold uppercase text-emerald-400">Active workspace</span>
+                        <span className="block text-[9px] font-extrabold">QPOS Retail</span>
+                        <span className="block text-[6px] font-bold uppercase text-emerald-400">Dimapur · dashboard</span>
                       </span>
                     </div>
-                    <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-2.5">
+                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2">
                       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-400"><ChefHat className="h-3.5 w-3.5" /></span>
-                      <span><span className="block text-[10px] font-extrabold">QPOS Restaurant</span><span className="block text-[7px] font-bold uppercase text-white/30">Kohima workspace</span></span>
+                      <span><span className="block text-[9px] font-extrabold">QPOS Restaurant</span><span className="block text-[6px] font-bold uppercase text-white/30">Kohima · dashboard</span></span>
                     </div>
+                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400"><Wrench className="h-3.5 w-3.5" /></span><span><span className="block text-[9px] font-extrabold">QPOS Services</span><span className="block text-[6px] font-bold uppercase text-white/30">Remote · dashboard</span></span></div>
                     <div className="space-y-1 text-[9px] font-bold text-white/38">
                       {[
                         [LayoutDashboard, 'Dashboard', true],
@@ -199,9 +200,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">Live business overview</p>
-                        <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">Welcome back, Store Owner</h2>
+                        <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">All workspace dashboards</h2>
                       </div>
-                      <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">Retail + Restaurant</span>
+                      <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">3 isolated workspaces</span>
                     </div>
 
                     <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
