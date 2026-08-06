@@ -128,6 +128,7 @@ export const ProductManagement: React.FC = () => {
   const [itemType, setItemType] = useState<'Material' | 'Service'>('Material');
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
   const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
+  const isRestaurantBusiness = businessMode === 'Restaurant';
   const effectiveSourcingType = businessMode === 'Hybrid'
     ? sourcingType
     : sourcingForBusinessMode(businessMode);
@@ -511,8 +512,8 @@ export const ProductManagement: React.FC = () => {
       {/* 1. Header controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-950 p-6 rounded-3xl border border-gray-100 dark:border-gray-900 shadow-sm">
         <div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white">Services & Materials Catalog</h2>
-          <p className="text-xs text-gray-400">Total billable catalog items: {products.length}</p>
+          <h2 className="text-2xl font-black text-gray-950 dark:text-white">{isRestaurantBusiness ? 'Restaurant Menu' : 'Services & Materials Catalog'}</h2>
+          <p className="text-xs text-gray-400">{isRestaurantBusiness ? 'Menu dishes and beverages' : 'Total billable catalog items'}: {products.length}</p>
         </div>
 
         <button
@@ -521,7 +522,7 @@ export const ProductManagement: React.FC = () => {
           className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-xs font-semibold text-white shadow-md shadow-emerald-500/10 cursor-pointer transition active:scale-95"
         >
           <Plus className="h-4 w-4 stroke-[3px]" />
-          <span>Add Service / Material</span>
+          <span>{isRestaurantBusiness ? 'Add Menu Item' : 'Add Service / Material'}</span>
         </button>
       </div>
 
@@ -536,7 +537,7 @@ export const ProductManagement: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search services, materials, SKU or barcode..."
+              placeholder={isRestaurantBusiness ? 'Search menu item or category...' : 'Search services, materials, SKU or barcode...'}
               className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-2.5 pl-10 text-xs focus:border-emerald-500 focus:outline-none"
             />
           </div>

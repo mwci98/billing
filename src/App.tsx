@@ -106,7 +106,7 @@ const AppContent: React.FC = () => {
   const isRestaurantBusiness = businessMode === 'Restaurant';
 
   // Custom Sidebar navigation list
-  const sidebarItems: Array<{
+  const allSidebarItems: Array<{
     id: string;
     name: string;
     icon: React.ComponentType<{className?: string}>;
@@ -115,14 +115,15 @@ const AppContent: React.FC = () => {
   }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
     { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
-    { id: 'products', name: isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
+    { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
-    { id: 'customers', name: isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
+    { id: 'customers', name: isRestaurantBusiness ? 'Guests & Customers' : isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
-    { id: 'reports', name: 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
+    { id: 'reports', name: isRestaurantBusiness ? 'Restaurant Reports' : 'Spreadsheet Reports', icon: BarChart3, permission: 'canViewFinancials' },
     { id: 'staff', name: 'Staff Access', icon: UserCog, adminOnly: true },
-    { id: 'settings', name: 'Store Config', icon: Settings, adminOnly: true },
+    { id: 'settings', name: isRestaurantBusiness ? 'Restaurant Config' : 'Store Config', icon: Settings, adminOnly: true },
   ];
+  const sidebarItems = allSidebarItems.filter(item => !isRestaurantBusiness || !['inventory', 'suppliers'].includes(item.id));
 
   const canAccessTab = (tab: string) => {
     const item = sidebarItems.find(entry => entry.id === tab);
@@ -445,7 +446,7 @@ const AppContent: React.FC = () => {
           }`}
         >
           <ListChecks className="h-5 w-5 stroke-[2.2]" />
-          <span className="text-[10px] mt-1 font-semibold">Catalog</span>
+          <span className="text-[10px] mt-1 font-semibold">{isRestaurantBusiness ? 'Menu' : 'Catalog'}</span>
         </button>
         )}
 
