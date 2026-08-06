@@ -46,10 +46,19 @@ const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
 
 const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 
-const omitUndefinedFields = <T extends Record<string, unknown>>(value: T): T =>
-  Object.fromEntries(
-    Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)
-  ) as T;
+const omitUndefinedFields = <T,>(value: T): T => {
+  if (Array.isArray(value)) {
+    return value.filter(item => item !== undefined).map(item => omitUndefinedFields(item)) as T;
+  }
+  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, fieldValue]) => fieldValue !== undefined)
+        .map(([key, fieldValue]) => [key, omitUndefinedFields(fieldValue)])
+    ) as T;
+  }
+  return value;
+};
 
 const migrateLegacyQposBranding = (settings: StoreSettings): StoreSettings => ({
   ...settings,
@@ -931,11 +940,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addSale = (s: Omit<Sale, 'id' | 'date'>): Sale => {
     const scope = getWorkspaceScope();
     const saleId = `sale-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newSale: Sale = {
+    const newSale = omitUndefinedFields<Sale>({
       ...s,
       id: saleId,
       date: new Date().toISOString()
-    };
+    });
 
     // Update real-time product stock counts atomically and write audit logs
     setProducts((prevProducts) => {
