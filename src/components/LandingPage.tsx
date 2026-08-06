@@ -22,6 +22,10 @@ import {
   Users,
   Wifi,
   Zap,
+  ChefHat,
+  CreditCard,
+  Printer,
+  Wrench,
 } from 'lucide-react';
 
 type LandingPageProps = {
@@ -31,13 +35,13 @@ type LandingPageProps = {
 const features = [
   {
     icon: ShoppingCart,
-    title: 'Fast POS billing',
-    description: 'Scan, bill and print GST-ready invoices from any phone, tablet or computer.',
+    title: 'Billing that fits the business',
+    description: 'Run retail POS, service invoices or restaurant orders from any phone, tablet or computer.',
   },
   {
     icon: Boxes,
-    title: 'Live inventory',
-    description: 'Track stock, IMEI details, purchase costs, low-stock alerts and product movement.',
+    title: 'Inventory down to each device',
+    description: 'Track stock, purchases, low-stock alerts and every handset separately by IMEI.',
   },
   {
     icon: Users,
@@ -46,25 +50,47 @@ const features = [
   },
   {
     icon: Building2,
-    title: 'Multi-store workspace',
-    description: 'Switch stores from one account and keep every branch securely separated.',
+    title: 'Isolated multi-store workspaces',
+    description: 'Switch branches from one account while products, sales, staff and store configuration stay separate.',
   },
   {
     icon: FileText,
-    title: 'Professional invoices',
-    description: 'Create branded GST invoices with your business details, logo and signature.',
+    title: 'GST invoices and thermal receipts',
+    description: 'Create branded GST invoices and print compact 80mm receipts after payment settlement.',
   },
   {
     icon: BarChart3,
     title: 'Business insights',
     description: 'See sales, revenue, estimated profit and customer activity as it happens.',
   },
+  {
+    icon: ChefHat,
+    title: 'Restaurant open orders',
+    description: 'Manage tables, guests, variants and kitchen notes. Edit unpaid tickets and settle them later.',
+  },
+  {
+    icon: CreditCard,
+    title: 'Flexible payment settlement',
+    description: 'Record Cash, UPI, Card, Split and credit payments with customer due tracking.',
+  },
+  {
+    icon: Smartphone,
+    title: 'Visual menu and catalog',
+    description: 'Upload compressed dish pictures, organize variants and create touch-friendly menu cards.',
+  },
+];
+
+const businessModes = [
+  {icon: ShoppingCart, title: 'Retail', accent: 'emerald', description: 'Barcode billing, purchasing, suppliers, stock and loyalty.'},
+  {icon: Wrench, title: 'Services', accent: 'blue', description: 'Service catalog, clients, GST invoices and professional billing.'},
+  {icon: Boxes, title: 'Hybrid', accent: 'amber', description: 'Sell products and services together from one workspace.'},
+  {icon: ChefHat, title: 'Restaurant', accent: 'rose', description: 'Tables, open orders, food variants, kitchen notes and thermal print.'},
 ];
 
 const workflow = [
   ['01', 'Create your workspace', 'Sign in with Google and add your business, GST and store information.'],
-  ['02', 'Add products & staff', 'Import inventory, scan barcodes and assign the right staff permissions.'],
-  ['03', 'Start billing', 'Create invoices, collect payments and monitor the business from anywhere.'],
+  ['02', 'Choose how you operate', 'Use Retail, Service, Hybrid or Restaurant mode and add your products, menu or services.'],
+  ['03', 'Bill, settle and grow', 'Collect payments, print receipts and monitor every workspace from anywhere.'],
 ];
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
@@ -88,6 +114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </a>
 
           <nav className="hidden items-center gap-8 text-xs font-semibold text-white/60 md:flex">
+            <a href="#business-modes" className="transition hover:text-white">Business modes</a>
             <a href="#features" className="transition hover:text-white">Features</a>
             <a href="#how-it-works" className="transition hover:text-white">How it works</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
@@ -243,14 +270,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
+        <section id="business-modes" className="border-y border-white/[0.06] bg-[#0D0D0F]">
+          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl"><span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">One QPOS, four ways to work</span><h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">The workspace changes with your business.</h2></div>
+              <p className="max-w-md text-sm leading-7 text-white/40">QPOS shows the right billing and inventory tools for each operation, without forcing every business into the same POS screen.</p>
+            </div>
+            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {businessModes.map(({icon: Icon, title, description}, index) => <article key={title} className="group relative overflow-hidden rounded-[1.5rem] border border-white/[0.08] bg-[#141416] p-6 transition hover:-translate-y-1 hover:border-emerald-400/25"><span className="absolute right-4 top-3 font-mono text-4xl font-black text-white/[0.025]">0{index + 1}</span><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/[0.08] text-emerald-400"><Icon className="h-5 w-5" /></span><h3 className="mt-8 text-xl font-extrabold">{title}</h3><p className="mt-2 text-xs leading-6 text-white/40">{description}</p></article>)}
+            </div>
+          </div>
+        </section>
+
         <section id="features" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32">
           <div className="max-w-2xl">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Everything in one place</span>
             <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">
-              Built for the way modern stores work.
+              From the first item to the final report.
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/45">
-              From the first barcode scan to the final sales report, QPOS keeps every part of your operation connected.
+              Billing, stock, customers, staff, payments and reporting stay connected inside the correct workspace.
             </p>
           </div>
 
@@ -302,22 +341,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14 xl:p-16">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  QPOS software available now
+                  Cloud business operating system
                 </div>
                 <h1 className="mt-7 text-[2.9rem] font-extrabold leading-[1.02] tracking-[-0.065em] sm:text-6xl xl:text-[4.6rem]">
-                  Run your store
-                  <span className="block text-emerald-400">with QPOS.</span>
+                  Bill. Track. Settle.
+                  <span className="block text-emerald-400">Run it all with QPOS.</span>
                 </h1>
                 <p className="mt-6 max-w-lg text-sm leading-7 text-white/45 sm:text-base">
-                  Start using the complete QPOS billing, inventory and GST invoice software
-                  today. Our optional all-in-one countertop Smart Terminal is coming soon.
+                  One cloud platform for retail stores, service businesses, mixed operations and restaurants. Keep every workspace isolated while billing, inventory and reporting stay connected.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 text-[10px] font-bold text-white/55">
                   {[
-                    [ScanBarcode, 'Barcode ready'],
-                    [FileText, 'Built-in receipts'],
-                    [BadgeIndianRupee, 'Card payments'],
-                    [Cloud, 'Cloud connected'],
+                    [ScanBarcode, 'Barcode + IMEI'],
+                    [Printer, 'GST + thermal print'],
+                    [CreditCard, 'Cash · UPI · Card'],
+                    [Building2, 'Multi-workspace'],
                   ].map(([Icon, label]) => {
                     const TerminalIcon = Icon as React.ComponentType<{ className?: string }>;
                     return (
@@ -328,9 +366,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     );
                   })}
                 </div>
-                <p className="mt-6 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                <p className="mt-6 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/35">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  Only the optional Smart Terminal hardware is coming soon
+                  Retail · Service · Hybrid · Restaurant
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <button
@@ -358,16 +396,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 </div>
               </div>
 
-              <div className="relative min-h-[24rem] overflow-hidden border-t border-white/[0.06] sm:min-h-[32rem] lg:min-h-full lg:border-l lg:border-t-0">
-                <img
-                  src="/images/qpos-terminal-coming-soon.png"
-                  alt="Preview of the upcoming QPOS smart billing terminal with receipt printer and card reader"
-                  fetchPriority="high"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#121214]/55 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#121214]/30 lg:via-transparent lg:to-transparent" />
-                <div className="absolute bottom-5 right-5 rounded-xl border border-white/15 bg-black/55 px-4 py-2.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white/75 backdrop-blur-xl">
-                  Smart Terminal · Coming soon
+              <div className="relative flex min-h-[28rem] items-center overflow-hidden border-t border-white/[0.06] bg-[radial-gradient(circle_at_65%_30%,rgba(16,185,129,0.16),transparent_45%)] p-6 sm:min-h-[34rem] sm:p-10 lg:min-h-full lg:border-l lg:border-t-0">
+                <div className="w-full rounded-[1.75rem] border border-white/10 bg-[#0D0D0F]/90 p-4 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:p-6">
+                  <div className="flex items-center justify-between border-b border-white/[0.07] pb-4"><div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400">Active workspace</p><h3 className="mt-1 text-lg font-extrabold">Restaurant · Kohima</h3></div><span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[9px] font-black text-emerald-400">Cloud synced</span></div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">{businessModes.map(({icon: Icon, title}, index) => <div key={title} className={`rounded-2xl border p-4 ${index === 3 ? 'border-emerald-400/30 bg-emerald-400/[0.08]' : 'border-white/[0.07] bg-white/[0.025]'}`}><Icon className={`h-5 w-5 ${index === 3 ? 'text-emerald-400' : 'text-white/35'}`} /><p className="mt-5 text-sm font-extrabold">{title}</p><p className="mt-1 text-[9px] text-white/30">Isolated configuration</p></div>)}</div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-center"><div><strong className="block text-lg text-emerald-400">12</strong><span className="text-[8px] text-white/35">Open orders</span></div><div><strong className="block text-lg">₹38.6K</strong><span className="text-[8px] text-white/35">Today</span></div><div><strong className="block text-lg">486</strong><span className="text-[8px] text-white/35">Items</span></div></div>
                 </div>
               </div>
             </div>
@@ -398,14 +431,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <div className="my-7 h-px bg-white/[0.07]" />
               <div className="grid gap-3 text-xs font-semibold text-white/65 sm:grid-cols-2">
                 {[
-                  'Unlimited billing',
-                  'GST invoices',
-                  'Cloud inventory',
+                  'Retail & service billing',
+                  'Restaurant open orders',
+                  'GST & thermal receipts',
+                  'Barcode & IMEI inventory',
+                  'Isolated store workspaces',
                   'Staff controls',
                   'Business reports',
                   'Customer loyalty',
-                  'Barcode scanning',
-                  'Multi-device access',
+                  'Cash, UPI & Card settlement',
+                  'Menu picture uploads',
                 ].map(item => (
                   <span key={item} className="flex items-center gap-2">
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-400">
