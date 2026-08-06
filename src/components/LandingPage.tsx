@@ -341,22 +341,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="order-first relative mx-auto w-full max-w-7xl px-5 pb-10 pt-5 sm:px-8 sm:pb-12 sm:pt-6">
-          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
-            <div className="grid lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
-              <div className="flex flex-col justify-center p-7 sm:p-8 lg:p-9">
+        <section className="order-first relative mx-auto w-full max-w-5xl px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
+          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.11),transparent_42%),#121214] shadow-[0_32px_90px_rgba(0,0,0,0.4)]">
+            <div>
+              <div className="flex flex-col items-center justify-center px-7 py-14 text-center sm:px-12 sm:py-16">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   Cloud business operating system
                 </div>
-                <h1 className="mt-4 max-w-xl text-[2.6rem] font-extrabold leading-[1.02] tracking-[-0.06em] sm:text-5xl lg:text-[3.3rem]">
-                  One QPOS.
-                  <span className="block text-emerald-400">Every kind of business.</span>
+                <h1 className="mt-5 max-w-3xl text-[2.65rem] font-extrabold leading-[1.04] tracking-[-0.06em] sm:text-5xl lg:text-[3.75rem]">
+                  Billing and inventory,
+                  <span className="block text-emerald-400">made simple.</span>
                 </h1>
-                <p className="mt-3 max-w-lg text-sm leading-6 text-white/45">
-                  One cloud platform for retail stores, service businesses, mixed operations and restaurants. Keep every workspace isolated while billing, inventory and reporting stay connected.
+                <p className="mt-5 max-w-xl text-sm leading-7 text-white/45 sm:text-base">
+                  Manage sales, stock, customers and payments from one cloud workspace built for retail, services and restaurants.
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold text-white/55">
+                <div className="hidden">
                   {[
                     [ScanBarcode, 'Barcode + IMEI'],
                     [Printer, 'GST + thermal print'],
@@ -372,7 +372,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     );
                   })}
                 </div>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={onGetStarted}
                     className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
@@ -388,7 +388,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <ChevronRight className="h-4 w-4" />
                   </a>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] font-bold text-white/45">
+                <div className="hidden">
                   <span className="uppercase tracking-[0.12em] text-white/28">Use QPOS on</span>
                   <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5 text-emerald-400" /> Mobile</span>
                   <span className="h-1 w-1 rounded-full bg-white/15" />
@@ -398,7 +398,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 </div>
               </div>
 
-              <div className="relative flex min-h-[26rem] items-center overflow-hidden border-t border-white/[0.06] bg-[radial-gradient(circle_at_70%_20%,rgba(16,185,129,0.18),transparent_42%)] p-5 sm:p-7 lg:border-l lg:border-t-0">
+              <div className="hidden">
                 <div className="w-full rounded-[1.6rem] border border-white/10 bg-[#0B0D0C]/95 p-4 shadow-[0_30px_90px_rgba(0,0,0,0.5)] sm:p-5">
                   <div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400">Restaurant workspace</p><h3 className="mt-1 text-xl font-extrabold">Open orders</h3></div><span className="rounded-full bg-emerald-400/10 px-3 py-1.5 text-[9px] font-black text-emerald-400">3 pending</span></div>
                   <div className="mt-4 space-y-2">{[['Table 04', '3 items', '₹850'], ['Table 01', '2 items', '₹450'], ['Takeaway', '4 items', '₹720']].map(([name, items, total], index) => <div key={name} className={`rounded-2xl border px-4 py-3 ${index === 0 ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-white/[0.07] bg-white/[0.025]'}`}><div className="flex items-center justify-between"><div><p className="text-sm font-extrabold">{name}</p><p className="mt-0.5 text-[9px] uppercase tracking-wide text-white/35">{items} · unpaid</p></div><strong className="font-mono text-sm text-emerald-400">{total}</strong></div>{index === 0 && <div className="mt-2 grid grid-cols-4 gap-1.5 text-[9px] font-black"><span className="rounded-lg border border-white/10 px-2 py-1.5 text-center text-white/55">Edit</span>{['Cash', 'UPI', 'Card'].map(method => <span key={method} className="rounded-lg bg-emerald-500/10 px-2 py-1.5 text-center text-emerald-400">{method}</span>)}</div>}</div>)}</div>
