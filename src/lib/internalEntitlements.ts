@@ -1,5 +1,6 @@
 const INTERNAL_TEST_ACCOUNTS = new Set([
-  'jiv.dasgupta09@gmail.com'
+  'jiv.dasgupta09@gmail.com',
+  'mobilezonekohima@gmail.com'
 ]);
 
 export const isInternalTestingAccount = (email?: string | null) =>
