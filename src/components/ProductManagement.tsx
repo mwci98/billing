@@ -351,9 +351,9 @@ export const ProductManagement: React.FC = () => {
     const autoId = Math.floor(Math.random() * 900000) + 100000;
     setSku(`SKU-${autoId}`);
     setBarcode(`${autoId}`);
-    setCategory('General');
+    setCategory(isRestaurantBusiness ? 'Main Course' : 'General');
     setBrand('');
-    setUnit('');
+    setUnit(isRestaurantBusiness ? 'Plate' : '');
     setPurchasePrice('');
     setSellingPrice('');
     setTaxRate('18');
@@ -367,7 +367,7 @@ export const ProductManagement: React.FC = () => {
     setProductionNotes('');
     setImeiInput('');
     setTrackInventoryByImei(false);
-    setItemType(businessMode === 'Service' ? 'Service' : 'Material');
+    setItemType(businessMode === 'Service' || isRestaurantBusiness ? 'Service' : 'Material');
     setIsFormOpen(true);
   };
 
@@ -868,21 +868,25 @@ export const ProductManagement: React.FC = () => {
             </button>
 
             <h3 className="text-xl font-black mb-1">
-              {editingItem ? 'Edit Billing Item' : 'Add Service or Material'}
+              {isRestaurantBusiness ? (editingItem ? 'Edit Menu Item' : 'Add Menu Item') : editingItem ? 'Edit Billing Item' : 'Add Service or Material'}
             </h3>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-gray-400">
-                {businessMode === 'Service'
+                {isRestaurantBusiness
+                  ? 'Add the dish details shown on the restaurant order screen.'
+                  : businessMode === 'Service'
                   ? 'Choose whether this billing entry is a service or a material.'
                   : 'Only fields relevant to this workspace are shown.'}
               </p>
-              <button
-                type="button"
-                onClick={() => setIsTouchEntryOpen(true)}
-                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
-              >
-                Touch typing
-              </button>
+              {!isRestaurantBusiness && (
+                <button
+                  type="button"
+                  onClick={() => setIsTouchEntryOpen(true)}
+                  className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+                >
+                  Touch typing
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
@@ -967,7 +971,7 @@ export const ProductManagement: React.FC = () => {
 
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold mb-1">
-                    {itemType === 'Service' ? 'Service Description' : 'Product Title'}
+                    {isRestaurantBusiness ? 'Menu Item Name' : itemType === 'Service' ? 'Service Description' : 'Product Title'}
                   </label>
                   <input
                     id="form-prod-name"
@@ -975,12 +979,12 @@ export const ProductManagement: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={itemType === 'Service' ? 'e.g. Website development or repair labour' : 'e.g. Organic Whole Wheat Bread...'}
+                    placeholder={isRestaurantBusiness ? 'e.g. Chicken biryani' : itemType === 'Service' ? 'e.g. Website development or repair labour' : 'e.g. Organic Whole Wheat Bread...'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
-                {itemType === 'Material' && <div className="col-span-2">
+                {itemType === 'Material' && !isRestaurantBusiness && <div className="col-span-2">
                   <label className="mb-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs font-semibold dark:border-gray-800 dark:bg-gray-900">
                     <span>
                       Track every handset by IMEI
@@ -1033,7 +1037,7 @@ export const ProductManagement: React.FC = () => {
                   )}
                 </div>}
 
-                <div>
+                {!isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">SKU identifier Code</label>
                   <input
                     id="form-prod-sku"
@@ -1043,9 +1047,9 @@ export const ProductManagement: React.FC = () => {
                     onChange={(e) => setSku(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
                   />
-                </div>
+                </div>}
 
-                {itemType === 'Material' && <div>
+                {itemType === 'Material' && !isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1 flex items-center justify-between">
                     <span>EAN Barcode Code</span>
                     <span className="text-[10px] text-gray-400 font-mono">Webcam or simulated scan</span>
@@ -1121,7 +1125,7 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">
-                    {itemType === 'Service' ? 'Department / Service Provider (Optional)' : 'Brand Name'}
+                    {isRestaurantBusiness ? 'Kitchen Station (Optional)' : itemType === 'Service' ? 'Department / Service Provider (Optional)' : 'Brand Name'}
                   </label>
                   {itemType === 'Service' ? (
                     <input
@@ -1129,7 +1133,7 @@ export const ProductManagement: React.FC = () => {
                       type="text"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
-                      placeholder="e.g. Web Team, Workshop, Consultant"
+                      placeholder={isRestaurantBusiness ? 'e.g. Main Kitchen, Bar, Dessert' : 'e.g. Web Team, Workshop, Consultant'}
                       className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                     />
                   ) : (
@@ -1150,19 +1154,19 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">
-                    {itemType === 'Service' ? 'Billing Unit' : 'Unit Weight/Size'}
+                    {isRestaurantBusiness ? 'Serving Unit' : itemType === 'Service' ? 'Billing Unit' : 'Unit Weight/Size'}
                   </label>
                   <input
                     id="form-prod-unit"
                     type="text"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    placeholder={itemType === 'Service' ? 'Job, Hour, Visit, Month...' : 'Loaf (400g), Bottle (1L)...'}
+                    placeholder={isRestaurantBusiness ? 'Plate, Bowl, Glass, Piece...' : itemType === 'Service' ? 'Job, Hour, Visit, Month...' : 'Loaf (400g), Bottle (1L)...'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
 
-                {itemType === 'Material' && <div>
+                {itemType === 'Material' && !isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">
                     Stock on Hand {trackInventoryByImei && <span className="text-emerald-500">(automatic)</span>}
                   </label>
@@ -1177,7 +1181,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>}
 
-                {itemType === 'Material' && <div>
+                {itemType === 'Material' && !isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">
                     {effectiveSourcingType === 'Manufactured' ? `Production / Raw Cost (${settings.currency})` : `Supplier Buy Price incl. GST (${settings.currency})`}
                   </label>
@@ -1235,7 +1239,7 @@ export const ProductManagement: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">
-                    {itemType === 'Service' ? 'Service Fee incl. GST' : 'POS Selling Price incl. GST'} ({settings.currency})
+                    {isRestaurantBusiness ? 'Menu Price incl. GST' : itemType === 'Service' ? 'Service Fee incl. GST' : 'POS Selling Price incl. GST'} ({settings.currency})
                   </label>
                   <input
                     id="form-prod-selling-price"
@@ -1265,7 +1269,7 @@ export const ProductManagement: React.FC = () => {
                   </select>
                 </div>
 
-                {itemType === 'Material' && <div>
+                {itemType === 'Material' && !isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">Low Stock Warning Limits</label>
                   <input
                     id="form-prod-low-stock"
@@ -1277,7 +1281,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>}
 
-                {itemType === 'Material' && <div>
+                {itemType === 'Material' && !isRestaurantBusiness && <div>
                   <label className="block text-xs font-semibold mb-1">Expiry Date (Optional)</label>
                   <input
                     id="form-prod-expiry"
@@ -1313,14 +1317,14 @@ export const ProductManagement: React.FC = () => {
                   onClick={() => setIsFormOpen(false)}
                   className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                 >
-                  Cancel definitions
+                  Cancel
                 </button>
                 <button
                   id="form-prod-submit-btn"
                   type="submit"
                   className="rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
                 >
-                  Confirm Specifications
+                  {isRestaurantBusiness ? (editingItem ? 'Save Menu Item' : 'Add to Menu') : 'Confirm Specifications'}
                 </button>
               </div>
             </form>
