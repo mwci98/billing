@@ -340,7 +340,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="order-first relative mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:py-16">
+        <section className="order-first relative mx-auto w-full max-w-7xl px-5 pb-14 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
           <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#121214] shadow-[0_40px_120px_rgba(0,0,0,0.48)]">
             <div className="grid lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
               <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
