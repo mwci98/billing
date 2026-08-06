@@ -139,7 +139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </header>
 
       <main id="top" className="relative z-10 flex flex-col pt-[4.75rem]">
-        <section className="hidden">
+        <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
           <div className="relative mx-auto max-w-5xl">
             <div className="absolute -inset-7 rounded-[3rem] bg-emerald-500/[0.06] blur-3xl" />
             <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111113] p-2 shadow-[0_40px_100px_rgba(0,0,0,0.55)] sm:p-3">
@@ -260,7 +260,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
+        <section className="hidden">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">A dashboard for every workspace</span><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Three businesses. Three focused views.</h2></div><p className="max-w-md text-sm leading-6 text-white/40">Each workspace keeps its own configuration, operations and reporting instead of mixing everything into one dashboard.</p></div>
           <div className="mt-9 grid gap-4 lg:grid-cols-3">
             {[
