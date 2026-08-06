@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, ArrowUpDown, Tag, Barcode,
-  Calendar, Layers, Info, Filter, ArrowRightLeft, Eye, X, Camera, Check, ChevronLeft, ChevronRight
+  Calendar, Layers, Info, Filter, ArrowRightLeft, Eye, X, Camera, Check, ChevronLeft, ChevronRight, ImagePlus
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Product } from '../types';
@@ -69,6 +69,39 @@ type TouchEntryField =
   | 'batchNo'
   | 'productionNotes';
 
+const isUploadedImage = (value?: string) => Boolean(value && (value.startsWith('data:image/') || value.startsWith('https://') || value.startsWith('http://')));
+
+function ProductImage({value, name, large = false}: {value?: string; name: string; large?: boolean}) {
+  const size = large ? 'h-20 w-20' : 'h-12 w-12';
+  return isUploadedImage(value)
+    ? <img src={value} alt={name} className={`${size} rounded-xl object-cover`} />
+    : <span className={`${size} flex items-center justify-center rounded-xl bg-gray-100 text-2xl dark:bg-white/5`}>{value || '📦'}</span>;
+}
+
+function compressProductImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxEdge = 640;
+      const scale = Math.min(1, maxEdge / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) return reject(new Error('Canvas is unavailable'));
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Invalid image'));
+    };
+    image.src = objectUrl;
+  });
+}
+
 export const ProductManagement: React.FC = () => {
   const { products, addProduct, editProduct, deleteProduct, adjustStock, settings, activeStore, triggerToast } = useAppState();
 
@@ -119,6 +152,7 @@ export const ProductManagement: React.FC = () => {
   const [lowStockAlert, setLowStockAlert] = useState<string>('5');
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('📦');
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
   const [sourcingType, setSourcingType] = useState<'Purchased' | 'Manufactured' | 'Both'>('Purchased');
   const [manufacturingCost, setManufacturingCost] = useState<string>('');
   const [batchNo, setBatchNo] = useState<string>('');
@@ -133,6 +167,22 @@ export const ProductManagement: React.FC = () => {
   const effectiveSourcingType = businessMode === 'Hybrid'
     ? sourcingType
     : sourcingForBusinessMode(businessMode);
+
+  const handleImageUpload = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return triggerToast('Please choose an image file.', 'warning');
+    if (file.size > 12 * 1024 * 1024) return triggerToast('Image must be smaller than 12 MB.', 'warning');
+    setIsImageProcessing(true);
+    try {
+      const dataUrl = await compressProductImage(file);
+      setImageUrl(dataUrl);
+      triggerToast('Menu picture added.', 'success');
+    } catch {
+      triggerToast('Could not process that image. Please try another one.', 'error');
+    } finally {
+      setIsImageProcessing(false);
+    }
+  };
 
   const touchEntryValue = (): string => {
     switch (touchEntryField) {
@@ -666,7 +716,7 @@ export const ProductManagement: React.FC = () => {
                 const src = p.sourcingType || 'Purchased';
                 return (
                   <tr key={p.id} className="text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50/40 dark:hover:bg-gray-900/10">
-                    <td className="py-3 px-2 text-2xl">{p.imageUrl || '📦'}</td>
+                    <td className="py-3 px-2"><ProductImage value={p.imageUrl} name={p.name} /></td>
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
                       {isRestaurantBusiness && Boolean(p.menuVariants?.length) && (
@@ -1346,7 +1396,12 @@ export const ProductManagement: React.FC = () => {
                 </div>}
 
                 <div>
-                  <label className="block text-xs font-semibold mb-2">Display Icon/Emoji</label>
+                  <label className="block text-xs font-semibold mb-2">{isRestaurantBusiness ? 'Menu Picture or Icon' : 'Display Picture or Icon'}</label>
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-700">
+                    <ProductImage value={imageUrl} name={name || 'Product preview'} large />
+                    <div className="min-w-0 flex-1"><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-500 transition hover:bg-emerald-500/20"><ImagePlus className="h-4 w-4" />{isImageProcessing ? 'Processing...' : 'Choose picture'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={isImageProcessing} onChange={event => void handleImageUpload(event.target.files?.[0])} className="hidden" /></label><p className="mt-1.5 text-[10px] text-gray-400">JPG, PNG or WebP. The image is compressed automatically.</p></div>
+                    {isUploadedImage(imageUrl) && <button type="button" onClick={() => setImageUrl('📦')} className="rounded-lg px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10">Remove</button>}
+                  </div>
                   <div className="flex gap-2 items-center flex-wrap">
                     {emojiPresets.map((emoji) => (
                       <button
