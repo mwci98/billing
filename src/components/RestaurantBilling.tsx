@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {Armchair, ChefHat, Minus, Plus, Search, ShoppingBag, Trash2, Truck, UsersRound, UtensilsCrossed, WalletCards} from 'lucide-react';
+import {Armchair, ChefHat, Minus, Plus, Printer, ReceiptText, Search, ShoppingBag, Trash2, Truck, UsersRound, UtensilsCrossed, WalletCards, X} from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {Product, Sale, SaleItem} from '../types';
 
@@ -18,6 +18,7 @@ export const RestaurantBilling: React.FC = () => {
   const [kitchenNotes, setKitchenNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'UPI' | 'Card'>('Cash');
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
+  const [completedOrder, setCompletedOrder] = useState<Sale | null>(null);
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))], [products]);
   const menuProducts = products.filter(product =>
@@ -67,12 +68,13 @@ export const RestaurantBilling: React.FC = () => {
       return {productId: line.product.id, name: line.variant ? `${line.product.name} - ${line.variant.name}` : line.product.name, sku: line.product.sku, barcode: line.product.barcode, price: taxable / line.quantity, quantity: line.quantity, taxRate: line.product.taxRate, taxAmount: gross - taxable, total: taxable};
     });
     const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : paymentMethod === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal};
-    addSale({
+    const completed = addSale({
       customerName: orderType === 'Dine In' ? `Table ${tableNumber}` : `${orderType} Guest`,
       items, subtotal, taxAmount, discount: 0, total: grossTotal, paymentMethod, paymentDetails,
       loyaltyPointsEarned: 0, authId: currentUser?.id || 'restaurant-staff', employeeName: currentUser?.name || 'Restaurant staff', status: 'Completed',
       orderType, ...(orderType === 'Dine In' ? {tableNumber: tableNumber.trim(), guestCount} : {}), ...(kitchenNotes.trim() ? {kitchenNotes: kitchenNotes.trim()} : {}),
     });
+    setCompletedOrder(completed);
     triggerToast(`${orderType} order settled successfully.`, 'success');
     setCart([]);
     setKitchenNotes('');
@@ -123,6 +125,10 @@ export const RestaurantBilling: React.FC = () => {
           </div>
         </div>
       )}
+
+      {completedOrder && (
+        <ThermalReceipt sale={completedOrder} storeName={settings.storeName} address={settings.address} phone={settings.phone} gstNumber={settings.gstNumber} currency={settings.currency} footer={settings.receiptFooter} onClose={() => setCompletedOrder(null)} />
+      )}
     </div>
   );
 };
@@ -130,3 +136,33 @@ export const RestaurantBilling: React.FC = () => {
 function OrderTypeButton({active, icon: Icon, label, onClick}: {active: boolean; icon: typeof UtensilsCrossed; label: string; onClick: () => void}) { return <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition ${active ? 'bg-emerald-500 text-[#07110D]' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'}`}><Icon className="h-4 w-4" />{label}</button>; }
 function Field({icon: Icon, label, children}: {icon: typeof Armchair; label: string; children: React.ReactNode}) { return <label><span className="mb-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400"><Icon className="h-3.5 w-3.5" />{label}</span>{children}</label>; }
 function TotalRow({label, value, currency}: {label: string; value: number; currency: string}) { return <div className="flex justify-between text-gray-500"><span>{label}</span><span className="font-mono font-bold text-gray-800 dark:text-gray-200">{currency}{value.toFixed(2)}</span></div>; }
+
+function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, footer, onClose}: {sale: Sale; storeName: string; address: string; phone: string; gstNumber: string; currency: string; footer: string; onClose: () => void}) {
+  function printReceipt() {
+    document.documentElement.classList.add('thermal-printing');
+    const cleanup = () => document.documentElement.classList.remove('thermal-printing');
+    window.addEventListener('afterprint', cleanup, {once: true});
+    window.print();
+    window.setTimeout(cleanup, 1000);
+  }
+
+  return <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm sm:items-center">
+    <div className="max-h-[95vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-gray-100 p-3 shadow-2xl">
+      <div className="mb-3 flex items-center justify-between px-2 text-gray-900"><div className="flex items-center gap-2"><ReceiptText className="h-4 w-4" /><span className="text-sm font-black">Thermal receipt</span></div><button onClick={onClose} className="rounded-lg p-2 hover:bg-gray-200"><X className="h-4 w-4" /></button></div>
+      <div className="thermal-receipt mx-auto w-[80mm] max-w-full bg-white px-[5mm] py-[5mm] font-mono text-[10px] leading-tight text-black">
+        <div className="text-center"><h2 className="text-base font-black uppercase">{storeName}</h2>{address && <p className="mt-1 whitespace-pre-line">{address}</p>}{phone && <p>Phone: {phone}</p>}{gstNumber && <p>GSTIN: {gstNumber}</p>}</div>
+        <div className="my-3 border-t border-dashed border-black" />
+        <div className="grid grid-cols-2 gap-1"><span>Receipt</span><span className="text-right">{sale.id}</span><span>Date</span><span className="text-right">{new Date(sale.date).toLocaleString('en-IN')}</span><span>Order</span><span className="text-right">{sale.orderType}</span>{sale.tableNumber && <><span>Table / Guests</span><span className="text-right">{sale.tableNumber} / {sale.guestCount || 1}</span></>}</div>
+        <div className="my-3 border-t border-dashed border-black" />
+        <div className="grid grid-cols-[1fr_28px_62px] gap-1 border-b border-black pb-1 font-black"><span>ITEM</span><span className="text-center">QTY</span><span className="text-right">AMOUNT</span></div>
+        <div>{sale.items.map((item, index) => <div key={`${item.productId}-${index}`} className="grid grid-cols-[1fr_28px_62px] gap-1 border-b border-dotted border-gray-400 py-1.5"><span>{item.name}<span className="block text-[8px]">@ {currency}{((item.total + item.taxAmount) / item.quantity).toFixed(2)}</span></span><span className="text-center">{item.quantity}</span><span className="text-right">{currency}{(item.total + item.taxAmount).toFixed(2)}</span></div>)}</div>
+        <div className="ml-auto mt-3 w-44 space-y-1"><ReceiptRow label="Subtotal" value={`${currency}${sale.subtotal.toFixed(2)}`} /><ReceiptRow label="GST" value={`${currency}${sale.taxAmount.toFixed(2)}`} /><div className="border-t border-black pt-1 text-xs font-black"><ReceiptRow label="TOTAL" value={`${currency}${sale.total.toFixed(2)}`} /></div><ReceiptRow label="Paid via" value={sale.paymentMethod} /></div>
+        <div className="my-3 border-t border-dashed border-black" />
+        <div className="text-center">{footer || 'Thank you. Please visit again.'}<p className="mt-2 text-[8px]">Powered by QPOS</p></div>
+      </div>
+      <button onClick={printReceipt} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-black text-[#07110D]"><Printer className="h-4 w-4" />Print 80mm receipt</button>
+    </div>
+  </div>;
+}
+
+function ReceiptRow({label, value}: {label: string; value: string}) { return <div className="flex justify-between gap-3"><span>{label}</span><span className="text-right font-bold">{value}</span></div>; }
