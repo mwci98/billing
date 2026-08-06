@@ -153,10 +153,7 @@ export const RestaurantBilling: React.FC = () => {
         </div>
       </header>
 
-      {(openOrders.length > 0 || recentSettledOrders.length > 0) && <section className="grid gap-4 lg:grid-cols-2">
-        <OrderShelf title="Open orders" subtitle="Unpaid tickets that can still be changed" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} emptyText="No open orders" />
-        <OrderShelf title="Recent settled" subtitle="Completed tickets ready for reprint" orders={recentSettledOrders} currency={settings.currency} actionLabel="Print receipt" onAction={setCompletedOrder} emptyText="No settled orders yet" />
-      </section>}
+      {openOrders.length > 0 && <OrderShelf title="Open orders" subtitle="Unpaid tickets that can still be changed" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} emptyText="No open orders" />}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="space-y-4">
@@ -173,6 +170,8 @@ export const RestaurantBilling: React.FC = () => {
           <div className="border-t border-gray-200 p-5 dark:border-white/10"><label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Kitchen note</label><textarea value={kitchenNotes} onChange={event => setKitchenNotes(event.target.value)} placeholder="No onion, extra spicy, serve together..." className="restaurant-input mt-2 min-h-20 resize-none" /><div className="mt-4 space-y-2 text-xs"><TotalRow label="Subtotal" value={subtotal} currency={settings.currency} /><TotalRow label="GST" value={taxAmount} currency={settings.currency} /><div className="my-3 border-t border-dashed border-gray-300 dark:border-white/10" /><div className="flex items-end justify-between"><span className="font-bold">Grand total</span><span className="font-mono text-2xl font-black">{settings.currency}{grossTotal.toFixed(2)}</span></div></div>{editingOrder && <div className="mt-5 grid grid-cols-3 gap-2">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-xl border px-2 py-2.5 text-xs font-bold ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{method}</button>)}</div>}<button onClick={saveOpenOrder} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 py-3.5 text-sm font-black text-emerald-500 transition hover:bg-emerald-500/10"><ReceiptText className="h-4 w-4" />{editingOrder ? 'Update open order' : 'Save open order'}</button>{editingOrder && <button onClick={settleOrder} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-sm font-black text-[#07110D] transition hover:bg-emerald-400"><WalletCards className="h-4 w-4" />Settle & print {settings.currency}{grossTotal.toFixed(2)}</button>}</div>
         </div></aside>
       </div>
+
+      {recentSettledOrders.length > 0 && <OrderShelf title="Recent settled" subtitle="Completed tickets ready for reprint" orders={recentSettledOrders} currency={settings.currency} actionLabel="Print receipt" onAction={setCompletedOrder} emptyText="No settled orders yet" />}
 
       {variantProduct && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center">
