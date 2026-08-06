@@ -274,6 +274,8 @@ export interface SaaSStore {
     currency?: string;
     receiptHeader?: string;
     receiptFooter?: string;
+    loyaltyPointsPerDollar?: number;
+    dashboardWidgets?: DashboardWidgetSettings;
   };
 }
 

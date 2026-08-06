@@ -1438,6 +1438,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Settings
   const updateSettings = (newSettings: StoreSettings) => {
     const scope = getUserScope(currentUser);
+    const primaryStoreId = settings.tenantId || scope;
+    const isPrimaryStore = !activeStore?.id || activeStore.id === 'primary-store' || activeStore.id === primaryStoreId || activeStore.id === scope;
+
+    if (!isPrimaryStore) {
+      const updatedStore: SaaSStore = {
+        ...activeStore,
+        name: newSettings.storeName.trim() || activeStore.name,
+        city: newSettings.address.trim() || activeStore.city,
+        configuration: {
+          ...activeStore.configuration,
+          ownerName: newSettings.ownerName,
+          businessType: newSettings.businessType,
+          phone: newSettings.phone,
+          email: newSettings.email,
+          address: newSettings.address,
+          gstNumber: newSettings.gstNumber,
+          website: newSettings.website,
+          currency: newSettings.currency,
+          receiptHeader: newSettings.receiptHeader,
+          receiptFooter: newSettings.receiptFooter,
+          loyaltyPointsPerDollar: newSettings.loyaltyPointsPerDollar,
+          dashboardWidgets: newSettings.dashboardWidgets
+        }
+      };
+      const storeBranches = saasStores.map(store => store.id === updatedStore.id ? updatedStore : store);
+      const sharedSettings = {...settings, storeBranches};
+      setSaaSStores(storeBranches);
+      setActiveStore(updatedStore);
+      saveLocalAndState('settings', sharedSettings, setSettings);
+      setDoc(doc(db, 'users', scope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/store_settings`));
+      return;
+    }
+
     // The selected workspace is a device preference. Never sync it through
     // Firestore, otherwise a store switch on one terminal changes every
     // terminal logged into the same owner account.
@@ -1611,10 +1644,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSaaSStores(storeBranches);
     setActiveStore(newStore);
     localStorage.setItem(getDeviceStoreKey(currentUser), newStore.id);
-    updateSettings({
-      ...settings,
-      storeBranches
-    });
+    const sharedSettings = {...settings, storeBranches};
+    const ownerScope = getUserScope(currentUser);
+    saveLocalAndState('settings', sharedSettings, setSettings);
+    setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${ownerScope}/store_settings`));
     triggerToast(`${newStore.name} added and activated.`, 'success');
   };
 
@@ -1643,10 +1676,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSaaSStores(storeBranches);
     setActiveStore(updatedStore);
     localStorage.setItem(getDeviceStoreKey(currentUser), updatedStore.id);
-    updateSettings({
-      ...settings,
-      storeBranches
-    });
+    const sharedSettings = {...settings, storeBranches};
+    const ownerScope = getUserScope(currentUser);
+    saveLocalAndState('settings', sharedSettings, setSettings);
+    setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${ownerScope}/store_settings`));
     setActiveTab('dashboard');
     triggerToast(`${updatedStore.name} is configured and ready.`, 'success');
   };
@@ -1655,6 +1688,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = { ...settings, planTier: planName };
     updateSettings(updated);
     triggerToast(`SaaS Workspace upgraded to ${planName} Plan! 🚀`, 'success');
+  };
+
+  const ownerScope = getUserScope(currentUser);
+  const primaryStoreId = settings.tenantId || ownerScope;
+  const isPrimaryStore = !activeStore?.id || activeStore.id === 'primary-store' || activeStore.id === primaryStoreId || activeStore.id === ownerScope;
+  const effectiveSettings: StoreSettings = isPrimaryStore ? settings : {
+    ...settings,
+    ...activeStore.configuration,
+    storeName: activeStore.name,
+    address: activeStore.configuration?.address || activeStore.city,
+    phone: activeStore.configuration?.phone || '',
+    email: activeStore.configuration?.email || '',
+    gstNumber: activeStore.configuration?.gstNumber || '',
+    website: activeStore.configuration?.website || '',
+    receiptHeader: activeStore.configuration?.receiptHeader || activeStore.name,
+    receiptFooter: activeStore.configuration?.receiptFooter || '',
+    businessType: activeStore.configuration?.businessType || 'Retail',
+    currency: activeStore.configuration?.currency || '₹',
+    loyaltyPointsPerDollar: activeStore.configuration?.loyaltyPointsPerDollar ?? settings.loyaltyPointsPerDollar,
+    dashboardWidgets: activeStore.configuration?.dashboardWidgets || settings.dashboardWidgets
   };
 
   return (
@@ -1679,7 +1732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sales,
         purchases,
         transactions,
-        settings,
+        settings: effectiveSettings,
         notifications,
         staff,
 
