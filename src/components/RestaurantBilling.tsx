@@ -8,7 +8,7 @@ type MenuVariant = NonNullable<Product['menuVariants']>[number];
 type CartLine = {product: Product; quantity: number; variant?: MenuVariant};
 
 export const RestaurantBilling: React.FC = () => {
-  const {products, addSale, currentUser, settings, triggerToast} = useAppState();
+  const {products, sales, addSale, editSale, currentUser, settings, triggerToast} = useAppState();
   const [orderType, setOrderType] = useState<OrderType>('Dine In');
   const [tableNumber, setTableNumber] = useState('1');
   const [guestCount, setGuestCount] = useState(2);
@@ -19,6 +19,7 @@ export const RestaurantBilling: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'UPI' | 'Card'>('Cash');
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Sale | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Sale | null>(null);
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))], [products]);
   const menuProducts = products.filter(product =>
@@ -32,6 +33,9 @@ export const RestaurantBilling: React.FC = () => {
   const grossTotal = cart.reduce((sum, line) => sum + linePrice(line) * line.quantity, 0);
   const taxAmount = grossTotal - subtotal;
   const itemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+  const restaurantOrders = sales.filter(sale => Boolean(sale.orderType));
+  const openOrders = restaurantOrders.filter(sale => sale.status === 'Pending');
+  const recentSettledOrders = restaurantOrders.filter(sale => sale.status === 'Completed').slice(0, 5);
 
   function addItem(product: Product) {
     if (product.menuVariants?.length) {
@@ -56,40 +60,103 @@ export const RestaurantBilling: React.FC = () => {
     setCart(current => current.map(line => lineKey(line) === key ? {...line, quantity: line.quantity + delta} : line).filter(line => line.quantity > 0));
   }
 
-  function settleOrder() {
+  function validateOrder() {
     if (!cart.length) return triggerToast('Add at least one menu item to the order.', 'warning');
     if (orderType === 'Dine In' && !tableNumber.trim()) return triggerToast('Enter a table number.', 'warning');
-    const unavailable = cart.find(line => line.product.itemType !== 'Service' && line.quantity > line.product.stock);
+    const unavailable = cart.find(line => {
+      if (line.product.itemType === 'Service') return false;
+      const reservedQuantity = editingOrder?.items
+        .filter(item => item.productId === line.product.id)
+        .reduce((sum, item) => sum + item.quantity, 0) || 0;
+      const requestedQuantity = cart
+        .filter(item => item.product.id === line.product.id)
+        .reduce((sum, item) => sum + item.quantity, 0);
+      return requestedQuantity > line.product.stock + reservedQuantity;
+    });
     if (unavailable) return triggerToast(`${unavailable.product.name} does not have enough stock.`, 'error');
+    return true;
+  }
 
-    const items: SaleItem[] = cart.map(line => {
+  function buildItems(): SaleItem[] {
+    return cart.map(line => {
       const gross = linePrice(line) * line.quantity;
       const taxable = gross / (1 + line.product.taxRate / 100);
-      return {productId: line.product.id, name: line.variant ? `${line.product.name} - ${line.variant.name}` : line.product.name, sku: line.product.sku, barcode: line.product.barcode, price: taxable / line.quantity, quantity: line.quantity, taxRate: line.product.taxRate, taxAmount: gross - taxable, total: taxable};
+      return {productId: line.product.id, name: line.variant ? `${line.product.name} - ${line.variant.name}` : line.product.name, sku: line.product.sku, barcode: line.product.barcode, price: taxable / line.quantity, quantity: line.quantity, taxRate: line.product.taxRate, taxAmount: gross - taxable, total: taxable, ...(line.variant ? {menuVariantId: line.variant.id, menuVariantName: line.variant.name} : {})};
     });
-    const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : paymentMethod === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal};
-    const completed = addSale({
+  }
+
+  function orderData(status: Sale['status'], method = paymentMethod) {
+    const paymentDetails = status === 'Completed' ? (method === 'Cash' ? {cashAmount: grossTotal} : method === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal}) : {};
+    return {
       customerName: orderType === 'Dine In' ? `Table ${tableNumber}` : `${orderType} Guest`,
-      items, subtotal, taxAmount, discount: 0, total: grossTotal, paymentMethod, paymentDetails,
-      loyaltyPointsEarned: 0, authId: currentUser?.id || 'restaurant-staff', employeeName: currentUser?.name || 'Restaurant staff', status: 'Completed',
-      orderType, ...(orderType === 'Dine In' ? {tableNumber: tableNumber.trim(), guestCount} : {}), ...(kitchenNotes.trim() ? {kitchenNotes: kitchenNotes.trim()} : {}),
-    });
-    setCompletedOrder(completed);
-    triggerToast(`${orderType} order settled successfully.`, 'success');
+      items: buildItems(), subtotal, taxAmount, discount: 0, total: grossTotal, paymentMethod: method, paymentDetails,
+      loyaltyPointsEarned: 0, authId: currentUser?.id || 'restaurant-staff', employeeName: currentUser?.name || 'Restaurant staff', status,
+      orderType, tableNumber: orderType === 'Dine In' ? tableNumber.trim() : undefined, guestCount: orderType === 'Dine In' ? guestCount : undefined, kitchenNotes: kitchenNotes.trim() || undefined,
+    };
+  }
+
+  function clearEditor() {
     setCart([]);
     setKitchenNotes('');
+    setEditingOrder(null);
+  }
+
+  function saveOpenOrder() {
+    if (!validateOrder()) return;
+    if (editingOrder) {
+      editSale(editingOrder.id, orderData('Pending'));
+      triggerToast('Open order updated. You can settle it when the guest is ready.', 'success');
+    } else {
+      addSale(orderData('Pending'));
+      triggerToast('Order saved as open and unpaid.', 'success');
+    }
+    clearEditor();
+  }
+
+  function editOpenOrder(order: Sale) {
+    const restoredCart = order.items.flatMap(item => {
+      const product = products.find(candidate => candidate.id === item.productId);
+      if (!product) return [];
+      const variant = item.menuVariantId ? product.menuVariants?.find(candidate => candidate.id === item.menuVariantId) : product.menuVariants?.find(candidate => candidate.name === item.menuVariantName);
+      return [{product, quantity: item.quantity, variant}];
+    });
+    if (!restoredCart.length) return triggerToast('The menu items for this order are no longer available.', 'error');
+    setCart(restoredCart);
+    setOrderType(order.orderType || 'Dine In');
+    setTableNumber(order.tableNumber || '1');
+    setGuestCount(order.guestCount || 1);
+    setKitchenNotes(order.kitchenNotes || '');
+    setPaymentMethod(order.paymentMethod === 'UPI' || order.paymentMethod === 'Card' ? order.paymentMethod : 'Cash');
+    setEditingOrder(order);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function settleOrder() {
+    if (!editingOrder) return triggerToast('Save the order first, then reopen it to settle payment.', 'warning');
+    if (!validateOrder()) return;
+    const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : paymentMethod === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal};
+    const completed: Sale = {...editingOrder, ...orderData('Completed'), paymentDetails, status: 'Completed'};
+    editSale(editingOrder.id, completed);
+    setCompletedOrder(completed);
+    triggerToast(`${orderType} order settled successfully.`, 'success');
+    clearEditor();
   }
 
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-500">Restaurant service desk</p><h1 className="mt-2 text-2xl font-black sm:text-3xl">New guest order</h1><p className="mt-1 text-sm text-gray-500">Build the order by table, add kitchen instructions, and settle the ticket.</p></div>
+        <div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-500">Restaurant service desk</p><h1 className="mt-2 text-2xl font-black sm:text-3xl">{editingOrder ? 'Update guest order' : 'New guest order'}</h1><p className="mt-1 text-sm text-gray-500">Save first as an open order. Edit, settle, and print when the guest is ready.</p></div>
         <div className="grid grid-cols-3 gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 dark:border-white/10 dark:bg-[#141416]">
           <OrderTypeButton active={orderType === 'Dine In'} icon={UtensilsCrossed} label="Dine in" onClick={() => setOrderType('Dine In')} />
           <OrderTypeButton active={orderType === 'Takeaway'} icon={ShoppingBag} label="Takeaway" onClick={() => setOrderType('Takeaway')} />
           <OrderTypeButton active={orderType === 'Delivery'} icon={Truck} label="Delivery" onClick={() => setOrderType('Delivery')} />
         </div>
       </header>
+
+      {(openOrders.length > 0 || recentSettledOrders.length > 0) && <section className="grid gap-4 lg:grid-cols-2">
+        <OrderShelf title="Open orders" subtitle="Unpaid tickets that can still be changed" orders={openOrders} currency={settings.currency} actionLabel="Edit order" onAction={editOpenOrder} emptyText="No open orders" />
+        <OrderShelf title="Recent settled" subtitle="Completed tickets ready for reprint" orders={recentSettledOrders} currency={settings.currency} actionLabel="Print receipt" onAction={setCompletedOrder} emptyText="No settled orders yet" />
+      </section>}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="space-y-4">
@@ -101,9 +168,9 @@ export const RestaurantBilling: React.FC = () => {
         </section>
 
         <aside className="xl:sticky xl:top-20 xl:self-start"><div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#141416]">
-          <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-white/10"><div><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current ticket</p><h2 className="mt-1 font-black">{orderType === 'Dine In' ? `Table ${tableNumber || '--'}` : orderType}</h2></div><span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500">{itemCount} items</span></div>
+          <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-white/10"><div><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{editingOrder ? `Editing ${editingOrder.id}` : 'Current ticket'}</p><h2 className="mt-1 font-black">{orderType === 'Dine In' ? `Table ${tableNumber || '--'}` : orderType}</h2></div><div className="flex items-center gap-2">{editingOrder && <button onClick={clearEditor} className="text-xs font-bold text-gray-400 hover:text-red-500">Cancel</button>}<span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500">{itemCount} items</span></div></div>
           <div className="max-h-[38vh] min-h-48 space-y-3 overflow-y-auto p-4">{cart.length ? cart.map(line => <div key={lineKey(line)} className="flex gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-white/[0.035]"><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{line.product.name}</p>{line.variant && <p className="mt-0.5 text-[10px] font-bold uppercase text-gray-400">{line.variant.name}</p>}<p className="mt-1 font-mono text-xs text-emerald-500">{settings.currency}{(linePrice(line) * line.quantity).toFixed(2)}</p></div><div className="flex items-center gap-1"><button onClick={() => changeQuantity(lineKey(line), -1)} className="ticket-button">{line.quantity === 1 ? <Trash2 className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}</button><span className="w-7 text-center text-sm font-black">{line.quantity}</span><button onClick={() => changeQuantity(lineKey(line), 1)} className="ticket-button"><Plus className="h-3.5 w-3.5" /></button></div></div>) : <div className="flex h-48 flex-col items-center justify-center text-center text-gray-400"><UtensilsCrossed className="mb-3 h-7 w-7 opacity-40" /><p className="text-sm font-bold">Ticket is empty</p><p className="mt-1 text-xs">Tap menu items to add them.</p></div>}</div>
-          <div className="border-t border-gray-200 p-5 dark:border-white/10"><label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Kitchen note</label><textarea value={kitchenNotes} onChange={event => setKitchenNotes(event.target.value)} placeholder="No onion, extra spicy, serve together..." className="restaurant-input mt-2 min-h-20 resize-none" /><div className="mt-4 space-y-2 text-xs"><TotalRow label="Subtotal" value={subtotal} currency={settings.currency} /><TotalRow label="GST" value={taxAmount} currency={settings.currency} /><div className="my-3 border-t border-dashed border-gray-300 dark:border-white/10" /><div className="flex items-end justify-between"><span className="font-bold">Grand total</span><span className="font-mono text-2xl font-black">{settings.currency}{grossTotal.toFixed(2)}</span></div></div><div className="mt-5 grid grid-cols-3 gap-2">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-xl border px-2 py-2.5 text-xs font-bold ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{method}</button>)}</div><button onClick={settleOrder} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-sm font-black text-[#07110D] transition hover:bg-emerald-400"><WalletCards className="h-4 w-4" />Settle {settings.currency}{grossTotal.toFixed(2)}</button></div>
+          <div className="border-t border-gray-200 p-5 dark:border-white/10"><label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Kitchen note</label><textarea value={kitchenNotes} onChange={event => setKitchenNotes(event.target.value)} placeholder="No onion, extra spicy, serve together..." className="restaurant-input mt-2 min-h-20 resize-none" /><div className="mt-4 space-y-2 text-xs"><TotalRow label="Subtotal" value={subtotal} currency={settings.currency} /><TotalRow label="GST" value={taxAmount} currency={settings.currency} /><div className="my-3 border-t border-dashed border-gray-300 dark:border-white/10" /><div className="flex items-end justify-between"><span className="font-bold">Grand total</span><span className="font-mono text-2xl font-black">{settings.currency}{grossTotal.toFixed(2)}</span></div></div>{editingOrder && <div className="mt-5 grid grid-cols-3 gap-2">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-xl border px-2 py-2.5 text-xs font-bold ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{method}</button>)}</div>}<button onClick={saveOpenOrder} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 py-3.5 text-sm font-black text-emerald-500 transition hover:bg-emerald-500/10"><ReceiptText className="h-4 w-4" />{editingOrder ? 'Update open order' : 'Save open order'}</button>{editingOrder && <button onClick={settleOrder} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-sm font-black text-[#07110D] transition hover:bg-emerald-400"><WalletCards className="h-4 w-4" />Settle & print {settings.currency}{grossTotal.toFixed(2)}</button>}</div>
         </div></aside>
       </div>
 
@@ -136,6 +203,18 @@ export const RestaurantBilling: React.FC = () => {
 function OrderTypeButton({active, icon: Icon, label, onClick}: {active: boolean; icon: typeof UtensilsCrossed; label: string; onClick: () => void}) { return <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition ${active ? 'bg-emerald-500 text-[#07110D]' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'}`}><Icon className="h-4 w-4" />{label}</button>; }
 function Field({icon: Icon, label, children}: {icon: typeof Armchair; label: string; children: React.ReactNode}) { return <label><span className="mb-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400"><Icon className="h-3.5 w-3.5" />{label}</span>{children}</label>; }
 function TotalRow({label, value, currency}: {label: string; value: number; currency: string}) { return <div className="flex justify-between text-gray-500"><span>{label}</span><span className="font-mono font-bold text-gray-800 dark:text-gray-200">{currency}{value.toFixed(2)}</span></div>; }
+
+function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, emptyText}: {title: string; subtitle: string; orders: Sale[]; currency: string; actionLabel: string; onAction: (sale: Sale) => void; emptyText: string}) {
+  return <div className="rounded-3xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#141416] sm:p-5">
+    <div className="flex items-end justify-between gap-3"><div><h2 className="font-black">{title}</h2><p className="mt-1 text-xs text-gray-500">{subtitle}</p></div><span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-black text-gray-500 dark:bg-white/5">{orders.length}</span></div>
+    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      {orders.length ? orders.map(order => <button key={order.id} onClick={() => onAction(order)} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 p-3 text-left transition hover:border-emerald-500/50 hover:bg-emerald-500/5 dark:border-white/10">
+        <span className="min-w-0"><span className="block truncate text-sm font-black">{order.tableNumber ? `Table ${order.tableNumber}` : order.orderType}</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">{order.items.reduce((sum, item) => sum + item.quantity, 0)} items · {new Date(order.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</span></span>
+        <span className="shrink-0 text-right"><span className="block font-mono text-sm font-black text-emerald-500">{currency}{order.total.toFixed(2)}</span><span className="mt-1 block text-[10px] font-black uppercase text-gray-400">{actionLabel}</span></span>
+      </button>) : <p className="py-4 text-sm text-gray-400">{emptyText}</p>}
+    </div>
+  </div>;
+}
 
 function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, footer, onClose}: {sale: Sale; storeName: string; address: string; phone: string; gstNumber: string; currency: string; footer: string; onClose: () => void}) {
   function printReceipt() {

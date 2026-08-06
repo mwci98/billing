@@ -92,6 +92,8 @@ export interface SaleItem {
   taxRate: number;
   taxAmount: number;
   total: number;
+  menuVariantId?: string;
+  menuVariantName?: string;
   serializedUnits?: Array<{
     unitId: string;
     imei1: string;
