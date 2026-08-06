@@ -170,10 +170,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         <span className="block text-[7px] font-bold uppercase text-emerald-400">Active workspace</span>
                       </span>
                     </div>
+                    <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-400"><ChefHat className="h-3.5 w-3.5" /></span>
+                      <span><span className="block text-[10px] font-extrabold">QPOS Restaurant</span><span className="block text-[7px] font-bold uppercase text-white/30">Kohima workspace</span></span>
+                    </div>
                     <div className="space-y-1 text-[9px] font-bold text-white/38">
                       {[
                         [LayoutDashboard, 'Dashboard', true],
                         [ShoppingCart, 'POS Billing'],
+                        [ChefHat, 'Restaurant Orders'],
                         [PackageCheck, 'Products'],
                         [Boxes, 'Inventory'],
                         [Users, 'Customers'],
@@ -196,7 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">Live business overview</p>
                         <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">Welcome back, Store Owner</h2>
                       </div>
-                      <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">Fast Billing POS</span>
+                      <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">Retail + Restaurant</span>
                     </div>
 
                     <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -204,7 +209,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         ['Today’s revenue', '₹38,640', '12 invoices', 'emerald'],
                         ['Inventory value', '₹2.4L', '486 products', 'blue'],
                         ['Low stock', '8', 'Needs attention', 'amber'],
-                        ['Customers', '1,284', '+18 this week', 'purple'],
+                        ['Open orders', '6', 'Restaurant workspace', 'purple'],
                       ].map(([label, value, detail, tone]) => (
                         <div key={label} className="rounded-xl border border-white/[0.07] bg-[#151517] p-3.5 sm:p-4">
                           <div className="flex items-center justify-between">
@@ -236,12 +241,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         </div>
                       </div>
                       <div className="rounded-xl border border-white/[0.07] bg-[#151517] p-4">
-                        <span className="text-[10px] font-extrabold">Recent activity</span>
+                        <div className="flex items-center justify-between"><span className="text-[10px] font-extrabold">Restaurant workspace</span><ChefHat className="h-3.5 w-3.5 text-emerald-400" /></div>
                         <div className="mt-4 space-y-3">
-                          {['Invoice #QP-1048', 'Stock received', 'New loyalty member'].map((item, index) => (
+                          {['Table 4 · 3 items', 'Table 1 · 2 items', 'Takeaway · 4 items'].map((item, index) => (
                             <div key={item} className="flex items-center justify-between border-b border-white/[0.05] pb-2.5 last:border-0">
                               <span className="text-[8px] font-semibold text-white/55">{item}</span>
-                              <span className="text-[8px] font-mono text-emerald-400">{index === 0 ? '₹4,290' : index === 1 ? '+24' : '+1'}</span>
+                              <span className="text-[8px] font-mono text-emerald-400">{index === 0 ? '₹850' : index === 1 ? '₹450' : '₹720'}</span>
                             </div>
                           ))}
                         </div>
