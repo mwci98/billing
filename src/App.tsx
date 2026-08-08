@@ -179,7 +179,7 @@ const AppContent: React.FC = () => {
 
   return (
     <SubscriptionGate>
-    <div className={isDarkMode ? 'app-shell dark min-h-[100dvh] overflow-x-hidden bg-[#0A0A0B] text-[#E0E0E0] font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell min-h-[100dvh] overflow-x-hidden bg-gray-50 text-gray-900 font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
+    <div className={isDarkMode ? 'app-shell dark min-h-[100dvh] w-full max-w-full overflow-x-clip bg-[#0A0A0B] text-[#E0E0E0] font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell min-h-[100dvh] w-full max-w-full overflow-x-clip bg-gray-50 text-gray-900 font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
       {/* Toast notification banner */}
       {toast && (
         <div id="visual-toast" className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 rounded-2xl bg-[#141416]/95 border border-white/10 backdrop-blur-xl px-5 py-3 shadow-2xl text-xs max-w-md w-[92%] md:w-auto transition-all duration-300 font-sans">
@@ -197,7 +197,7 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <div className="flex min-h-[100dvh] min-w-0">
+      <div className="flex min-h-[100dvh] w-full min-w-0 max-w-full overflow-x-clip">
         
         {/* MOBILE SIDEBAR BACKDROP */}
         <div className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity duration-200 ${
@@ -301,10 +301,10 @@ const AppContent: React.FC = () => {
         </aside>
 
         {/* MAIN DYNAMIC SHELL CONTAINER */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-auto">
           
           {/* NATIVE APP TOP HEADER BAR */}
-          <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-gray-100 bg-white/90 px-3 py-3 backdrop-blur-md dark:border-white/5 dark:bg-[#0A0A0B]/90 sm:px-4 md:px-6">
+          <header className="sticky top-0 z-30 flex w-full max-w-full items-center justify-between gap-2 overflow-x-clip border-b border-gray-100 bg-white/90 px-3 py-3 backdrop-blur-md dark:border-white/5 dark:bg-[#0A0A0B]/90 sm:px-4 md:px-6">
             
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <button 
@@ -419,7 +419,7 @@ const AppContent: React.FC = () => {
           </header>
 
           {/* MAIN APPLICATION VIEW PORT (with safe bottom padding for fixed mobile dock) */}
-          <main className="mx-auto w-full max-w-7xl flex-1 p-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-8">
+          <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-clip p-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-8">
             {renderActiveScreen()}
           </main>
         </div>
