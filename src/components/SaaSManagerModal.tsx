@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Building2, CheckCircle2, Zap,
-  Layers, Check, X, Sparkles, Globe, MapPin, CreditCard, Plus, Loader2
+  Layers, Check, X, Sparkles, Globe, MapPin, CreditCard, Plus, Loader2, ChevronRight, ShoppingBasket, UtensilsCrossed, Wrench
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import {UserRole} from '../types';
@@ -44,7 +44,8 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
     settings, 
     currentUser,
     isFirebaseConnected,
-    triggerToast
+    triggerToast,
+    sales
   } = useAppState();
 
   const [activeTab, setActiveTab] = useState<'branches' | 'plans'>('branches');
@@ -53,11 +54,20 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
   const [storeName, setStoreName] = useState('');
   const [branchCode, setBranchCode] = useState('');
   const [storeCity, setStoreCity] = useState('');
+  const [selectedStoreId, setSelectedStoreId] = useState(activeStore.id);
 
   if (!isOpen) return null;
   const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
   const isOwner = currentUser?.role === UserRole.ADMIN;
   const visibleStores = isOwner ? saasStores : saasStores.filter(store => store.id === activeStore.id);
+  const todaySales = sales
+    .filter(sale => new Date(sale.date).toDateString() === new Date().toDateString() && sale.status === 'Completed')
+    .reduce((total, sale) => total + sale.total, 0);
+
+  const selectStore = () => {
+    if (isOwner && selectedStoreId !== activeStore.id) switchStoreBranch(selectedStoreId);
+    onClose();
+  };
 
   const purchaseStoreAddon = async () => {
     if (!currentUser || !isOwner || isBuyingStore) return;
@@ -143,67 +153,25 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
     <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-[#111112] border border-gray-200 dark:border-white/10 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-900 dark:text-[#E0E0E0] font-sans">
         
-        {/* MODAL HEADER */}
-        <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-emerald-500/5 via-transparent to-emerald-500/5">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-500/20">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  SaaS Workspace & Subscription
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {hasInternalAccess ? 'Internal' : settings.subscriptionStatus === 'active' ? 'Basic' : settings.subscriptionStatus === 'trialing' ? 'Trial' : 'Expired'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-white/60 mt-0.5">
-                Your isolated store workspace, trial, and Basic subscription
-              </p>
-            </div>
+        <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-white/5 sm:px-6">
+          <div>
+            <h2 className="text-lg font-black text-gray-900 dark:text-white">{activeTab === 'branches' ? 'Your Workspaces' : 'Subscription & Plans'}</h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{activeTab === 'branches' ? 'Choose where you want to work today.' : 'Manage the plan for your QPOS workspaces.'}</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-white/60 flex items-center justify-center transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* MODAL NAVIGATION TABS */}
-        <div className="flex border-b border-gray-100 dark:border-white/5 px-6 gap-2 bg-gray-50/50 dark:bg-black/20">
-          {isOwner && <button
-            onClick={() => setActiveTab('branches')}
-            className={`py-3.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-colors ${
-              activeTab === 'branches' 
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <Building2 className="h-4 w-4" />
-            Store Workspace
-          </button>}
-          <button
-            onClick={() => setActiveTab('plans')}
-            className={`py-3.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-colors ${
-              activeTab === 'plans' 
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <Zap className="h-4 w-4" />
-            Subscription & Plans
-          </button>
+          <div className="flex items-center gap-2">
+            {activeTab === 'branches' && isOwner && <button type="button" onClick={purchaseStoreAddon} disabled={isBuyingStore} className="flex items-center gap-1.5 rounded-xl border border-emerald-500/35 px-3 py-2 text-[11px] font-black text-emerald-600 transition hover:bg-emerald-500/10 disabled:opacity-50 dark:text-emerald-400"><Plus className="h-3.5 w-3.5" />{isBuyingStore ? 'Opening...' : 'Add workspace'}</button>}
+            {activeTab === 'plans' && <button type="button" onClick={() => setActiveTab('branches')} className="rounded-xl px-3 py-2 text-[11px] font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5">Back</button>}
+            <button onClick={onClose} aria-label="Close workspace selector" className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-gray-200 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10"><X className="h-5 w-5" /></button>
+          </div>
         </div>
 
         {/* MODAL BODY */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
 
           {/* TAB 1: STORE BRANCHES */}
           {activeTab === 'branches' && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="hidden">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">{isOwner ? 'Store Workspaces' : 'Assigned Workspace'}</h3>
                   <p className="text-xs text-gray-500 dark:text-white/50">{isOwner ? 'Select a store to switch the active workspace.' : 'Your staff account can access this workspace only.'}</p>
@@ -253,31 +221,29 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                 </form>
               )}
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2.5">
                 {visibleStores.map((store) => {
                   const isActive = store.id === activeStore.id;
+                  const isSelected = store.id === selectedStoreId;
+                  const businessType = store.configuration?.businessType || 'Retail';
+                  const WorkspaceIcon = businessType === 'Restaurant' ? UtensilsCrossed : businessType === 'Service' ? Wrench : ShoppingBasket;
                   return (
                     <button
                       type="button"
                       key={store.id}
-                    onClick={() => isOwner && switchStoreBranch(store.id)}
-                    className={`w-full p-5 rounded-2xl border text-left transition-all relative ${isOwner ? 'cursor-pointer' : 'cursor-default'} ${
-                        isActive 
-                          ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-500/50 shadow-lg shadow-emerald-500/5' 
-                          : 'bg-gray-50 dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20'
+                    onClick={() => isOwner && setSelectedStoreId(store.id)}
+                    className={`w-full rounded-2xl border p-3 text-left transition-all ${isOwner ? 'cursor-pointer' : 'cursor-default'} ${
+                        isSelected
+                          ? 'border-emerald-500/60 bg-emerald-500/[0.07] shadow-sm shadow-emerald-500/10'
+                          : 'border-gray-200 bg-white hover:border-emerald-500/30 dark:border-white/10 dark:bg-white/[0.02]'
                       }`}
                     >
-                      {isActive && (
-                        <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 animate-pulse" />
-                      )}
-                      <div className="flex items-start gap-3">
-                        <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/70'
-                        }`}>
-                          <MapPin className="h-4 w-4" />
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isSelected ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-white/60'}`}>
+                          <WorkspaceIcon className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">{store.name}</h4>
+                          <h4 className="text-sm font-black text-gray-900 dark:text-white truncate">{store.name}</h4>
                           <p className="text-[10px] text-gray-500 dark:text-white/50 mt-0.5">{store.city} • Code: {store.branchCode}</p>
                           <div className="mt-3 flex items-center justify-between text-[10px]">
                             <span className={`font-semibold ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`}>
@@ -294,7 +260,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                 })}
               </div>
 
-              <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
+              <div className="hidden">
                 <div className="flex items-center gap-2.5">
                   <Globe className="h-4 w-4 text-blue-500" />
                   <span>Products, sales, purchases, and staff access are isolated inside this tenant workspace.</span>
@@ -395,18 +361,12 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
 
         </div>
 
-        {/* MODAL FOOTER */}
-        <div className="p-4 px-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/40 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-white/50">
-            <Layers className="h-4 w-4 text-emerald-500" />
-            <span>Active Location: <strong className="text-gray-900 dark:text-white">{activeStore.name}</strong></span>
+        <div className="border-t border-gray-100 bg-gray-50 p-4 dark:border-white/5 dark:bg-black/40 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            {activeTab === 'branches' ? <button type="button" onClick={() => setActiveTab('plans')} className="text-xs font-bold text-gray-500 transition hover:text-emerald-600 dark:text-white/50 dark:hover:text-emerald-400">Manage subscription</button> : <span className="text-xs text-gray-500 dark:text-white/50">Plan changes apply to all workspaces.</span>}
+            <button onClick={activeTab === 'branches' ? selectStore : onClose} className="rounded-xl bg-emerald-500 px-6 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-500/20 transition hover:bg-emerald-600">{activeTab === 'branches' ? 'Continue' : 'Done'}</button>
           </div>
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 font-bold text-gray-800 dark:text-white transition-colors"
-          >
-            Done
-          </button>
+          {activeTab === 'branches' && <p className="mt-2 text-center text-[10px] text-gray-400">You can switch workspaces any time from this menu.</p>}
         </div>
 
       </div>
