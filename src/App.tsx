@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog, ArrowRight, ClipboardList
+  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -43,7 +43,6 @@ const AppContent: React.FC = () => {
     setIsDarkMode,
     notifications,
     markNotificationRead,
-    isFirebaseConnected,
     settings,
     activeStore,
     toast,
@@ -351,12 +350,6 @@ const AppContent: React.FC = () => {
                       : 'Expired'}
                 </span>
               </button>
-
-              {/* Online connection status badge */}
-              <div className="rounded-xl px-2.5 py-1.5 bg-gray-100 dark:bg-gray-900 flex items-center gap-1.5 text-gray-600 dark:text-gray-300 font-mono text-[10px]">
-                <Wifi className="h-3.5 w-3.5 text-emerald-500 animate-pulse shrink-0" />
-                <span className="hidden sm:inline font-bold uppercase">{isFirebaseConnected ? 'Cloud Syncing' : 'Local Offline'}</span>
-              </div>
 
               {/* Theme Quick Toggle Button */}
               <button
