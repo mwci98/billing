@@ -29,6 +29,7 @@ import { BusinessOnboarding } from './components/BusinessOnboarding';
 import { LandingPage } from './components/LandingPage';
 import {isInternalTestingAccount} from './lib/internalEntitlements';
 import {getBusinessMode} from './lib/businessMode';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -514,6 +515,7 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent />
+      <PwaInstallPrompt />
     </AppProvider>
   );
 }
