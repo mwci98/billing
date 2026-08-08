@@ -638,7 +638,7 @@ export const POSBilling: React.FC = () => {
 
       {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols on tablet/desktop) */}
       {hasPOSWorkspaceActive && (
-      <div className="flex h-auto self-start overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-900 dark:bg-gray-950 xl:col-span-5 xl:h-full xl:self-stretch">
+      <div className="flex h-auto flex-col self-start overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-900 dark:bg-gray-950 xl:col-span-5 xl:h-full xl:self-stretch">
         
         {/* Panel Cart Title */}
         <div className="border-b border-gray-100 dark:border-gray-900 p-5 bg-gray-50/50 dark:bg-gray-900/15 flex items-center justify-between">
