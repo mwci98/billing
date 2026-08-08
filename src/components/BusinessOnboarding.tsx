@@ -1,13 +1,13 @@
 import React, {useState} from 'react';
 import {
-  ArrowLeft, ArrowRight, Building2, Check, Landmark, MapPin,
-  Receipt, Rocket, Store, UserRound
+  ArrowLeft, ArrowRight, Building2, Check, Landmark, Layers, MapPin,
+  Receipt, Rocket, ShoppingBasket, Store, UserRound, UtensilsCrossed, Wrench
 } from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {BusinessMode, getBusinessMode} from '../lib/businessMode';
 import {isInternalTestingAccount} from '../lib/internalEntitlements';
 
-const steps = ['Business', 'Compliance', 'POS setup'];
+const steps = ['Business type', 'Business', 'Compliance', 'POS setup'];
 
 export const BusinessOnboarding: React.FC = () => {
   const {settings, currentUser, activeStore, updateSettings, completeStoreBranchSetup} = useAppState();
@@ -75,8 +75,9 @@ export const BusinessOnboarding: React.FC = () => {
   };
 
   const canContinue =
-    step === 0 ? Boolean(storeName.trim() && ownerName.trim() && businessType) :
-    step === 1 ? Boolean(phone.trim() && email.trim() && address.trim()) :
+    step === 0 ? Boolean(businessType) :
+    step === 1 ? Boolean(storeName.trim() && ownerName.trim()) :
+    step === 2 ? Boolean(phone.trim() && email.trim() && address.trim()) :
     Boolean(currency && receiptHeader.trim() && receiptFooter.trim());
 
   return (
@@ -119,6 +120,26 @@ export const BusinessOnboarding: React.FC = () => {
 
         <div className="mt-6 rounded-3xl border border-white/10 bg-[#141416] p-5 shadow-2xl sm:p-8">
           {step === 0 && (
+            <div className="space-y-4">
+              <div className="text-center"><h2 className="text-xl font-black">Select your business type</h2><p className="mt-1 text-sm text-gray-400">QPOS will customize your workspace experience.</p></div>
+              <div className="space-y-2.5">
+                {[
+                  {mode: 'Retail' as BusinessMode, title: 'Retail', description: 'For shops, grocery, fashion, electronics and more.', icon: ShoppingBasket, accent: 'text-emerald-400 bg-emerald-500/10'},
+                  {mode: 'Restaurant' as BusinessMode, title: 'Restaurant', description: 'Table orders, kitchen tickets, menu management and more.', icon: UtensilsCrossed, accent: 'text-blue-400 bg-blue-500/10'},
+                  {mode: 'Hybrid' as BusinessMode, title: 'Hybrid', description: 'Manage retail products and services in one workspace.', icon: Layers, accent: 'text-violet-400 bg-violet-500/10'},
+                  {mode: 'Service' as BusinessMode, title: 'Service', description: 'Bookings, appointments, billing and service management.', icon: Wrench, accent: 'text-amber-400 bg-amber-500/10'},
+                ].map(({mode, title, description, icon: Icon, accent}) => (
+                  <button key={mode} type="button" onClick={() => setBusinessType(mode)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${businessType === mode ? 'border-emerald-500 bg-emerald-500/[0.07] shadow-lg shadow-emerald-500/5' : 'border-white/10 bg-white/[0.025] hover:border-white/20'}`}>
+                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${accent}`}><Icon className="h-6 w-6" /></span>
+                    <span className="min-w-0 flex-1"><span className="block text-sm font-black">{title}</span><span className="mt-1 block text-xs leading-5 text-gray-400">{description}</span></span>
+                    <ArrowRight className="h-5 w-5 shrink-0 text-gray-500" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <Building2 className="h-5 w-5 text-emerald-500" />
@@ -130,7 +151,7 @@ export const BusinessOnboarding: React.FC = () => {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Business / store name" value={storeName} onChange={setStoreName} icon={<Store />} required />
                 <Field label="Owner name" value={ownerName} onChange={setOwnerName} icon={<UserRound />} required />
-                <label className="sm:col-span-2 text-xs font-bold text-gray-300">
+                <label className="hidden">
                   Business operating mode
                   <select value={businessType} onChange={event => setBusinessType(event.target.value as BusinessMode)}
                     className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#18181B] p-3 text-sm text-white">
@@ -148,7 +169,7 @@ export const BusinessOnboarding: React.FC = () => {
             </div>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <Landmark className="h-5 w-5 text-emerald-500" />
@@ -169,7 +190,7 @@ export const BusinessOnboarding: React.FC = () => {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <Receipt className="h-5 w-5 text-emerald-500" />
