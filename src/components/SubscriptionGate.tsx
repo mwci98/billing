@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {CreditCard, Loader2, LockKeyhole, LogOut, ShieldCheck} from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {UserRole} from '../types';
-import {isInternalTestingAccount} from '../lib/internalEntitlements';
+import {isInternalTestingAccount, isInternalWorkspace} from '../lib/internalEntitlements';
 
 declare global {
   interface Window {
@@ -42,7 +42,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
 
   if (!currentUser) return <>{children}</>;
 
-  const hasInternalAccess = isInternalTestingAccount(currentUser.email);
+  const hasInternalAccess = isInternalTestingAccount(currentUser.email) || isInternalWorkspace(currentUser.tenantId || settings.tenantId);
   const trialEnd = settings.trialEndsAt ? new Date(settings.trialEndsAt).getTime() : Number.POSITIVE_INFINITY;
   const remainingMs = trialEnd - Date.now();
   const remainingDays = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
