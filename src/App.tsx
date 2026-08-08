@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog, ArrowRight
+  Menu, X, Bell, UserCheck, ShieldAlert, Wifi, Building2, Zap, UserCog, ArrowRight, ClipboardList
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -15,6 +15,7 @@ import { AuthScreen } from './components/AuthScreen';
 import { Dashboard } from './components/Dashboard';
 import { POSBilling } from './components/POSBilling';
 import { RestaurantBilling } from './components/RestaurantBilling';
+import { RestaurantOpenOrders } from './components/RestaurantOpenOrders';
 import { ProductManagement } from './components/ProductManagement';
 import { InventoryManagement } from './components/InventoryManagement';
 import { CustomerManagement } from './components/CustomerManagement';
@@ -116,6 +117,7 @@ const AppContent: React.FC = () => {
   }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
     { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
+    ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: isRestaurantBusiness ? 'Guests & Customers' : isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
@@ -145,6 +147,9 @@ const AppContent: React.FC = () => {
       case 'products':
         if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
+      case 'open-orders':
+        if (!isRestaurantBusiness || !canAccessTab('open-orders')) return <SecurityBarrier />;
+        return <RestaurantOpenOrders />;
       case 'inventory':
         if (!canAccessTab('inventory')) return <SecurityBarrier />;
         return <InventoryManagement />;
@@ -434,6 +439,20 @@ const AppContent: React.FC = () => {
         >
           <ShoppingCart className="h-5 w-5 stroke-[2.2]" />
           <span className="text-[10px] mt-1 font-semibold">{isRestaurantBusiness ? 'Orders' : isServiceBusiness ? 'Billing' : 'POS Billing'}</span>
+        </button>
+        )}
+
+        {isRestaurantBusiness && canAccessTab('open-orders') && (
+        <button
+          onClick={() => setActiveTab('open-orders')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
+            activeTab === 'open-orders'
+              ? 'text-emerald-500 font-bold'
+              : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          <ClipboardList className="h-5 w-5 stroke-[2.2]" />
+          <span className="text-[10px] mt-1 font-semibold">Open orders</span>
         </button>
         )}
 
