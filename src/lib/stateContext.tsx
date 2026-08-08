@@ -186,8 +186,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const branches = settings.storeBranches?.length
       ? settings.storeBranches
       : [primaryStore];
+    const assignedStore = currentUser?.role === UserRole.STAFF && currentUser.workspaceScope
+      ? branches.find(store => {
+          const storeScope = store.id === tenantId || store.id === 'primary-store'
+            ? tenantId
+            : `${tenantId}__store__${store.id.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          return storeScope === currentUser.workspaceScope;
+        })
+      : undefined;
     const deviceStoreId = localStorage.getItem(getDeviceStoreKey(currentUser));
-    const selected = branches.find(store => store.id === deviceStoreId)
+    const selected = assignedStore
+      || branches.find(store => store.id === deviceStoreId)
       || branches.find(store => store.id === activeStore.id)
       || branches[0];
     setSaaSStores(branches);
@@ -1601,6 +1610,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const switchStoreBranch = (storeId: string) => {
+    if (currentUser?.role === UserRole.STAFF && currentUser.workspaceScope !== getStoreWorkspaceScope(storeId)) {
+      triggerToast('Staff can only access their assigned workspace.', 'error');
+      return;
+    }
     const target = saasStores.find(s => s.id === storeId);
     if (target) {
       if (target.onboardingCompleted !== true && getStoreWorkspaceScope(target.id) !== getUserScope(currentUser)) {

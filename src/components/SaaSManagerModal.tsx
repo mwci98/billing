@@ -4,6 +4,7 @@ import {
   Layers, Check, X, Sparkles, Globe, MapPin, CreditCard, Plus, Loader2
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
+import {UserRole} from '../types';
 import {isInternalTestingAccount} from '../lib/internalEntitlements';
 
 async function loadRazorpayCheckout() {
@@ -55,9 +56,11 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
   const hasInternalAccess = isInternalTestingAccount(currentUser?.email);
+  const isOwner = currentUser?.role === UserRole.ADMIN;
+  const visibleStores = isOwner ? saasStores : saasStores.filter(store => store.id === activeStore.id);
 
   const purchaseStoreAddon = async () => {
-    if (!currentUser || isBuyingStore) return;
+    if (!currentUser || !isOwner || isBuyingStore) return;
     if (hasInternalAccess) {
       setShowStoreForm(true);
       triggerToast('Internal testing access: add another store without payment.', 'info');
@@ -170,7 +173,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
 
         {/* MODAL NAVIGATION TABS */}
         <div className="flex border-b border-gray-100 dark:border-white/5 px-6 gap-2 bg-gray-50/50 dark:bg-black/20">
-          <button
+          {isOwner && <button
             onClick={() => setActiveTab('branches')}
             className={`py-3.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'branches' 
@@ -180,7 +183,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
           >
             <Building2 className="h-4 w-4" />
             Store Workspace
-          </button>
+          </button>}
           <button
             onClick={() => setActiveTab('plans')}
             className={`py-3.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-colors ${
@@ -202,10 +205,10 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Store Workspaces</h3>
-                  <p className="text-xs text-gray-500 dark:text-white/50">Select a store to switch the active workspace.</p>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{isOwner ? 'Store Workspaces' : 'Assigned Workspace'}</h3>
+                  <p className="text-xs text-gray-500 dark:text-white/50">{isOwner ? 'Select a store to switch the active workspace.' : 'Your staff account can access this workspace only.'}</p>
                 </div>
-                <button
+                {isOwner && <button
                   type="button"
                   onClick={purchaseStoreAddon}
                   disabled={isBuyingStore}
@@ -213,7 +216,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                 >
                   {isBuyingStore ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   {hasInternalAccess ? 'Add Store · No charge' : 'Add Store · ₹500 once'}
-                </button>
+                </button>}
               </div>
 
               {showStoreForm && (
@@ -251,14 +254,14 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
               )}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {saasStores.map((store) => {
+                {visibleStores.map((store) => {
                   const isActive = store.id === activeStore.id;
                   return (
                     <button
                       type="button"
                       key={store.id}
-                      onClick={() => switchStoreBranch(store.id)}
-                      className={`w-full p-5 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                    onClick={() => isOwner && switchStoreBranch(store.id)}
+                    className={`w-full p-5 rounded-2xl border text-left transition-all relative ${isOwner ? 'cursor-pointer' : 'cursor-default'} ${
                         isActive 
                           ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-500/50 shadow-lg shadow-emerald-500/5' 
                           : 'bg-gray-50 dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20'
