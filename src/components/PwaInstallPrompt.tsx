@@ -69,7 +69,7 @@ export function PwaInstallPrompt() {
   if (hidden || (!installEvent && !showIosHint)) return null;
 
   return (
-    <aside className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-md rounded-2xl border border-emerald-400/25 bg-[#141416]/95 p-4 text-white shadow-2xl shadow-black/50 backdrop-blur-xl sm:bottom-6">
+    <aside className="fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[100] mx-auto max-w-md rounded-2xl border border-emerald-400/25 bg-[#141416]/95 p-4 text-white shadow-2xl shadow-black/50 backdrop-blur-xl lg:bottom-6">
       <button
         type="button"
         onClick={dismiss}

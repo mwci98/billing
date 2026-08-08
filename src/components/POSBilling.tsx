@@ -402,10 +402,10 @@ export const POSBilling: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:min-h-[calc(100vh-10rem)]">
+    <div className="grid grid-cols-1 gap-5 xl:min-h-[calc(100dvh-10rem)] xl:grid-cols-12">
       
       {/* LEFT: Fast Product search & fast selections catalog (7 cols on tablet/desktop) */}
-      <div className={`${hasPOSWorkspaceActive ? 'md:col-span-7' : 'w-full max-w-4xl mx-auto md:col-span-12'} space-y-4`}>
+      <div className={`${hasPOSWorkspaceActive ? 'xl:col-span-7' : 'mx-auto w-full max-w-4xl xl:col-span-12'} space-y-4`}>
         
         {/* Rapid Search Bar actions */}
         <div className="flex flex-col md:flex-row gap-3 rounded-2xl bg-white dark:bg-gray-950 p-4 border border-gray-100 dark:border-gray-900 shadow-sm">
@@ -638,7 +638,7 @@ export const POSBilling: React.FC = () => {
 
       {/* RIGHT: Active POS Invoice Cart Panel & checkout steps (5 cols on tablet/desktop) */}
       {hasPOSWorkspaceActive && (
-      <div className="md:col-span-5 flex flex-col rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden h-auto self-start md:h-full md:self-stretch">
+      <div className="flex h-auto self-start overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-900 dark:bg-gray-950 xl:col-span-5 xl:h-full xl:self-stretch">
         
         {/* Panel Cart Title */}
         <div className="border-b border-gray-100 dark:border-gray-900 p-5 bg-gray-50/50 dark:bg-gray-900/15 flex items-center justify-between">
@@ -658,7 +658,7 @@ export const POSBilling: React.FC = () => {
         </div>
 
         {/* POS Cart items table list */}
-        <div className="flex-none md:flex-1 overflow-y-auto min-h-[12rem] max-h-[16rem] p-4 sm:p-5 space-y-3 font-medium">
+        <div className="min-h-[12rem] max-h-[22rem] flex-none space-y-3 overflow-y-auto p-4 font-medium sm:p-5 xl:max-h-none xl:flex-1">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-center text-gray-400">
               <ReceiptText className="h-10 w-10 text-gray-300 dark:text-gray-800 stroke-[1.5px] mb-3" />

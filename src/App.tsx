@@ -174,7 +174,7 @@ const AppContent: React.FC = () => {
 
   return (
     <SubscriptionGate>
-    <div className={isDarkMode ? 'app-shell dark bg-[#0A0A0B] text-[#E0E0E0] min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell bg-gray-50 text-gray-900 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
+    <div className={isDarkMode ? 'app-shell dark min-h-[100dvh] overflow-x-hidden bg-[#0A0A0B] text-[#E0E0E0] font-sans antialiased selection:bg-emerald-500 selection:text-white' : 'app-shell min-h-[100dvh] overflow-x-hidden bg-gray-50 text-gray-900 font-sans antialiased selection:bg-emerald-500 selection:text-white'}>
       {/* Toast notification banner */}
       {toast && (
         <div id="visual-toast" className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 rounded-2xl bg-[#141416]/95 border border-white/10 backdrop-blur-xl px-5 py-3 shadow-2xl text-xs max-w-md w-[92%] md:w-auto transition-all duration-300 font-sans">
@@ -192,7 +192,7 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <div className="flex min-h-screen">
+      <div className="flex min-h-[100dvh] min-w-0">
         
         {/* MOBILE SIDEBAR BACKDROP */}
         <div className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity duration-200 ${
@@ -200,7 +200,7 @@ const AppContent: React.FC = () => {
         }`} onClick={() => setIsSidebarOpen(false)} />
 
         {/* SIDEBAR COMPONENT */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#111112] border-r border-gray-100 dark:border-white/5 p-5 flex flex-col justify-between transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+        <aside className={`fixed inset-y-0 left-0 z-50 flex w-[17.5rem] max-w-[86vw] flex-col justify-between border-r border-gray-100 bg-white p-5 transition-transform duration-200 ease-out dark:border-white/5 dark:bg-[#111112] lg:static lg:w-64 lg:max-w-none lg:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div>
@@ -296,12 +296,12 @@ const AppContent: React.FC = () => {
         </aside>
 
         {/* MAIN DYNAMIC SHELL CONTAINER */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
           
           {/* NATIVE APP TOP HEADER BAR */}
-          <header className="border-b border-gray-100 dark:border-white/5 bg-white/90 dark:bg-[#0A0A0B]/90 backdrop-blur-md sticky top-0 z-30 px-4 md:px-6 py-3 flex items-center justify-between gap-3">
+          <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-gray-100 bg-white/90 px-3 py-3 backdrop-blur-md dark:border-white/5 dark:bg-[#0A0A0B]/90 sm:px-4 md:px-6">
             
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setIsSidebarOpen(true)} 
                 className="p-2 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 active:scale-95 cursor-pointer"
@@ -310,9 +310,9 @@ const AppContent: React.FC = () => {
                 <Menu className="h-5 w-5 stroke-[2.2]" />
               </button>
               
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm md:text-base font-extrabold text-gray-900 dark:text-white leading-none">
+                  <h2 className="truncate text-sm font-extrabold leading-none text-gray-900 dark:text-white md:text-base">
                     {activeTabTitle}
                   </h2>
                   <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hidden sm:inline-block">
@@ -326,7 +326,7 @@ const AppContent: React.FC = () => {
             </div>
 
             {/* Top header status tools & notifications bell */}
-            <div className="flex items-center gap-2 text-xs font-semibold">
+            <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold sm:gap-2">
               
               {/* SaaS Multi-Branch Selector Button */}
               <button
@@ -336,7 +336,7 @@ const AppContent: React.FC = () => {
               >
                 <Building2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="max-w-[120px] truncate hidden md:inline">{activeStore.name}</span>
-                <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider">
+                <span className="hidden rounded bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white min-[360px]:inline">
                   {hasInternalAccess
                     ? 'Internal'
                     : settings.subscriptionStatus === 'active'
@@ -414,7 +414,7 @@ const AppContent: React.FC = () => {
           </header>
 
           {/* MAIN APPLICATION VIEW PORT (with safe bottom padding for fixed mobile dock) */}
-          <main className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl mx-auto w-full pb-28 lg:pb-8">
+          <main className="mx-auto w-full max-w-7xl flex-1 p-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-8">
             {renderActiveScreen()}
           </main>
         </div>
@@ -422,7 +422,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* NATIVE APP BOTTOM NAVIGATION DOCK (VISIBLE ON MOBILE & TABLET) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#111112]/95 backdrop-blur-lg border-t border-gray-200/80 dark:border-white/10 px-2 py-1.5 flex items-center justify-around lg:hidden shadow-2xl">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-start gap-1 overflow-x-auto border-t border-gray-200/80 bg-white/95 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 shadow-2xl backdrop-blur-lg dark:border-white/10 dark:bg-[#111112]/95 sm:justify-around lg:hidden touch-scroll [&>button]:min-w-[4.25rem] [&>button]:shrink-0">
         {canAccessTab('pos') && (
         <button
           onClick={() => setActiveTab('pos')}
