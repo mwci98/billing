@@ -477,20 +477,6 @@ const AppContent: React.FC = () => {
         </button>
         )}
 
-        {canAccessTab('dashboard') && (
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer transition active:scale-95 ${
-            activeTab === 'dashboard' 
-              ? 'text-emerald-500 font-bold' 
-              : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
-          }`}
-        >
-          <LayoutDashboard className="h-5 w-5 stroke-[2.2]" />
-          <span className="text-[10px] mt-1 font-semibold">Dashboard</span>
-        </button>
-        )}
-
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="flex flex-col items-center justify-center py-1 px-3 rounded-xl cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:scale-95"
