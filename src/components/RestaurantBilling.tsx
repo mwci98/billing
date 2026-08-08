@@ -156,7 +156,7 @@ export const RestaurantBilling: React.FC = () => {
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#141416] sm:p-5 xl:flex-row xl:items-end xl:justify-between">
-        <div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-500">Restaurant service desk</p><h1 className="mt-2 text-2xl font-black sm:text-3xl">{editingOrder ? 'Update guest order' : 'New guest order'}</h1><p className="mt-1 text-sm text-gray-500">Save first as an open order. Edit, settle, and print when the guest is ready.</p></div>
+        <div><h1 className="text-2xl font-black sm:text-3xl">{editingOrder ? 'Update guest order' : 'New guest order'}</h1><p className="mt-1 text-sm text-gray-500">Save first as an open order. Edit, settle, and print when the guest is ready.</p></div>
         <div className="grid w-full grid-cols-3 gap-1.5 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 dark:border-white/10 dark:bg-white/[0.035] sm:w-auto sm:min-w-[25rem]">
           <OrderTypeButton active={orderType === 'Dine In'} icon={UtensilsCrossed} label="Dine in" onClick={() => setOrderType('Dine In')} />
           <OrderTypeButton active={orderType === 'Takeaway'} icon={ShoppingBag} label="Takeaway" onClick={() => setOrderType('Takeaway')} />

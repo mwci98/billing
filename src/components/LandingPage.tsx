@@ -285,7 +285,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         <section id="business-modes" className="border-y border-white/[0.06] bg-[#0D0D0F]">
           <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl"><span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">One QPOS, four ways to work</span><h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">The workspace changes with your business.</h2></div>
+              <div className="max-w-2xl"><h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">The workspace changes with your business.</h2></div>
               <p className="max-w-md text-sm leading-7 text-white/40">QPOS shows the right billing and inventory tools for each operation, without forcing every business into the same POS screen.</p>
             </div>
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -296,8 +296,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
         <section id="features" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="max-w-2xl">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Everything in one place</span>
-            <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">
+            <h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">
               From the first item to the final report.
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/45">
@@ -328,8 +327,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
             <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
               <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Simple from day one</span>
-                <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-[-0.05em]">Your store, live in three steps.</h2>
+                <h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em]">Your store, live in three steps.</h2>
                 <p className="mt-5 text-sm leading-7 text-white/40">No complicated setup. QPOS guides every new business through its workspace configuration.</p>
               </div>
               <div className="space-y-3">
@@ -417,8 +415,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
         <section id="pricing" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Straightforward pricing</span>
-            <h2 className="mt-4 text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QPOS.</h2>
+            <h2 className="text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QPOS.</h2>
             <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/40">Start free for five days, then keep your entire business connected for one simple annual price.</p>
           </div>
 
