@@ -139,14 +139,14 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
               {isOwner ? <CreditCard className="h-7 w-7" /> : <LockKeyhole className="h-7 w-7" />}
             </div>
-            <h2 className="mt-5 text-2xl font-black text-white">Your 5-day trial has ended</h2>
+            <h2 className="mt-5 text-2xl font-black text-white">{isOwner ? 'Your 5-day trial has ended' : 'Store subscription required'}</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
               {isOwner
                 ? 'Subscribe to the Basic plan to restore access for your store and all staff accounts.'
-                : 'The store owner must activate a subscription before staff can continue working.'}
+                : 'Your store subscription has ended. Please contact the store owner or manager to restore staff access.'}
             </p>
 
-            <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-left">
+            {isOwner && <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-left">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white">Basic Plan</span>
                 <span className="font-mono text-lg font-black text-emerald-400">₹6,000/year</span>
@@ -155,7 +155,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
                 <ShieldCheck className="h-4 w-4 text-emerald-500" />
                 Recurring billing secured by Razorpay
               </p>
-            </div>
+            </div>}
 
             {isOwner && (
               <button onClick={startSubscription} disabled={loading}
