@@ -31,13 +31,13 @@ export const RestaurantOpenOrders: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#141416] sm:flex-row sm:items-end sm:justify-between sm:p-5">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-500">Restaurant queue</p>
           <h1 className="mt-2 text-2xl font-black sm:text-3xl">Open orders</h1>
           <p className="mt-1 text-sm text-gray-500">Unpaid guest tickets waiting to be edited or settled at the counter.</p>
         </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#141416]">
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] px-4 py-3 dark:bg-emerald-500/[0.07]">
           <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-500"><ClipboardList className="h-4 w-4" /></div>
           <div><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Open value</p><p className="font-mono text-sm font-black text-emerald-500">{settings.currency}{totalOpenValue.toFixed(2)}</p></div>
         </div>
