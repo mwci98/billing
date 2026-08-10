@@ -62,7 +62,7 @@ const AppContent: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const splashTimer = window.setTimeout(() => setShowSplash(false), 950);
+    const splashTimer = window.setTimeout(() => setShowSplash(false), 2950);
     return () => window.clearTimeout(splashTimer);
   }, []);
 
