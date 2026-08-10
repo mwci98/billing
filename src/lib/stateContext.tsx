@@ -46,6 +46,11 @@ const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
 
 const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 
+// This account is limited to an isolated workspace with safe sample data for Google Play review.
+const PLAY_REVIEW_EMAIL = 'play-review@qpos.neospec.co.in';
+const PLAY_REVIEW_PASSCODE_HASH = 'b74d1c11fe0ace8315148fbe594f70d141046d7e60d73afb34463ebc455fe72a';
+const PLAY_REVIEW_SEED_VERSION = '1';
+
 const omitUndefinedFields = <T,>(value: T): T => {
   if (Array.isArray(value)) {
     return value.filter(item => item !== undefined).map(item => omitUndefinedFields(item)) as T;
@@ -287,51 +292,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localTransactions = localStorage.getItem(scopeKey('transactions'));
     const localSettings = localStorage.getItem(ownerScopeKey('settings'));
     const localStaff = localStorage.getItem(scopeKey('staff'));
+    const isPlayReviewWorkspace = currentUser?.email?.toLowerCase() === PLAY_REVIEW_EMAIL;
+    const reviewSeedKey = ownerScopeKey('play_review_seed_version');
+    const shouldSeedPlayReview = isPlayReviewWorkspace
+      && localStorage.getItem(reviewSeedKey) !== PLAY_REVIEW_SEED_VERSION;
+    const hydrateCollection = <T,>(key: string, cached: string | null, sample: T[]) => {
+      const value = shouldSeedPlayReview
+        ? structuredClone(sample)
+        : cached
+          ? JSON.parse(cached) as T[]
+          : [];
+      localStorage.setItem(scopeKey(key), JSON.stringify(value));
+      return value;
+    };
 
-    if (localProducts) {
-      setProducts(JSON.parse(localProducts));
-    } else {
-      setProducts([]);
-      localStorage.setItem(scopeKey('products'), JSON.stringify([]));
-    }
-
-    if (localCustomers) {
-      setCustomers(JSON.parse(localCustomers));
-    } else {
-      setCustomers([]);
-      localStorage.setItem(scopeKey('customers'), JSON.stringify([]));
-    }
-
-    if (localSuppliers) {
-      setSuppliers(JSON.parse(localSuppliers));
-    } else {
-      setSuppliers([]);
-      localStorage.setItem(scopeKey('suppliers'), JSON.stringify([]));
-    }
-
-    if (localSales) {
-      setSales(JSON.parse(localSales));
-    } else {
-      setSales([]);
-      localStorage.setItem(scopeKey('sales'), JSON.stringify([]));
-    }
-
-    if (localPurchases) {
-      setPurchases(JSON.parse(localPurchases));
-    } else {
-      setPurchases([]);
-      localStorage.setItem(scopeKey('purchases'), JSON.stringify([]));
-    }
-
-    if (localTransactions) {
-      setTransactions(JSON.parse(localTransactions));
-    } else {
-      setTransactions([]);
-      localStorage.setItem(scopeKey('transactions'), JSON.stringify([]));
-    }
+    setProducts(hydrateCollection('products', localProducts, INITIAL_PRODUCTS));
+    setCustomers(hydrateCollection('customers', localCustomers, INITIAL_CUSTOMERS));
+    setSuppliers(hydrateCollection('suppliers', localSuppliers, INITIAL_SUPPLIERS));
+    setSales(hydrateCollection('sales', localSales, INITIAL_SALES));
+    setPurchases(hydrateCollection('purchases', localPurchases, INITIAL_PURCHASES));
+    setTransactions(hydrateCollection('transactions', localTransactions, INITIAL_TRANSACTIONS));
+    if (shouldSeedPlayReview) localStorage.setItem(reviewSeedKey, PLAY_REVIEW_SEED_VERSION);
 
     if (localSettings) {
       const parsed = migrateLegacyQposBranding(JSON.parse(localSettings) as StoreSettings);
+      if (shouldSeedPlayReview) {
+        parsed.storeName = 'QPOS Demo Store';
+        parsed.email = PLAY_REVIEW_EMAIL;
+        parsed.businessType = 'Retail';
+        parsed.onboardingCompleted = true;
+        parsed.subscriptionStatus = 'active';
+        parsed.planTier = 'Basic';
+      }
       parsed.tenantId = parsed.tenantId || ownerScope;
       parsed.onboardingCompleted = parsed.onboardingCompleted ?? false;
       if (!parsed.trialStartedAt && parsed.subscriptionStatus !== 'active') {
@@ -355,9 +347,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         subscriptionStatus: 'trialing',
         trialStartedAt: trialStartedAt.toISOString(),
         trialEndsAt: new Date(trialStartedAt.getTime() + TRIAL_DURATION_MS).toISOString(),
-        onboardingCompleted: false,
-        storeName: currentUser?.name ? `${currentUser.name}'s QPOS` : INITIAL_SETTINGS.storeName,
-        email: currentUser?.email || INITIAL_SETTINGS.email,
+        onboardingCompleted: isPlayReviewWorkspace,
+        storeName: isPlayReviewWorkspace ? 'QPOS Demo Store' : currentUser?.name ? `${currentUser.name}'s QPOS` : INITIAL_SETTINGS.storeName,
+        email: isPlayReviewWorkspace ? PLAY_REVIEW_EMAIL : currentUser?.email || INITIAL_SETTINGS.email,
+        businessType: isPlayReviewWorkspace ? 'Retail' : INITIAL_SETTINGS.businessType,
         currency: '₹'
       };
       setSettings(userCustomSettings);
@@ -656,10 +649,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const normalizeEmail = (email: string) => email.toLowerCase().trim();
   const directoryIdForEmail = (email: string) => normalizeEmail(email).replace(/[^a-zA-Z0-9]/g, '_');
-  // This account is limited to an isolated, sample workspace for Google Play review.
-  const PLAY_REVIEW_EMAIL = 'play-review@qpos.neospec.co.in';
-  const PLAY_REVIEW_PASSCODE_HASH = 'b74d1c11fe0ace8315148fbe594f70d141046d7e60d73afb34463ebc455fe72a';
-
   const hashPasscode = async (passcode: string) => {
     const bytes = new TextEncoder().encode(passcode);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -735,7 +724,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role: UserRole.STAFF,
         tenantId: 'qpos_play_review',
         workspaceScope: 'qpos_play_review',
-        permissions: DEFAULT_STAFF_PERMISSIONS
+        permissions: {
+          ...DEFAULT_STAFF_PERMISSIONS,
+          canViewDashboard: true,
+          canViewFinancials: true
+        }
       };
       saveLocalAndState('active_user', reviewSession, setCurrentUser);
       setActiveTab('pos');
