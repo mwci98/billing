@@ -113,7 +113,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </span>
             <span className="hidden min-[360px]:block">
               <span className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</span>
-              <span className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400">Smart business terminal</span>
+              <a href="https://neospec.co.in" className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400 transition hover:text-emerald-300">A product of Neospec</a>
             </span>
           </a>
 
