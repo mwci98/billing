@@ -656,6 +656,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const normalizeEmail = (email: string) => email.toLowerCase().trim();
   const directoryIdForEmail = (email: string) => normalizeEmail(email).replace(/[^a-zA-Z0-9]/g, '_');
+  // This account is limited to an isolated, sample workspace for Google Play review.
+  const PLAY_REVIEW_EMAIL = 'play-review@qpos.neospec.co.in';
+  const PLAY_REVIEW_PASSCODE_HASH = 'b74d1c11fe0ace8315148fbe594f70d141046d7e60d73afb34463ebc455fe72a';
 
   const hashPasscode = async (passcode: string) => {
     const bytes = new TextEncoder().encode(passcode);
@@ -717,6 +720,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveLocalAndState('active_user', staffSession, setCurrentUser);
       setActiveTab(staffAccount.permissions.canBill ? 'pos' : staffAccount.permissions.canPurchase ? 'inventory' : 'products');
       triggerToast(`Authenticated as ${staffAccount.name}`, 'success');
+      return true;
+    }
+
+    if (formattedEmail === PLAY_REVIEW_EMAIL) {
+      if (!passcode || await hashPasscode(passcode) !== PLAY_REVIEW_PASSCODE_HASH) {
+        triggerToast('Invalid review access credentials.', 'error');
+        return false;
+      }
+      const reviewSession: AppUser = {
+        id: 'qpos-play-reviewer',
+        email: PLAY_REVIEW_EMAIL,
+        name: 'Google Play Reviewer',
+        role: UserRole.STAFF,
+        tenantId: 'qpos_play_review',
+        workspaceScope: 'qpos_play_review',
+        permissions: DEFAULT_STAFF_PERMISSIONS
+      };
+      saveLocalAndState('active_user', reviewSession, setCurrentUser);
+      setActiveTab('pos');
+      triggerToast('Authenticated in the QPOS demonstration workspace.', 'success');
       return true;
     }
 
