@@ -31,6 +31,7 @@ import { LandingPage } from './components/LandingPage';
 import {isInternalTestingAccount} from './lib/internalEntitlements';
 import {getBusinessMode} from './lib/businessMode';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { SplashScreen } from './components/SplashScreen';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -58,6 +59,12 @@ const AppContent: React.FC = () => {
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
   const [isSaaSModalOpen, setIsSaaSModalOpen] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState<boolean>(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const splashTimer = window.setTimeout(() => setShowSplash(false), 950);
+    return () => window.clearTimeout(splashTimer);
+  }, []);
 
   // Keep global theme selectors aligned with application state.
   // The authentication screen is intentionally always dark.
@@ -65,6 +72,10 @@ const AppContent: React.FC = () => {
     document.documentElement.classList.toggle('dark', currentUser ? isDarkMode : true);
     document.title = 'QPOS';
   }, [currentUser, isDarkMode]);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   // Unauthenticated screen guard gate
   if (!currentUser) {
