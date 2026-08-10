@@ -66,6 +66,10 @@ const AppContent: React.FC = () => {
     return () => window.clearTimeout(splashTimer);
   }, []);
 
+  useEffect(() => {
+    document.getElementById('qpos-startup-splash')?.remove();
+  }, []);
+
   // Keep global theme selectors aligned with application state.
   // The authentication screen is intentionally always dark.
   useEffect(() => {

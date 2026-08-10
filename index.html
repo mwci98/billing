@@ -15,6 +15,12 @@
     <link rel="alternate icon" type="image/png" href="/icons/icon-192.png?v=qpos-icon-4" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=qpos-icon-4" />
     <title>QPOS – Point of Sales</title>
+    <style>
+      #qpos-startup-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #07110D; }
+      #qpos-startup-splash::before { content: ''; position: absolute; width: 28rem; height: 28rem; border-radius: 999px; background: rgba(0,188,125,.16); filter: blur(96px); }
+      #qpos-startup-splash img { position: relative; width: 6rem; height: 6rem; animation: qpos-startup-pulse 1.3s ease-in-out infinite; }
+      @keyframes qpos-startup-pulse { 50% { transform: scale(1.06); } }
+    </style>
     <script>
       if (new URLSearchParams(window.location.search).get('refresh') === 'qpos') {
         Promise.all([
@@ -34,6 +40,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="qpos-startup-splash" role="status" aria-label="Loading QPOS"><img src="/icons/qpos-logo.svg" alt="QPOS" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
