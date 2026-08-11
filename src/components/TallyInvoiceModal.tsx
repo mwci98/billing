@@ -274,69 +274,6 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
     }
   };
 
-  const openPrintInNewTab = () => {
-    const printElement = document.getElementById('printable-tally-a5-invoice');
-    if (!printElement) return;
-
-    try {
-      const printWin = window.open('', '_blank');
-      if (printWin) {
-        printWin.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Tax Invoice - ${activeReceipt.id}</title>
-              <script src="https://cdn.tailwindcss.com"></script>
-              <style>
-                @page {
-                  size: A5 portrait;
-                  margin: 4mm;
-                }
-                body {
-                  margin: 0;
-                  padding: 10px;
-                  font-family: Arial, sans-serif;
-                  background-color: #ffffff;
-                  color: #000000;
-                  -webkit-print-color-adjust: exact;
-                  print-color-adjust: exact;
-                }
-                .tally-invoice-paper, .tally-invoice-paper * {
-                  color: #000000 !important;
-                  border-color: #000000 !important;
-                }
-                .tally-table-border {
-                  border: 1px solid #000000 !important;
-                }
-                .tally-table-border td, .tally-table-border th {
-                  border: 1px solid #000000 !important;
-                }
-              </style>
-            </head>
-            <body>
-              <div style="max-width: 148mm; margin: 0 auto;">
-                ${printElement.innerHTML}
-              </div>
-              <script>
-                window.onload = function() {
-                  setTimeout(function() {
-                    window.print();
-                  }, 300);
-                };
-              </script>
-            </body>
-          </html>
-        `);
-        printWin.document.close();
-      } else {
-        // Fallback to PDF download if popup blocked
-        downloadPDF();
-      }
-    } catch (err) {
-      downloadPDF();
-    }
-  };
-
   const renderInvoiceContent = () => (
     <>
       {/* Title Banner */}
@@ -762,17 +699,10 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
               <span>{isPdfLoading ? 'Saving PDF...' : 'Save as PDF'}</span>
             </button>
             <button
-              onClick={openPrintInNewTab}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition cursor-pointer border border-gray-700"
-              title="Open print preview in a new window"
-            >
-              <span>New Window</span>
-            </button>
-            <button
               onClick={onClose}
               className="min-w-0 px-2 sm:px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold transition cursor-pointer"
             >
-              Done / Close
+              Close
             </button>
             <button
               onClick={printInvoice}
