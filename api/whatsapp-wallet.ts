@@ -11,6 +11,6 @@ export default async function handler(request: any, response: any) {
     return response.status(200).json({...wallet, invoicePricePaise: WHATSAPP_INVOICE_PRICE_PAISE});
   } catch (error) {
     console.error('WhatsApp wallet lookup failed:', error);
-    return response.status(500).json({error: 'Could not load the WhatsApp wallet.'});
+    return response.status(503).json({error: error instanceof Error ? error.message : 'Could not load the WhatsApp wallet.'});
   }
 }

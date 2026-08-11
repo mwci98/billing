@@ -25,6 +25,6 @@ export default async function handler(request: any, response: any) {
     return response.status(200).json({keyId, orderId: body.id, amount, currency: 'INR'});
   } catch (error) {
     console.error('WhatsApp wallet order failed:', error);
-    return response.status(500).json({error: 'Could not start the wallet top-up.'});
+    return response.status(503).json({error: error instanceof Error ? error.message : 'Could not start the wallet top-up.'});
   }
 }

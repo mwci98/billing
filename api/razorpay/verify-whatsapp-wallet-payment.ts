@@ -39,6 +39,6 @@ export default async function handler(request: any, response: any) {
     return response.status(200).json({verified: true, ...wallet});
   } catch (error) {
     console.error('WhatsApp wallet payment verification failed:', error);
-    return response.status(500).json({error: error instanceof Error ? error.message : 'Could not verify the wallet top-up.'});
+    return response.status(503).json({error: error instanceof Error ? error.message : 'Could not verify the wallet top-up.'});
   }
 }
