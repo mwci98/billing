@@ -1,5 +1,5 @@
 import {timingSafeEqual, createHmac} from 'node:crypto';
-import {getWallet, verifyWalletAccess, walletDoc} from '../_whatsapp-wallet';
+import {getWallet, verifyWalletAccess, walletDoc} from '../_whatsapp-wallet.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') return response.status(405).json({error: 'Method not allowed'});

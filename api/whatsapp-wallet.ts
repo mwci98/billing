@@ -1,4 +1,4 @@
-import {getWallet, verifyWalletAccess, WHATSAPP_INVOICE_PRICE_PAISE} from './_whatsapp-wallet';
+import {getWallet, verifyWalletAccess, WHATSAPP_INVOICE_PRICE_PAISE} from './_whatsapp-wallet.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'GET') return response.status(405).json({error: 'Method not allowed'});

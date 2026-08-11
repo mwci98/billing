@@ -1,4 +1,4 @@
-import {getAdminDb} from './_firebase-admin';
+import {getAdminDb} from './_firebase-admin.js';
 
 export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
 const FIREBASE_API_KEY = 'AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk';

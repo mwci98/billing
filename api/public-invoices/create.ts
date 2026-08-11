@@ -1,4 +1,4 @@
-import {getAdminDb} from '../_firebase-admin';
+import {getAdminDb} from '../_firebase-admin.js';
 
 const FIREBASE_API_KEY = 'AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk';
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;

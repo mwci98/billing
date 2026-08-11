@@ -1,5 +1,5 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
-import {updateTenantSubscription} from '../_firebase-admin';
+import {updateTenantSubscription} from '../_firebase-admin.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {

@@ -1,4 +1,4 @@
-import {getWallet, verifyWalletAccess, walletDoc, WHATSAPP_INVOICE_PRICE_PAISE} from '../_whatsapp-wallet';
+import {getWallet, verifyWalletAccess, walletDoc, WHATSAPP_INVOICE_PRICE_PAISE} from '../_whatsapp-wallet.js';
 
 async function createSignature(body: string, secret: string) {
   const key = await crypto.subtle.importKey(

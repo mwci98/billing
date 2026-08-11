@@ -1,4 +1,4 @@
-import {getAdminDb} from './_firebase-admin';
+import {getAdminDb} from './_firebase-admin.js';
 
 type LinkPayload = { scope: string; saleId: string; expiresAt: number; storeName: string; storeAddress?: string; storePhone?: string; storeGst?: string; currency: string };
 

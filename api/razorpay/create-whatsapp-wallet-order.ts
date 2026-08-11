@@ -1,4 +1,4 @@
-import {verifyWalletAccess} from '../_whatsapp-wallet';
+import {verifyWalletAccess} from '../_whatsapp-wallet.js';
 
 const ALLOWED_AMOUNTS = new Set([10000, 20000, 50000]);
 
