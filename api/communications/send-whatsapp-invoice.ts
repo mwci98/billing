@@ -17,7 +17,8 @@ export default async function handler(request: any, response: any) {
     return response.status(401).json({error: 'Your sign-in session has expired. Please sign in again.'});
   }
 
-  const endpoint = process.env.CRM_QPOS_WHATSAPP_INVOICE_URL;
+  const endpoint = process.env.CRM_QPOS_WHATSAPP_INVOICE_URL
+    || process.env.CRM_QPOS_WEBHOOK_URL?.replace(/\/subscription-invoices$/, '/whatsapp-invoices');
   const apiKey = process.env.CRM_API_KEY;
   const secret = process.env.CRM_WEBHOOK_SECRET;
   if (!endpoint || !apiKey || !secret) {
