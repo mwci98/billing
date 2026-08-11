@@ -211,6 +211,15 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         reader.onerror = () => reject(new Error('Could not prepare the invoice PDF.'));
         reader.readAsDataURL(pdf);
       });
+      const marketingImageBase64 = await fetch('/whatsapp/qpos-invoice-banner.jpg')
+        .then(response => response.ok ? response.blob() : Promise.reject(new Error('Banner not available')))
+        .then(blob => new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+          reader.onerror = () => reject(new Error('Could not prepare the QPOS banner.'));
+          reader.readAsDataURL(blob);
+        }))
+        .catch(() => '');
       const idToken = await auth.currentUser.getIdToken();
       const invoiceSummary = [
         `*${settings.storeName}*`,
@@ -240,6 +249,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           currency: settings.currency,
           fileName: `Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
           pdfBase64,
+          ...(marketingImageBase64 ? {marketingImageBase64} : {}),
           invoiceSummary,
         }),
       });
