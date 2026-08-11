@@ -234,7 +234,7 @@ function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, s
 
 function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, footer, upiId, upiPayeeName, onClose}: {sale: Sale; storeName: string; address: string; phone: string; gstNumber: string; currency: string; footer: string; upiId?: string; upiPayeeName?: string; onClose: () => void}) {
   const [upiQrCode, setUpiQrCode] = useState('');
-  const upiUri = upiId
+  const upiUri = sale.paymentMethod === 'UPI' && upiId
     ? `upi://pay?${new URLSearchParams({pa: upiId, pn: upiPayeeName || storeName, am: sale.total.toFixed(2), cu: 'INR', tn: `Receipt ${sale.id}`}).toString()}`
     : '';
 
@@ -269,7 +269,11 @@ function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, f
         <div className="ml-auto mt-3 w-44 space-y-1"><ReceiptRow label="Subtotal" value={`${currency}${sale.subtotal.toFixed(2)}`} /><ReceiptRow label="GST" value={`${currency}${sale.taxAmount.toFixed(2)}`} /><div className="border-t border-black pt-1 text-xs font-black"><ReceiptRow label="TOTAL" value={`${currency}${sale.total.toFixed(2)}`} /></div><ReceiptRow label="Paid via" value={sale.paymentMethod} /></div>
         {upiQrCode && <div className="mt-3 border-t border-dashed border-black pt-3 text-center"><p className="font-black">SCAN TO PAY BY UPI</p><img src={upiQrCode} alt="UPI payment QR" className="mx-auto mt-1 h-28 w-28" /><p className="text-[8px]">{upiPayeeName || storeName}</p><p className="text-[8px]">{upiId}</p><p className="font-bold">Pay {currency}{sale.total.toFixed(2)}</p></div>}
         <div className="my-3 border-t border-dashed border-black" />
-        <div className="text-center">{footer || 'Thank you. Please visit again.'}<p className="mt-2 text-[8px]">Powered by QPOS</p></div>
+        <div className="text-center">
+          {footer || 'Thank you. Please visit again.'}
+          <p className="mt-2 text-[8px]">Powered by QPOS, a product of Neospec</p>
+          <p className="text-[8px]">https://qpos.neospec.co.in</p>
+        </div>
       </div>
       <button onClick={printReceipt} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-black text-[#07110D]"><Printer className="h-4 w-4" />Print 80mm receipt</button>
     </div>

@@ -97,7 +97,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   onClose
 }) => {
   const [upiQrCode, setUpiQrCode] = useState('');
-  const upiUri = settings.upiId
+  const upiUri = activeReceipt.paymentMethod === 'UPI' && settings.upiId
     ? `upi://pay?${new URLSearchParams({ pa: settings.upiId, pn: settings.upiPayeeName || settings.storeName, am: activeReceipt.total.toFixed(2), cu: 'INR', tn: `Invoice ${activeReceipt.id}` }).toString()}`
     : '';
 
