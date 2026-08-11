@@ -103,6 +103,7 @@ export const SettingsPage: React.FC = () => {
     const safeStoreId = activeStore.id.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     return `${ownerScope}__store__${safeStoreId}`;
   })();
+  const hasWhatsappInvoiceCredit = whatsappWalletBalance !== null && whatsappWalletBalance >= WHATSAPP_INVOICE_PRICE_PAISE;
 
   const loadWhatsappWallet = async () => {
     const user = auth.currentUser;
@@ -127,6 +128,13 @@ export const SettingsPage: React.FC = () => {
   useEffect(() => {
     void loadWhatsappWallet();
   }, [whatsappWorkspaceScope, currentUser?.email]);
+
+  useEffect(() => {
+    // A workspace must keep at least one invoice's credit before this service can stay enabled.
+    if (whatsappWalletBalance !== null && !hasWhatsappInvoiceCredit && whatsappInvoiceEnabled) {
+      setWhatsappInvoiceEnabled(false);
+    }
+  }, [hasWhatsappInvoiceCredit, whatsappInvoiceEnabled, whatsappWalletBalance]);
 
   const addWhatsappCredit = async (amountPaise: number) => {
     const user = auth.currentUser;
@@ -192,8 +200,8 @@ export const SettingsPage: React.FC = () => {
       triggerToast('Complete the bank name, account number, and IFSC before showing bank details on invoices.', 'warning');
       return;
     }
-    if (whatsappInvoiceEnabled && whatsappWalletBalance !== null && whatsappWalletBalance < WHATSAPP_INVOICE_PRICE_PAISE) {
-      triggerToast('Add WhatsApp invoice credit before enabling this option.', 'warning');
+    if (whatsappInvoiceEnabled && !hasWhatsappInvoiceCredit) {
+      triggerToast('Add at least Rs 2 WhatsApp invoice credit before enabling this option.', 'warning');
       return;
     }
     updateSettings({
@@ -706,8 +714,21 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Send retail invoices by WhatsApp</p>
                   <p className="mt-1 text-[10px] text-gray-400">Uses the Neospec CRM WhatsApp Business number. Rs 2 is deducted only after WhatsApp accepts an invoice delivery.</p>
                 </div>
-                <button type="button" role="switch" aria-checked={whatsappInvoiceEnabled} onClick={() => setWhatsappInvoiceEnabled(value => !value)} className={`relative h-6 w-11 shrink-0 rounded-full transition ${whatsappInvoiceEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${whatsappInvoiceEnabled ? 'left-6' : 'left-1'}`} /></button>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={whatsappInvoiceEnabled}
+                  aria-label="Enable WhatsApp retail invoice delivery"
+                  disabled={!hasWhatsappInvoiceCredit || isLoadingWhatsappWallet}
+                  onClick={() => setWhatsappInvoiceEnabled(value => !value)}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition ${whatsappInvoiceEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'} disabled:cursor-not-allowed disabled:opacity-50`}
+                ><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${whatsappInvoiceEnabled ? 'left-6' : 'left-1'}`} /></button>
               </div>
+              {!isLoadingWhatsappWallet && !hasWhatsappInvoiceCredit && (
+                <p className="mt-2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                  Add at least Rs 2 credit to activate WhatsApp invoice delivery.
+                </p>
+              )}
               <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-950 dark:bg-emerald-950/20">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
