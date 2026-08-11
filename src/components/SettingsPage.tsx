@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { BusinessMode, getBusinessMode } from '../lib/businessMode';
-import { DashboardWidgetSettings, UserRole } from '../types';
+import { DashboardWidgetSettings } from '../types';
 import { auth } from '../lib/firebase';
 
 const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetSettings = {
@@ -96,9 +96,7 @@ export const SettingsPage: React.FC = () => {
   const [statusMsg, setStatusMsg] = useState<string>('');
 
   const whatsappWorkspaceScope = (() => {
-    // Staff are restricted to their assigned workspace; owners follow the
-    // currently selected store so credits can never be shown across branches.
-    if (currentUser?.role === UserRole.STAFF && currentUser.workspaceScope) return currentUser.workspaceScope;
+    if (currentUser?.workspaceScope) return currentUser.workspaceScope;
     const ownerScope = currentUser?.tenantId || currentUser?.email?.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_') || '';
     const primaryStoreId = settings.tenantId || ownerScope;
     if (!ownerScope || activeStore.id === 'primary-store' || activeStore.id === primaryStoreId || activeStore.id === ownerScope) return ownerScope;
