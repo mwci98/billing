@@ -6,6 +6,7 @@ import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
 import { Sale, StoreSettings } from '../types';
 import { auth } from '../lib/firebase';
+import { useAppState } from '../lib/stateContext';
 
 interface TallyInvoiceModalProps {
   activeReceipt: Sale;
@@ -97,6 +98,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   settings,
   onClose
 }) => {
+  const { activeStore, currentUser } = useAppState();
   const [upiQrCode, setUpiQrCode] = useState('');
   const upiUri = activeReceipt.paymentMethod === 'UPI' && settings.upiId
     ? `upi://pay?${new URLSearchParams({ pa: settings.upiId, pn: settings.upiPayeeName || settings.storeName, am: activeReceipt.total.toFixed(2), cu: 'INR', tn: `Invoice ${activeReceipt.id}` }).toString()}`
@@ -221,6 +223,32 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         }))
         .catch(() => '');
       const idToken = await auth.currentUser.getIdToken();
+      const ownerScope = settings.tenantId
+        || currentUser?.tenantId
+        || (currentUser?.email || '').toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+      const workspaceScope = currentUser?.workspaceScope
+        || (!activeStore?.id || activeStore.id === 'primary-store' || activeStore.id === ownerScope
+          ? ownerScope
+          : `${ownerScope}__store__${activeStore.id.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_')}`);
+      const linkResponse = await fetch('/api/public-invoices/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${idToken}`},
+        body: JSON.stringify({
+          workspaceScope,
+          saleId: activeReceipt.id,
+          invoice: {
+            storeName: settings.storeName,
+            storeAddress: settings.address,
+            storePhone: settings.phone,
+            storeGst: settings.gstNumber,
+            currency: settings.currency,
+          },
+        }),
+      });
+      const linkResult = await linkResponse.json().catch(() => ({}));
+      if (!linkResponse.ok || !linkResult.url) {
+        throw new Error(linkResult.error || 'Could not create the secure invoice link.');
+      }
       const invoiceSummary = [
         `*${settings.storeName}*`,
         settings.address,
@@ -250,12 +278,13 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           fileName: `Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
           pdfBase64,
           ...(marketingImageBase64 ? {marketingImageBase64} : {}),
+          invoicePublicUrl: linkResult.url,
           invoiceSummary,
         }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'WhatsApp could not deliver the invoice.');
-      alert('Invoice PDF sent on WhatsApp.');
+      alert('Invoice sent on WhatsApp.');
     } catch (error) {
       alert(error instanceof Error ? error.message : 'WhatsApp invoice delivery failed.');
     } finally {

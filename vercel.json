@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/i/:token",
+      "destination": "/api/public-invoice?token=:token"
+    },
+    {
       "source": "/__/auth/:path*",
       "destination": "https://gen-lang-client-0487602795.firebaseapp.com/__/auth/:path*"
     }
