@@ -69,7 +69,7 @@ export default async function handler(request: any, response: any) {
         totalSpentPaise: Number(current.totalSpentPaise || 0) + WHATSAPP_INVOICE_PRICE_PAISE,
         updatedAt: new Date().toISOString(),
       }, {merge: true});
-      transaction.set(access.db.doc(`users/${access.workspaceScope}/whatsapp_wallet/ledger/${ledgerId}`), {
+      transaction.set(access.db.doc(`users/${access.workspaceScope}/whatsapp_wallet/active/ledger/${ledgerId}`), {
         type: 'invoice_delivery', amountPaise: -WHATSAPP_INVOICE_PRICE_PAISE, invoiceNumber: payload.invoiceNumber,
         messageId: result.messageId || '', createdAt: new Date().toISOString(),
       });

@@ -25,7 +25,7 @@ export default async function handler(request: any, response: any) {
     if (!orderResponse.ok || order.notes?.purchaseType !== 'whatsapp_wallet' || order.notes?.workspaceScope !== access.workspaceScope || ![10000, 20000, 50000].includes(amount)) {
       return response.status(400).json({error: 'This Razorpay order is not a valid wallet top-up.'});
     }
-    const reference = access.db.doc(`users/${access.workspaceScope}/whatsapp_wallet/ledger/${razorpayPaymentId}`);
+    const reference = access.db.doc(`users/${access.workspaceScope}/whatsapp_wallet/active/ledger/${razorpayPaymentId}`);
     await access.db.runTransaction(async transaction => {
       const existing = await transaction.get(reference);
       if (existing.exists) return;
