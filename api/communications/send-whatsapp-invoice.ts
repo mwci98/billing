@@ -11,9 +11,8 @@ async function createSignature(body: string, secret: string) {
 }
 
 async function verifyFirebaseSession(idToken: string) {
-  const apiKey = process.env.FIREBASE_WEB_API_KEY;
-  if (!apiKey) return false;
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+  // Firebase web API keys identify the public Firebase project; they are not server secrets.
+  const response = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({idToken}),
