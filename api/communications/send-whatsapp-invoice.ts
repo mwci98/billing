@@ -1,8 +1,18 @@
 import {createHmac} from 'node:crypto';
-import {getAdminAuth} from '../_firebase-admin';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 function createSignature(body: string, secret: string) {
   return createHmac('sha256', secret).update(body).digest('hex');
+}
+
+async function verifyFirebaseSession(idToken: string) {
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({idToken}),
+  });
+  const payload = await response.json().catch(() => ({}));
+  return response.ok && Array.isArray(payload.users) && payload.users.length > 0;
 }
 
 export default async function handler(request: any, response: any) {
@@ -12,7 +22,7 @@ export default async function handler(request: any, response: any) {
   if (!token) return response.status(401).json({error: 'Sign in is required to send an invoice.'});
 
   try {
-    await getAdminAuth().verifyIdToken(token);
+    if (!await verifyFirebaseSession(token)) throw new Error('Invalid Firebase session');
   } catch {
     return response.status(401).json({error: 'Your sign-in session has expired. Please sign in again.'});
   }
