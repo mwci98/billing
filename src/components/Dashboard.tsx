@@ -112,7 +112,7 @@ export const Dashboard: React.FC = () => {
   const maxWeeklyVal = Math.max(...weeklyChartData.map((d) => d.value), 100);
   const weeklyRevenueTotal = weeklyChartData.reduce((sum, day) => sum + day.value, 0);
 
-  const topSellingSkus = Object.values(
+  const topSellingSkus = (Object.values(
     sales
       .filter(sale => sale.status === 'Completed')
       .flatMap(sale => sale.items)
@@ -135,7 +135,13 @@ export const Dashboard: React.FC = () => {
         quantity: number;
         revenue: number;
       }>)
-  )
+  ) as Array<{
+    productId: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    revenue: number;
+  }>)
     .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
     .slice(0, 3);
 
