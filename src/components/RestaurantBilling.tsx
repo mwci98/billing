@@ -1,4 +1,5 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
+import QRCode from 'qrcode';
 import {Armchair, ChefHat, Grid2X2, List, Minus, Plus, Printer, ReceiptText, Search, ShoppingBag, Trash2, Truck, UsersRound, UtensilsCrossed, WalletCards, X} from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {Product, Sale, SaleItem} from '../types';
@@ -204,7 +205,7 @@ export const RestaurantBilling: React.FC = () => {
       )}
 
       {completedOrder && (
-        <ThermalReceipt sale={completedOrder} storeName={settings.storeName} address={settings.address} phone={settings.phone} gstNumber={settings.gstNumber} currency={settings.currency} footer={settings.receiptFooter} onClose={() => setCompletedOrder(null)} />
+        <ThermalReceipt sale={completedOrder} storeName={settings.storeName} address={settings.address} phone={settings.phone} gstNumber={settings.gstNumber} currency={settings.currency} footer={settings.receiptFooter} upiId={settings.upiId} upiPayeeName={settings.upiPayeeName} onClose={() => setCompletedOrder(null)} />
       )}
     </div>
   );
@@ -231,7 +232,22 @@ function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, s
   </div>;
 }
 
-function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, footer, onClose}: {sale: Sale; storeName: string; address: string; phone: string; gstNumber: string; currency: string; footer: string; onClose: () => void}) {
+function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, footer, upiId, upiPayeeName, onClose}: {sale: Sale; storeName: string; address: string; phone: string; gstNumber: string; currency: string; footer: string; upiId?: string; upiPayeeName?: string; onClose: () => void}) {
+  const [upiQrCode, setUpiQrCode] = useState('');
+  const upiUri = upiId
+    ? `upi://pay?${new URLSearchParams({pa: upiId, pn: upiPayeeName || storeName, am: sale.total.toFixed(2), cu: 'INR', tn: `Receipt ${sale.id}`}).toString()}`
+    : '';
+
+  useEffect(() => {
+    if (!upiUri) {
+      setUpiQrCode('');
+      return;
+    }
+    QRCode.toDataURL(upiUri, {width: 160, margin: 1, errorCorrectionLevel: 'M'})
+      .then(setUpiQrCode)
+      .catch(() => setUpiQrCode(''));
+  }, [upiUri]);
+
   function printReceipt() {
     document.documentElement.classList.add('thermal-printing');
     const cleanup = () => document.documentElement.classList.remove('thermal-printing');
@@ -251,6 +267,7 @@ function ThermalReceipt({sale, storeName, address, phone, gstNumber, currency, f
         <div className="grid grid-cols-[1fr_28px_62px] gap-1 border-b border-black pb-1 font-black"><span>ITEM</span><span className="text-center">QTY</span><span className="text-right">AMOUNT</span></div>
         <div>{sale.items.map((item, index) => <div key={`${item.productId}-${index}`} className="grid grid-cols-[1fr_28px_62px] gap-1 border-b border-dotted border-gray-400 py-1.5"><span>{item.name}<span className="block text-[8px]">@ {currency}{((item.total + item.taxAmount) / item.quantity).toFixed(2)}</span></span><span className="text-center">{item.quantity}</span><span className="text-right">{currency}{(item.total + item.taxAmount).toFixed(2)}</span></div>)}</div>
         <div className="ml-auto mt-3 w-44 space-y-1"><ReceiptRow label="Subtotal" value={`${currency}${sale.subtotal.toFixed(2)}`} /><ReceiptRow label="GST" value={`${currency}${sale.taxAmount.toFixed(2)}`} /><div className="border-t border-black pt-1 text-xs font-black"><ReceiptRow label="TOTAL" value={`${currency}${sale.total.toFixed(2)}`} /></div><ReceiptRow label="Paid via" value={sale.paymentMethod} /></div>
+        {upiQrCode && <div className="mt-3 border-t border-dashed border-black pt-3 text-center"><p className="font-black">SCAN TO PAY BY UPI</p><img src={upiQrCode} alt="UPI payment QR" className="mx-auto mt-1 h-28 w-28" /><p className="text-[8px]">{upiPayeeName || storeName}</p><p className="text-[8px]">{upiId}</p><p className="font-bold">Pay {currency}{sale.total.toFixed(2)}</p></div>}
         <div className="my-3 border-t border-dashed border-black" />
         <div className="text-center">{footer || 'Thank you. Please visit again.'}<p className="mt-2 text-[8px]">Powered by QPOS</p></div>
       </div>
