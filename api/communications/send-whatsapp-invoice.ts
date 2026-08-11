@@ -1,12 +1,19 @@
-import {createHmac} from 'node:crypto';
-import firebaseConfig from '../../firebase-applet-config.json';
-
-function createSignature(body: string, secret: string) {
-  return createHmac('sha256', secret).update(body).digest('hex');
+async function createSignature(body: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    {name: 'HMAC', hash: 'SHA-256'},
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+  return Array.from(new Uint8Array(signature)).map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 async function verifyFirebaseSession(idToken: string) {
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`, {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) return false;
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({idToken}),
@@ -50,7 +57,7 @@ export default async function handler(request: any, response: any) {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'x-neospec-signature': createSignature(body, secret),
+        'x-neospec-signature': await createSignature(body, secret),
       },
       body,
     });
