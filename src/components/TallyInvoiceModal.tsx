@@ -212,6 +212,23 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         reader.readAsDataURL(pdf);
       });
       const idToken = await auth.currentUser.getIdToken();
+      const invoiceSummary = [
+        `*${settings.storeName}*`,
+        settings.address,
+        settings.phone ? `Phone: ${settings.phone}` : '',
+        '',
+        `Invoice: ${activeReceipt.id}`,
+        `Date: ${new Date(activeReceipt.date).toLocaleDateString('en-IN')}`,
+        activeReceipt.customerName ? `Customer: ${activeReceipt.customerName}` : '',
+        '',
+        '*Items*',
+        ...activeReceipt.items.slice(0, 8).map(item => `${item.name} x ${item.quantity} - ${settings.currency}${(item.total + item.taxAmount).toFixed(2)}`),
+        activeReceipt.items.length > 8 ? `+ ${activeReceipt.items.length - 8} more item(s)` : '',
+        '',
+        `*Total: ${settings.currency}${activeReceipt.total.toFixed(2)}*`,
+        `Payment: ${activeReceipt.paymentMethod}`,
+        'Thank you for your business.',
+      ].filter(Boolean).join('\n').slice(0, 1000);
       const response = await fetch('/api/communications/send-whatsapp-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
@@ -223,6 +240,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           currency: settings.currency,
           fileName: `Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
           pdfBase64,
+          invoiceSummary,
         }),
       });
       const result = await response.json().catch(() => ({}));
