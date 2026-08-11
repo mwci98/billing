@@ -1493,6 +1493,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           receiptHeader: newSettings.receiptHeader,
           receiptFooter: newSettings.receiptFooter,
           loyaltyPointsPerDollar: newSettings.loyaltyPointsPerDollar,
+          upiId: newSettings.upiId,
+          upiPayeeName: newSettings.upiPayeeName,
           dashboardWidgets: newSettings.dashboardWidgets
         }
       };
@@ -1707,7 +1709,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         website: configuration.website,
         currency: configuration.currency,
         receiptHeader: configuration.receiptHeader,
-        receiptFooter: configuration.receiptFooter
+        receiptFooter: configuration.receiptFooter,
+        upiId: configuration.upiId,
+        upiPayeeName: configuration.upiPayeeName
       }
     };
     const storeBranches = saasStores.map(store => store.id === activeStore.id ? updatedStore : store);
@@ -1742,8 +1746,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     website: activeStore.configuration?.website || '',
     receiptHeader: activeStore.configuration?.receiptHeader || activeStore.name,
     receiptFooter: activeStore.configuration?.receiptFooter || '',
-    upiId: activeStore.configuration?.upiId || settings.upiId || '',
-    upiPayeeName: activeStore.configuration?.upiPayeeName || settings.upiPayeeName || activeStore.name,
+    // Payment QR details belong to a workspace and must never inherit a sibling store's UPI account.
+    upiId: activeStore.configuration?.upiId || '',
+    upiPayeeName: activeStore.configuration?.upiPayeeName || activeStore.name,
     businessType: activeStore.configuration?.businessType || 'Retail',
     currency: activeStore.configuration?.currency || '₹',
     loyaltyPointsPerDollar: activeStore.configuration?.loyaltyPointsPerDollar ?? settings.loyaltyPointsPerDollar,
