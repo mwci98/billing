@@ -200,6 +200,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
     }
     setIsWhatsAppSending(true);
     try {
+      const phoneDigits = activeReceipt.customerPhone.replace(/\D/g, '');
+      const recipient = phoneDigits.length === 10 ? `91${phoneDigits}` : phoneDigits;
+      if (recipient.length < 10) throw new Error('Enter a valid customer WhatsApp number before sending the invoice.');
       const pdf = await createInvoicePdf();
       if (!pdf) throw new Error('Could not generate the invoice PDF.');
       const pdfBase64 = await new Promise<string>((resolve, reject) => {
@@ -213,7 +216,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
-          recipient: activeReceipt.customerPhone,
+          recipient,
           storeName: settings.storeName,
           invoiceNumber: activeReceipt.id,
           total: activeReceipt.total,
