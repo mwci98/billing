@@ -118,6 +118,7 @@ export const SettingsPage: React.FC = () => {
       setWhatsappWalletBalance(Number(wallet.balancePaise || 0));
     } catch (error) {
       setWhatsappWalletBalance(null);
+      triggerToast(error instanceof Error ? error.message : 'Unable to load the WhatsApp wallet.', 'error');
     } finally {
       setIsLoadingWhatsappWallet(false);
     }
