@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Building2, PhoneCall, Receipt, Landmark, Award, ShieldCheck, 
-  HelpCircle, Settings, Save, DownloadCloud, UploadCloud, Info, Trash2, AlertTriangle
+  HelpCircle, Settings, Save, DownloadCloud, UploadCloud, Info, Trash2, AlertTriangle, CreditCard, Loader2
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { BusinessMode, getBusinessMode } from '../lib/businessMode';
 import { DashboardWidgetSettings } from '../types';
+import { auth } from '../lib/firebase';
 
 const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetSettings = {
   revenue: true,
@@ -36,8 +37,31 @@ const DASHBOARD_WIDGET_OPTIONS: Array<{ key: keyof DashboardWidgetSettings; labe
   { key: 'salesRegister', label: 'Sales Register' }
 ];
 
+const WHATSAPP_INVOICE_PRICE_PAISE = 200;
+
+async function loadRazorpayCheckout() {
+  if (window.Razorpay) return true;
+  return new Promise<boolean>(resolve => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
+
+async function readPaymentApiResponse(response: Response) {
+  const body = await response.text();
+  if (!body) return {} as Record<string, any>;
+  try {
+    return JSON.parse(body) as Record<string, any>;
+  } catch {
+    throw new Error('The payment server returned an invalid response.');
+  }
+}
+
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions, triggerToast, deleteAllMockupData } = useAppState();
+  const { settings, updateSettings, products, customers, suppliers, sales, purchases, transactions, triggerToast, deleteAllMockupData, currentUser, activeStore } = useAppState();
   const [showConfirmDelete, setShowConfirmDelete] = useState<boolean>(false);
 
   // Form states initialized with setting configs
@@ -59,6 +83,9 @@ export const SettingsPage: React.FC = () => {
   const [upiId, setUpiId] = useState<string>(settings.upiId || '');
   const [upiPayeeName, setUpiPayeeName] = useState<string>(settings.upiPayeeName || settings.storeName);
   const [whatsappInvoiceEnabled, setWhatsappInvoiceEnabled] = useState<boolean>(settings.whatsappInvoiceEnabled ?? false);
+  const [whatsappWalletBalance, setWhatsappWalletBalance] = useState<number | null>(null);
+  const [isLoadingWhatsappWallet, setIsLoadingWhatsappWallet] = useState(false);
+  const [isAddingWhatsappCredit, setIsAddingWhatsappCredit] = useState(false);
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
   const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidgetSettings>(() => ({
     ...DEFAULT_DASHBOARD_WIDGETS,
@@ -68,10 +95,104 @@ export const SettingsPage: React.FC = () => {
   // Status logs
   const [statusMsg, setStatusMsg] = useState<string>('');
 
+  const whatsappWorkspaceScope = (() => {
+    if (currentUser?.workspaceScope) return currentUser.workspaceScope;
+    const ownerScope = currentUser?.tenantId || currentUser?.email?.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_') || '';
+    const primaryStoreId = settings.tenantId || ownerScope;
+    if (!ownerScope || activeStore.id === 'primary-store' || activeStore.id === primaryStoreId || activeStore.id === ownerScope) return ownerScope;
+    const safeStoreId = activeStore.id.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `${ownerScope}__store__${safeStoreId}`;
+  })();
+
+  const loadWhatsappWallet = async () => {
+    const user = auth.currentUser;
+    if (!user || !whatsappWorkspaceScope) return;
+    setIsLoadingWhatsappWallet(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/whatsapp-wallet?workspaceScope=${encodeURIComponent(whatsappWorkspaceScope)}`, {
+        headers: {Authorization: `Bearer ${token}`},
+      });
+      const wallet = await readPaymentApiResponse(response);
+      if (!response.ok) throw new Error(wallet.error || 'Unable to load the WhatsApp wallet.');
+      setWhatsappWalletBalance(Number(wallet.balancePaise || 0));
+    } catch (error) {
+      setWhatsappWalletBalance(null);
+    } finally {
+      setIsLoadingWhatsappWallet(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadWhatsappWallet();
+  }, [whatsappWorkspaceScope, currentUser?.email]);
+
+  const addWhatsappCredit = async (amountPaise: number) => {
+    const user = auth.currentUser;
+    if (!user || !whatsappWorkspaceScope || isAddingWhatsappCredit) {
+      triggerToast('Sign in again before adding WhatsApp credit.', 'warning');
+      return;
+    }
+    setIsAddingWhatsappCredit(true);
+    try {
+      const checkoutLoaded = await loadRazorpayCheckout();
+      if (!checkoutLoaded || !window.Razorpay) throw new Error('Razorpay Checkout could not be loaded.');
+      const token = await user.getIdToken();
+      const orderResponse = await fetch('/api/razorpay/create-whatsapp-wallet-order', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
+        body: JSON.stringify({workspaceScope: whatsappWorkspaceScope, amountPaise}),
+      });
+      const order = await readPaymentApiResponse(orderResponse);
+      if (!orderResponse.ok) throw new Error(order.error || 'Unable to start the WhatsApp credit payment.');
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'QPOS',
+        description: `WhatsApp invoice credit - Rs ${(amountPaise / 100).toFixed(0)}`,
+        prefill: {name: currentUser?.name, email: currentUser?.email},
+        theme: {color: '#10B981'},
+        handler: async (payment: any) => {
+          try {
+            const verificationResponse = await fetch('/api/razorpay/verify-whatsapp-wallet-payment', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
+              body: JSON.stringify({
+                workspaceScope: whatsappWorkspaceScope,
+                razorpayOrderId: payment.razorpay_order_id,
+                razorpayPaymentId: payment.razorpay_payment_id,
+                razorpaySignature: payment.razorpay_signature,
+              }),
+            });
+            const verification = await readPaymentApiResponse(verificationResponse);
+            if (!verificationResponse.ok || !verification.verified) throw new Error(verification.error || 'Credit payment verification failed.');
+            setWhatsappWalletBalance(Number(verification.balancePaise || 0));
+            triggerToast('WhatsApp invoice credit added.', 'success');
+          } catch (error) {
+            triggerToast(error instanceof Error ? error.message : 'Credit payment verification failed.', 'error');
+          } finally {
+            setIsAddingWhatsappCredit(false);
+          }
+        },
+        modal: {ondismiss: () => setIsAddingWhatsappCredit(false)},
+      });
+      checkout.open();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Unable to add WhatsApp credit.', 'error');
+      setIsAddingWhatsappCredit(false);
+    }
+  };
+
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (showBankDetailsOnInvoice && (!bankName.trim() || !bankAccountNumber.trim() || !bankIfsc.trim())) {
       triggerToast('Complete the bank name, account number, and IFSC before showing bank details on invoices.', 'warning');
+      return;
+    }
+    if (whatsappInvoiceEnabled && whatsappWalletBalance !== null && whatsappWalletBalance < WHATSAPP_INVOICE_PRICE_PAISE) {
+      triggerToast('Add WhatsApp invoice credit before enabling this option.', 'warning');
       return;
     }
     updateSettings({
@@ -582,9 +703,43 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Send retail invoices by WhatsApp</p>
-                  <p className="mt-1 text-[10px] text-gray-400">Uses the Neospec CRM WhatsApp Business number. Customers receive the invoice PDF from the completed retail invoice screen.</p>
+                  <p className="mt-1 text-[10px] text-gray-400">Uses the Neospec CRM WhatsApp Business number. Rs 2 is deducted only after WhatsApp accepts an invoice delivery.</p>
                 </div>
                 <button type="button" role="switch" aria-checked={whatsappInvoiceEnabled} onClick={() => setWhatsappInvoiceEnabled(value => !value)} className={`relative h-6 w-11 shrink-0 rounded-full transition ${whatsappInvoiceEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${whatsappInvoiceEnabled ? 'left-6' : 'left-1'}`} /></button>
+              </div>
+              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-950 dark:bg-emerald-950/20">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-800 dark:text-gray-100">WhatsApp invoice wallet</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">This balance belongs only to {activeStore.name}.</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Available credit</p>
+                    <p className="font-mono text-sm font-bold text-emerald-600">
+                      {isLoadingWhatsappWallet ? 'Loading...' : whatsappWalletBalance === null ? 'Unavailable' : `Rs ${(whatsappWalletBalance / 100).toFixed(2)}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[10000, 20000, 50000].map(amountPaise => (
+                    <button
+                      key={amountPaise}
+                      type="button"
+                      onClick={() => void addWhatsappCredit(amountPaise)}
+                      disabled={isAddingWhatsappCredit}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isAddingWhatsappCredit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+                      Add Rs {amountPaise / 100}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => void loadWhatsappWallet()} className="rounded-lg border border-emerald-200 px-3 py-2 text-[10px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:text-emerald-400">
+                    Refresh balance
+                  </button>
+                </div>
               </div>
             </div>}
 

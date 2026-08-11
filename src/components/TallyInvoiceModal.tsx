@@ -271,6 +271,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
           recipient,
+          workspaceScope,
           storeName: settings.storeName,
           invoiceNumber: activeReceipt.id,
           total: activeReceipt.total,
