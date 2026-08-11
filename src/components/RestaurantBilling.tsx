@@ -18,7 +18,7 @@ export const RestaurantBilling: React.FC = () => {
   const [menuView, setMenuView] = useState<'grid' | 'compact'>('grid');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [kitchenNotes, setKitchenNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'UPI' | 'Card'>('Cash');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'UPI'>('Cash');
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Sale | null>(null);
   const [editingOrder, setEditingOrder] = useState<Sale | null>(null);
@@ -87,7 +87,7 @@ export const RestaurantBilling: React.FC = () => {
   }
 
   function orderData(status: Sale['status'], method = paymentMethod) {
-    const paymentDetails = status === 'Completed' ? (method === 'Cash' ? {cashAmount: grossTotal} : method === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal}) : {};
+    const paymentDetails = status === 'Completed' ? (method === 'Cash' ? {cashAmount: grossTotal} : {upiAmount: grossTotal}) : {};
     return {
       customerName: orderType === 'Dine In' ? `Table ${tableNumber}` : `${orderType} Guest`,
       items: buildItems(), subtotal, taxAmount, discount: 0, total: grossTotal, paymentMethod: method, paymentDetails,
@@ -129,7 +129,7 @@ export const RestaurantBilling: React.FC = () => {
     setTableNumber(order.tableNumber || '1');
     setGuestCount(order.guestCount || 1);
     setKitchenNotes(order.kitchenNotes || '');
-    setPaymentMethod(order.paymentMethod === 'UPI' || order.paymentMethod === 'Card' ? order.paymentMethod : 'Cash');
+    setPaymentMethod(order.paymentMethod === 'UPI' ? order.paymentMethod : 'Cash');
     setEditingOrder(order);
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
@@ -137,7 +137,7 @@ export const RestaurantBilling: React.FC = () => {
   function settleOrder() {
     if (!editingOrder) return triggerToast('Save the order first, then reopen it to settle payment.', 'warning');
     if (!validateOrder()) return;
-    const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : paymentMethod === 'Card' ? {cardAmount: grossTotal} : {upiAmount: grossTotal};
+    const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : {upiAmount: grossTotal};
     const completed: Sale = {...editingOrder, ...orderData('Completed'), paymentDetails, status: 'Completed'};
     editSale(editingOrder.id, completed);
     setCompletedOrder(completed);
@@ -145,9 +145,9 @@ export const RestaurantBilling: React.FC = () => {
     clearEditor();
   }
 
-  function settleSavedOrder(order: Sale, method: 'Cash' | 'UPI' | 'Card') {
+  function settleSavedOrder(order: Sale, method: 'Cash' | 'UPI') {
     if (order.status !== 'Pending') return triggerToast('This order has already been settled.', 'warning');
-    const paymentDetails = method === 'Cash' ? {cashAmount: order.total} : method === 'Card' ? {cardAmount: order.total} : {upiAmount: order.total};
+    const paymentDetails = method === 'Cash' ? {cashAmount: order.total} : {upiAmount: order.total};
     const completed: Sale = {...order, paymentMethod: method, paymentDetails, status: 'Completed'};
     editSale(order.id, completed);
     if (editingOrder?.id === order.id) clearEditor();
@@ -178,7 +178,7 @@ export const RestaurantBilling: React.FC = () => {
         <aside className="sm:sticky sm:top-20 sm:self-start"><div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#141416]">
           <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-white/10"><div><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{editingOrder ? `Editing ${editingOrder.id}` : 'Current ticket'}</p><h2 className="mt-1 font-black">{orderType === 'Dine In' ? `Table ${tableNumber || '--'}` : orderType}</h2></div><div className="flex items-center gap-2">{editingOrder && <button onClick={clearEditor} className="text-xs font-bold text-gray-400 hover:text-red-500">Cancel</button>}<span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500">{itemCount} items</span></div></div>
           <div className="max-h-[32vh] min-h-0 space-y-3 overflow-y-auto p-4">{cart.length ? cart.map(line => <div key={lineKey(line)} className="flex gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-white/[0.035]"><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{line.product.name}</p>{line.variant && <p className="mt-0.5 text-[10px] font-bold uppercase text-gray-400">{line.variant.name}</p>}<p className="mt-1 font-mono text-xs text-emerald-500">{settings.currency}{(linePrice(line) * line.quantity).toFixed(2)}</p></div><div className="flex items-center gap-1"><button onClick={() => changeQuantity(lineKey(line), -1)} className="ticket-button">{line.quantity === 1 ? <Trash2 className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}</button><span className="w-7 text-center text-sm font-black">{line.quantity}</span><button onClick={() => changeQuantity(lineKey(line), 1)} className="ticket-button"><Plus className="h-3.5 w-3.5" /></button></div></div>) : <div className="flex min-h-32 flex-col items-center justify-center py-7 text-center text-gray-400"><UtensilsCrossed className="mb-2.5 h-6 w-6 opacity-40" /><p className="text-sm font-bold">Ticket is empty</p><p className="mt-1 text-xs">Tap menu items to add them.</p></div>}</div>
-          <div className="border-t border-gray-200 p-5 dark:border-white/10"><label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Kitchen note</label><textarea value={kitchenNotes} onChange={event => setKitchenNotes(event.target.value)} placeholder="No onion, extra spicy, serve together..." className="restaurant-input mt-2 min-h-20 resize-none" /><div className="mt-4 space-y-2 text-xs"><TotalRow label="Subtotal" value={subtotal} currency={settings.currency} /><TotalRow label="GST" value={taxAmount} currency={settings.currency} /><div className="my-3 border-t border-dashed border-gray-300 dark:border-white/10" /><div className="flex items-end justify-between"><span className="font-bold">Grand total</span><span className="font-mono text-2xl font-black">{settings.currency}{grossTotal.toFixed(2)}</span></div></div>{editingOrder && <div className="mt-5 grid grid-cols-3 gap-2">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-xl border px-2 py-2.5 text-xs font-bold ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{method}</button>)}</div>}<button onClick={saveOpenOrder} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 py-3.5 text-sm font-black text-emerald-500 transition hover:bg-emerald-500/10"><ReceiptText className="h-4 w-4" />{editingOrder ? 'Update open order' : 'Save open order'}</button>{editingOrder && <button onClick={settleOrder} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-sm font-black text-[#07110D] transition hover:bg-emerald-400"><WalletCards className="h-4 w-4" />Settle & print {settings.currency}{grossTotal.toFixed(2)}</button>}</div>
+          <div className="border-t border-gray-200 p-5 dark:border-white/10"><label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Kitchen note</label><textarea value={kitchenNotes} onChange={event => setKitchenNotes(event.target.value)} placeholder="No onion, extra spicy, serve together..." className="restaurant-input mt-2 min-h-20 resize-none" /><div className="mt-4 space-y-2 text-xs"><TotalRow label="Subtotal" value={subtotal} currency={settings.currency} /><TotalRow label="GST" value={taxAmount} currency={settings.currency} /><div className="my-3 border-t border-dashed border-gray-300 dark:border-white/10" /><div className="flex items-end justify-between"><span className="font-bold">Grand total</span><span className="font-mono text-2xl font-black">{settings.currency}{grossTotal.toFixed(2)}</span></div></div>{editingOrder && <div className="mt-5 grid grid-cols-2 gap-2">{(['Cash', 'UPI'] as const).map(method => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-xl border px-2 py-2.5 text-xs font-bold ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{method}</button>)}</div>}<button onClick={saveOpenOrder} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 py-3.5 text-sm font-black text-emerald-500 transition hover:bg-emerald-500/10"><ReceiptText className="h-4 w-4" />{editingOrder ? 'Update open order' : 'Save open order'}</button>{editingOrder && <button onClick={settleOrder} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-sm font-black text-[#07110D] transition hover:bg-emerald-400"><WalletCards className="h-4 w-4" />Settle & print {settings.currency}{grossTotal.toFixed(2)}</button>}</div>
         </div></aside>
       </div>
 
@@ -218,14 +218,14 @@ function OrderCounter({value, onChange, label}: {value: number; onChange: (value
 }
 function TotalRow({label, value, currency}: {label: string; value: number; currency: string}) { return <div className="flex justify-between text-gray-500"><span>{label}</span><span className="font-mono font-bold text-gray-800 dark:text-gray-200">{currency}{value.toFixed(2)}</span></div>; }
 
-function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, secondaryActionLabel, onSecondaryAction, onSettle, paymentLabel = 'Settle payment', emptyText}: {title: string; subtitle: string; orders: Sale[]; currency: string; actionLabel: string; onAction: (sale: Sale) => void; secondaryActionLabel?: string; onSecondaryAction?: (sale: Sale) => void; onSettle?: (sale: Sale, method: 'Cash' | 'UPI' | 'Card') => void; paymentLabel?: string; emptyText: string}) {
+function OrderShelf({title, subtitle, orders, currency, actionLabel, onAction, secondaryActionLabel, onSecondaryAction, onSettle, paymentLabel = 'Settle payment', emptyText}: {title: string; subtitle: string; orders: Sale[]; currency: string; actionLabel: string; onAction: (sale: Sale) => void; secondaryActionLabel?: string; onSecondaryAction?: (sale: Sale) => void; onSettle?: (sale: Sale, method: 'Cash' | 'UPI') => void; paymentLabel?: string; emptyText: string}) {
   return <div className="rounded-3xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#141416] sm:p-5">
     <div className="flex items-end justify-between gap-3"><div><h2 className="font-black">{title}</h2><p className="mt-1 text-xs text-gray-500">{subtitle}</p></div><span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-black text-gray-500 dark:bg-white/5">{orders.length}</span></div>
     <div className="mt-4 grid gap-2 sm:grid-cols-2">
       {orders.length ? orders.map(order => <div key={order.id} className="rounded-2xl border border-gray-200 p-3 dark:border-white/10">
         <div className="flex items-center justify-between gap-3"><span className="min-w-0"><span className="block truncate text-sm font-black">{order.tableNumber ? `Table ${order.tableNumber}` : order.orderType}</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">{order.items.reduce((sum, item) => sum + item.quantity, 0)} items · {new Date(order.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</span></span><span className="shrink-0 font-mono text-sm font-black text-emerald-500">{currency}{order.total.toFixed(2)}</span></div>
         <div className={`mt-3 grid gap-1.5 ${onSecondaryAction ? 'grid-cols-2' : 'grid-cols-1'}`}><button onClick={() => onAction(order)} className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-black uppercase text-gray-500 transition hover:border-emerald-500/50 hover:text-emerald-500 dark:border-white/10">{actionLabel}</button>{onSecondaryAction && <button onClick={() => onSecondaryAction(order)} className="rounded-xl border border-amber-500/30 px-3 py-2 text-xs font-black uppercase text-amber-500 transition hover:bg-amber-500/10">{secondaryActionLabel}</button>}</div>
-        {onSettle && <div className="mt-2"><p className="mb-1.5 text-[9px] font-black uppercase tracking-widest text-gray-400">{paymentLabel}</p><div className="grid grid-cols-3 gap-1.5">{(['Cash', 'UPI', 'Card'] as const).map(method => <button key={method} onClick={() => onSettle(order, method)} className={`rounded-lg px-2 py-2 text-[10px] font-black uppercase transition ${order.paymentMethod === method && order.status === 'Completed' ? 'bg-emerald-500 text-[#07110D]' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-[#07110D]'}`}>{method}</button>)}</div></div>}
+        {onSettle && <div className="mt-2"><p className="mb-1.5 text-[9px] font-black uppercase tracking-widest text-gray-400">{paymentLabel}</p><div className="grid grid-cols-2 gap-1.5">{(['Cash', 'UPI'] as const).map(method => <button key={method} onClick={() => onSettle(order, method)} className={`rounded-lg px-2 py-2 text-[10px] font-black uppercase transition ${order.paymentMethod === method && order.status === 'Completed' ? 'bg-emerald-500 text-[#07110D]' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-[#07110D]'}`}>{method}</button>)}</div></div>}
       </div>) : <p className="py-4 text-sm text-gray-400">{emptyText}</p>}
     </div>
   </div>;

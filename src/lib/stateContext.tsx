@@ -1742,6 +1742,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     website: activeStore.configuration?.website || '',
     receiptHeader: activeStore.configuration?.receiptHeader || activeStore.name,
     receiptFooter: activeStore.configuration?.receiptFooter || '',
+    upiId: activeStore.configuration?.upiId || settings.upiId || '',
+    upiPayeeName: activeStore.configuration?.upiPayeeName || settings.upiPayeeName || activeStore.name,
     businessType: activeStore.configuration?.businessType || 'Retail',
     currency: activeStore.configuration?.currency || '₹',
     loyaltyPointsPerDollar: activeStore.configuration?.loyaltyPointsPerDollar ?? settings.loyaltyPointsPerDollar,

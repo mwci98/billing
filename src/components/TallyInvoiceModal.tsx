@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, Download, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 // @ts-ignore html2pdf module declaration
 import html2pdf from 'html2pdf.js';
+import QRCode from 'qrcode';
 import { Sale, StoreSettings } from '../types';
 
 interface TallyInvoiceModalProps {
@@ -95,6 +96,21 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   settings,
   onClose
 }) => {
+  const [upiQrCode, setUpiQrCode] = useState('');
+  const upiUri = settings.upiId
+    ? `upi://pay?${new URLSearchParams({ pa: settings.upiId, pn: settings.upiPayeeName || settings.storeName, am: activeReceipt.total.toFixed(2), cu: 'INR', tn: `Invoice ${activeReceipt.id}` }).toString()}`
+    : '';
+
+  useEffect(() => {
+    if (!upiUri) {
+      setUpiQrCode('');
+      return;
+    }
+    QRCode.toDataURL(upiUri, { width: 180, margin: 1, errorCorrectionLevel: 'M' })
+      .then(setUpiQrCode)
+      .catch(() => setUpiQrCode(''));
+  }, [upiUri]);
+
   const sellerState = getGstStateInfo(settings.gstNumber);
   const buyerState = activeReceipt.customerStateCode
     ? {
@@ -465,6 +481,17 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
               <p className="text-[8.5px] leading-tight text-gray-800">
                 We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
               </p>
+              {upiQrCode && (
+                <div className="mt-2 flex items-center gap-2 border-t border-dashed border-black pt-2">
+                  <img src={upiQrCode} alt="UPI payment QR" className="h-16 w-16" />
+                  <div className="text-[8px] leading-tight">
+                    <p className="font-bold">Scan to pay by UPI</p>
+                    <p>{settings.upiPayeeName || settings.storeName}</p>
+                    <p className="font-mono">{settings.upiId}</p>
+                    <p className="font-bold">Amount: {settings.currency}{activeReceipt.total.toFixed(2)}</p>
+                  </div>
+                </div>
+              )}
             </td>
             <td className="w-2/5 p-2 text-right align-top">
               <p className="font-bold uppercase">for {settings.storeName}</p>

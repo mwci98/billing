@@ -226,6 +226,8 @@ export interface StoreSettings {
   bankAccountNumber?: string;
   bankBranch?: string;
   bankIfsc?: string;
+  upiId?: string;
+  upiPayeeName?: string;
   loyaltyPointsPerDollar: number; // conversion rate
   planTier?: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
   tenantId?: string;
@@ -275,6 +277,8 @@ export interface SaaSStore {
     receiptHeader?: string;
     receiptFooter?: string;
     loyaltyPointsPerDollar?: number;
+    upiId?: string;
+    upiPayeeName?: string;
     dashboardWidgets?: DashboardWidgetSettings;
   };
 }

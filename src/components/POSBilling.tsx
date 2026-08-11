@@ -53,11 +53,10 @@ export const POSBilling: React.FC = () => {
     selectedUnitIds?: string[];
   }[]>([]);
   const [discountInput, setDiscountInput] = useState<string>('0');
-  const [paymentOption, setPaymentOption] = useState<'Cash' | 'UPI' | 'Card' | 'Split'>('Cash');
+  const [paymentOption, setPaymentOption] = useState<'Cash' | 'UPI' | 'Split'>('Cash');
 
   // Split payment allocations
   const [splitCash, setSplitCash] = useState<string>('');
-  const [splitCard, setSplitCard] = useState<string>('');
   const [splitUpi, setSplitUpi] = useState<string>('');
 
   // Scanner modal toggle
@@ -241,7 +240,6 @@ export const POSBilling: React.FC = () => {
     setAttachedCustomer(null);
     setPaymentOption('Cash');
     setSplitCash('');
-    setSplitCard('');
     setSplitUpi('');
   };
 
@@ -350,10 +348,8 @@ export const POSBilling: React.FC = () => {
     const paymentDetails: any = {};
     if (paymentOption === 'Split') {
       paymentDetails.cashAmount = parseFloat(splitCash) || 0;
-      paymentDetails.cardAmount = parseFloat(splitCard) || 0;
       paymentDetails.upiAmount = parseFloat(splitUpi) || 0;
-      
-      const allocated = paymentDetails.cashAmount + paymentDetails.cardAmount + paymentDetails.upiAmount;
+      const allocated = paymentDetails.cashAmount + paymentDetails.upiAmount;
       if (Math.abs(allocated - netTotal) > 0.5) {
         // Allow treating remainder as customer credit due, else reject mismatch
         if (!attachedCustomer) {
@@ -366,8 +362,6 @@ export const POSBilling: React.FC = () => {
       }
     } else if (paymentOption === 'Cash') {
       paymentDetails.cashAmount = netTotal;
-    } else if (paymentOption === 'Card') {
-      paymentDetails.cardAmount = netTotal;
     } else {
       paymentDetails.upiAmount = netTotal;
     }
@@ -967,8 +961,8 @@ export const POSBilling: React.FC = () => {
           {/* Payment Option Selector */}
           <div className="space-y-1.5 pt-1">
             <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Payment channel</label>
-            <div className="grid grid-cols-4 gap-1">
-              {['Cash', 'UPI', 'Card', 'Split'].map((opt) => (
+            <div className="grid grid-cols-3 gap-1">
+              {['Cash', 'UPI', 'Split'].map((opt) => (
                 <button
                   key={opt}
                   onClick={() => setPaymentOption(opt as any)}
@@ -985,27 +979,17 @@ export const POSBilling: React.FC = () => {
             </div>
           </div>
 
-          {/* If Split Payment, expand cash card upi boxes */}
+          {/* If Split Payment, expand cash and UPI boxes */}
           {paymentOption === 'Split' && (
             <div className="p-3 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-slate-200 space-y-2">
               <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">Allocate split amounts ({settings.currency}{netTotal.toFixed(2)}):</span>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[9px] font-medium text-gray-400">Cash part</label>
                   <input
                     type="number"
                     value={splitCash}
                     onChange={(e) => setSplitCash(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50/50 p-1.5 text-xs text-right"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-medium text-gray-400 font-mono">Card part</label>
-                  <input
-                    type="number"
-                    value={splitCard}
-                    onChange={(e) => setSplitCard(e.target.value)}
                     placeholder="0.00"
                     className="w-full rounded-lg border border-gray-200 bg-gray-50/50 p-1.5 text-xs text-right"
                   />

@@ -56,6 +56,8 @@ export const SettingsPage: React.FC = () => {
   const [bankAccountNumber, setBankAccountNumber] = useState<string>(settings.bankAccountNumber || '');
   const [bankBranch, setBankBranch] = useState<string>(settings.bankBranch || '');
   const [bankIfsc, setBankIfsc] = useState<string>(settings.bankIfsc || '');
+  const [upiId, setUpiId] = useState<string>(settings.upiId || '');
+  const [upiPayeeName, setUpiPayeeName] = useState<string>(settings.upiPayeeName || settings.storeName);
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
   const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidgetSettings>(() => ({
     ...DEFAULT_DASHBOARD_WIDGETS,
@@ -88,6 +90,8 @@ export const SettingsPage: React.FC = () => {
       bankAccountNumber: bankAccountNumber.trim(),
       bankBranch: bankBranch.trim(),
       bankIfsc: bankIfsc.trim().toUpperCase(),
+      upiId: upiId.trim().toLowerCase(),
+      upiPayeeName: upiPayeeName.trim() || storeName.trim(),
       businessType,
       dashboardWidgets
     });
@@ -554,6 +558,21 @@ export const SettingsPage: React.FC = () => {
                   Complete the bank name, account number, and IFSC before enabling invoice display.
                 </p>
               )}
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200">UPI payment QR on invoices</p>
+              <p className="mt-1 text-[10px] text-gray-400">Customers scan the invoice QR to pay this workspace directly. QPOS does not receive the payment.</p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">UPI ID</label>
+                  <input value={upiId} onChange={(event) => setUpiId(event.target.value)} placeholder="shop@upi" className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-gray-400">UPI payee name</label>
+                  <input value={upiPayeeName} onChange={(event) => setUpiPayeeName(event.target.value)} placeholder="Your shop name" className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white" />
+                </div>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-4">
