@@ -228,6 +228,7 @@ export interface StoreSettings {
   bankIfsc?: string;
   upiId?: string;
   upiPayeeName?: string;
+  whatsappInvoiceEnabled?: boolean;
   loyaltyPointsPerDollar: number; // conversion rate
   planTier?: 'Free' | 'Basic' | 'Pro' | 'Enterprise';
   tenantId?: string;
@@ -279,6 +280,7 @@ export interface SaaSStore {
     loyaltyPointsPerDollar?: number;
     upiId?: string;
     upiPayeeName?: string;
+    whatsappInvoiceEnabled?: boolean;
     dashboardWidgets?: DashboardWidgetSettings;
   };
 }

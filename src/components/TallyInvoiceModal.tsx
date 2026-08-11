@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, Download, CheckCircle2, FileText, Loader2 } from 'lucide-react';
+import { X, Printer, Download, CheckCircle2, FileText, Loader2, MessageCircle } from 'lucide-react';
 // @ts-ignore html2pdf module declaration
 import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
 import { Sale, StoreSettings } from '../types';
+import { auth } from '../lib/firebase';
 
 interface TallyInvoiceModalProps {
   activeReceipt: Sale;
@@ -151,6 +152,20 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   });
 
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isWhatsAppSending, setIsWhatsAppSending] = useState(false);
+
+  const createInvoicePdf = async (): Promise<Blob | null> => {
+    const printElement = document.getElementById('printable-tally-a5-invoice');
+    if (!printElement) return null;
+    const options = {
+      margin: [3, 3, 3, 3] as [number, number, number, number],
+      filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
+    };
+    return html2pdf().set(options).from(printElement).outputPdf('blob') as Promise<Blob>;
+  };
 
   const downloadPDF = async () => {
     const printElement = document.getElementById('printable-tally-a5-invoice');
@@ -158,21 +173,62 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
 
     setIsPdfLoading(true);
     try {
-      const opt = {
+      await html2pdf().set({
         margin: [3, 3, 3, 3] as [number, number, number, number],
         filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
-      };
-
-      await html2pdf().set(opt).from(printElement).save();
+      }).from(printElement).save();
     } catch (err) {
       console.error("PDF generation error:", err);
       alert("PDF generation failed. Using browser print instead.");
       window.print();
     } finally {
       setIsPdfLoading(false);
+    }
+  };
+
+  const sendInvoiceOnWhatsApp = async () => {
+    if (!activeReceipt.customerPhone) {
+      alert('Add the customer WhatsApp number before sending this invoice.');
+      return;
+    }
+    if (!auth.currentUser) {
+      alert('Please sign in again before sending a WhatsApp invoice.');
+      return;
+    }
+    setIsWhatsAppSending(true);
+    try {
+      const pdf = await createInvoicePdf();
+      if (!pdf) throw new Error('Could not generate the invoice PDF.');
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = () => reject(new Error('Could not prepare the invoice PDF.'));
+        reader.readAsDataURL(pdf);
+      });
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/communications/send-whatsapp-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          recipient: activeReceipt.customerPhone,
+          storeName: settings.storeName,
+          invoiceNumber: activeReceipt.id,
+          total: activeReceipt.total,
+          currency: settings.currency,
+          fileName: `Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+          pdfBase64,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'WhatsApp could not deliver the invoice.');
+      alert('Invoice PDF sent on WhatsApp.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'WhatsApp invoice delivery failed.');
+    } finally {
+      setIsWhatsAppSending(false);
     }
   };
 
@@ -657,6 +713,15 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             Sale Completed • <span className="text-white font-semibold">{activeReceipt.items.length} Items Billed</span>
           </p>
           <div className="grid grid-cols-3 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            {settings.whatsappInvoiceEnabled && <button
+              onClick={sendInvoiceOnWhatsApp}
+              disabled={isWhatsAppSending}
+              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition disabled:opacity-50"
+              title="Send this invoice PDF through the configured Neospec WhatsApp Business number"
+            >
+              {isWhatsAppSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              <span>{isWhatsAppSending ? 'Sending...' : 'WhatsApp'}</span>
+            </button>}
             <button
               onClick={downloadPDF}
               disabled={isPdfLoading}

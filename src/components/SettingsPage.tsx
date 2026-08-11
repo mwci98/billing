@@ -58,6 +58,7 @@ export const SettingsPage: React.FC = () => {
   const [bankIfsc, setBankIfsc] = useState<string>(settings.bankIfsc || '');
   const [upiId, setUpiId] = useState<string>(settings.upiId || '');
   const [upiPayeeName, setUpiPayeeName] = useState<string>(settings.upiPayeeName || settings.storeName);
+  const [whatsappInvoiceEnabled, setWhatsappInvoiceEnabled] = useState<boolean>(settings.whatsappInvoiceEnabled ?? false);
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
   const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidgetSettings>(() => ({
     ...DEFAULT_DASHBOARD_WIDGETS,
@@ -92,6 +93,7 @@ export const SettingsPage: React.FC = () => {
       bankIfsc: bankIfsc.trim().toUpperCase(),
       upiId: upiId.trim().toLowerCase(),
       upiPayeeName: upiPayeeName.trim() || storeName.trim(),
+      whatsappInvoiceEnabled,
       businessType,
       dashboardWidgets
     });
@@ -574,6 +576,16 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {businessType !== 'Restaurant' && <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Send retail invoices by WhatsApp</p>
+                  <p className="mt-1 text-[10px] text-gray-400">Uses the Neospec CRM WhatsApp Business number. Customers receive the invoice PDF from the completed retail invoice screen.</p>
+                </div>
+                <button type="button" role="switch" aria-checked={whatsappInvoiceEnabled} onClick={() => setWhatsappInvoiceEnabled(value => !value)} className={`relative h-6 w-11 shrink-0 rounded-full transition ${whatsappInvoiceEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${whatsappInvoiceEnabled ? 'left-6' : 'left-1'}`} /></button>
+              </div>
+            </div>}
 
             <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

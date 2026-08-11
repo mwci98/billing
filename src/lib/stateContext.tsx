@@ -1495,6 +1495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           loyaltyPointsPerDollar: newSettings.loyaltyPointsPerDollar,
           upiId: newSettings.upiId,
           upiPayeeName: newSettings.upiPayeeName,
+          whatsappInvoiceEnabled: newSettings.whatsappInvoiceEnabled,
           dashboardWidgets: newSettings.dashboardWidgets
         }
       };
@@ -1711,7 +1712,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         receiptHeader: configuration.receiptHeader,
         receiptFooter: configuration.receiptFooter,
         upiId: configuration.upiId,
-        upiPayeeName: configuration.upiPayeeName
+        upiPayeeName: configuration.upiPayeeName,
+        whatsappInvoiceEnabled: configuration.whatsappInvoiceEnabled
       }
     };
     const storeBranches = saasStores.map(store => store.id === activeStore.id ? updatedStore : store);
@@ -1749,6 +1751,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Payment QR details belong to a workspace and must never inherit a sibling store's UPI account.
     upiId: activeStore.configuration?.upiId || '',
     upiPayeeName: activeStore.configuration?.upiPayeeName || activeStore.name,
+    whatsappInvoiceEnabled: activeStore.configuration?.whatsappInvoiceEnabled ?? false,
     businessType: activeStore.configuration?.businessType || 'Retail',
     currency: activeStore.configuration?.currency || '₹',
     loyaltyPointsPerDollar: activeStore.configuration?.loyaltyPointsPerDollar ?? settings.loyaltyPointsPerDollar,
