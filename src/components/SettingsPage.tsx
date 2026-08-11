@@ -482,7 +482,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">
-              <label className="flex cursor-pointer items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-200">
                     <Landmark className="h-4 w-4 text-emerald-500" />
@@ -492,14 +492,15 @@ export const SettingsPage: React.FC = () => {
                     Enable this only when customers should see your settlement account on printed and PDF invoices.
                   </p>
                 </div>
-                <input
+                <button
                   id="set-show-bank-details"
-                  type="checkbox"
-                  checked={showBankDetailsOnInvoice}
-                  onChange={(event) => setShowBankDetailsOnInvoice(event.target.checked)}
-                  className="h-4 w-4 shrink-0 accent-emerald-500"
-                />
-              </label>
+                  type="button"
+                  role="switch"
+                  aria-checked={showBankDetailsOnInvoice}
+                  onClick={() => setShowBankDetailsOnInvoice(value => !value)}
+                  className={`relative h-7 w-12 shrink-0 rounded-full transition ${showBankDetailsOnInvoice ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                ><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${showBankDetailsOnInvoice ? 'left-6' : 'left-1'}`} /></button>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

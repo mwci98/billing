@@ -277,6 +277,13 @@ export interface SaaSStore {
     currency?: string;
     receiptHeader?: string;
     receiptFooter?: string;
+    invoiceSignature?: string;
+    showBankDetailsOnInvoice?: boolean;
+    bankAccountHolder?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankBranch?: string;
+    bankIfsc?: string;
     loyaltyPointsPerDollar?: number;
     upiId?: string;
     upiPayeeName?: string;
