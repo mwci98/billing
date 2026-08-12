@@ -1,4 +1,4 @@
-import {getAdminDb} from '../_firebase-admin.js';
+import {getAdminDb, getVerifiedFirebaseUser} from '../_firebase-admin.js';
 
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_PUBLIC_INVOICE_PDF_BASE64_LENGTH = 900_000;
@@ -22,16 +22,6 @@ async function sign(value: string, secret: string) {
   return Buffer.from(signature).toString('base64url');
 }
 
-async function getFirebaseUser(idToken: string) {
-  const firebaseApiKey = process.env.FIREBASE_WEB_API_KEY;
-  if (!firebaseApiKey) throw new Error('Firebase authentication is not configured on the QPOS server.');
-  const result = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`, {
-    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idToken}),
-  });
-  const payload = await result.json().catch(() => ({}));
-  return result.ok ? payload.users?.[0] : null;
-}
-
 const emailScope = (email: string) => email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
 
 export default async function handler(request: any, response: any) {
@@ -43,8 +33,8 @@ export default async function handler(request: any, response: any) {
   if (!secret) return response.status(503).json({error: 'Public invoice links are not configured yet.'});
 
   try {
-    const user = await getFirebaseUser(token);
-    const email = String(user?.email || '');
+    const user = await getVerifiedFirebaseUser(token).catch(() => null);
+    const email = user?.email || '';
     const body = request.body || {};
     const scope = String(body.workspaceScope || '');
     const saleId = String(body.saleId || '');
