@@ -1,5 +1,4 @@
 import {cert, getApps, initializeApp} from 'firebase-admin/app';
-import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
 
 // QPOS is provisioned with a named Firestore database rather than "(default)".
@@ -20,6 +19,9 @@ export function getAdminDb() {
 }
 
 export async function getVerifiedFirebaseUser(idToken: string) {
+  // Load Auth only inside authenticated routes. This keeps lightweight API routes
+  // from failing during Vercel's module initialization.
+  const {getAuth} = await import('firebase-admin/auth');
   const token = await getAuth(getAdminApp()).verifyIdToken(idToken);
   if (!token.email) throw new Error('The signed-in Firebase user has no email address.');
   return {email: token.email};
