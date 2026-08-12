@@ -5,7 +5,7 @@ import { X, Printer, Download, CheckCircle2, FileText, Loader2, MessageCircle } 
 import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
 import { Sale, StoreSettings } from '../types';
-import { auth } from '../lib/firebase';
+import { auth, firebaseWebApiKey } from '../lib/firebase';
 import { useAppState } from '../lib/stateContext';
 
 interface TallyInvoiceModalProps {
@@ -232,7 +232,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           : `${ownerScope}__store__${activeStore.id.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_')}`);
       const linkResponse = await fetch('/api/public-invoices/create', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${idToken}`},
+        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${idToken}`, 'x-firebase-api-key': firebaseWebApiKey},
         body: JSON.stringify({
           workspaceScope,
           saleId: activeReceipt.id,
@@ -269,7 +269,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       ].filter(Boolean).join('\n').slice(0, 1000);
       const response = await fetch('/api/communications/send-whatsapp-invoice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}`, 'x-firebase-api-key': firebaseWebApiKey },
         body: JSON.stringify({
           recipient,
           workspaceScope,
