@@ -22,7 +22,18 @@ export default async function handler(request: any, response: any) {
     const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as LinkPayload;
     if (!payload.scope || !payload.saleId || !payload.expiresAt || payload.expiresAt < Date.now()) return response.status(410).send('This invoice link has expired.');
 
-    const saleDoc = await getAdminDb().doc(`users/${payload.scope}/sales/${payload.saleId}`).get();
+    const db = getAdminDb();
+    const publicInvoice = await db.doc(`users/${payload.scope}/public_invoices/${payload.saleId}`).get();
+    const storedPdf = publicInvoice.exists ? publicInvoice.data() as any : null;
+    if (storedPdf?.pdfBase64 && Number(storedPdf.expiresAt || 0) >= Date.now()) {
+      const fileName = String(storedPdf.fileName || `Invoice_${payload.saleId}.pdf`).replace(/[\\/\r\n"]/g, '_');
+      response.setHeader('Content-Type', 'application/pdf');
+      response.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      response.setHeader('Cache-Control', 'private, no-store');
+      return response.status(200).send(Buffer.from(String(storedPdf.pdfBase64), 'base64'));
+    }
+
+    const saleDoc = await db.doc(`users/${payload.scope}/sales/${payload.saleId}`).get();
     if (!saleDoc.exists) return response.status(404).send('Invoice not found.');
     const sale = saleDoc.data() as any;
     const invoiceNumber = sale.id || payload.saleId;

@@ -236,6 +236,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         body: JSON.stringify({
           workspaceScope,
           saleId: activeReceipt.id,
+          pdfBase64,
           invoice: {
             storeName: settings.storeName,
             storeAddress: settings.address,

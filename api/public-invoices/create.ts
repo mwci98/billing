@@ -2,6 +2,7 @@ import {getAdminDb} from '../_firebase-admin.js';
 
 const FIREBASE_API_KEY = 'AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk';
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_PUBLIC_INVOICE_PDF_BASE64_LENGTH = 900_000;
 
 type LinkPayload = {
   scope: string;
@@ -47,8 +48,12 @@ export default async function handler(request: any, response: any) {
     const scope = String(body.workspaceScope || '');
     const saleId = String(body.saleId || '');
     const invoice = body.invoice || {};
+    const pdfBase64 = String(body.pdfBase64 || '');
     if (!email || !scope || !saleId || !invoice.storeName) {
       return response.status(400).json({error: 'Invoice link details are incomplete.'});
+    }
+    if (pdfBase64 && (pdfBase64.length > MAX_PUBLIC_INVOICE_PDF_BASE64_LENGTH || !/^[A-Za-z0-9+/]+={0,2}$/.test(pdfBase64))) {
+      return response.status(413).json({error: 'The invoice PDF is too large to create a secure public link.'});
     }
 
     const db = getAdminDb();
@@ -75,6 +80,14 @@ export default async function handler(request: any, response: any) {
     };
     const encoded = base64Url(JSON.stringify(payload));
     const signature = await sign(encoded, secret);
+    if (pdfBase64) {
+      await db.doc(`users/${scope}/public_invoices/${saleId}`).set({
+        pdfBase64,
+        fileName: `Invoice_${saleId.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+        expiresAt: payload.expiresAt,
+        updatedAt: new Date().toISOString(),
+      }, {merge: true});
+    }
     return response.status(200).json({url: `https://qpos.neospec.co.in/i/${encoded}.${signature}`, expiresAt: payload.expiresAt});
   } catch (error) {
     console.error('Public invoice link creation failed:', error);
