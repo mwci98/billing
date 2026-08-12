@@ -1,12 +1,15 @@
 import {getAdminDb} from './_firebase-admin.js';
 
 export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
-const FIREBASE_API_KEY = 'AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk';
 
 const emailScope = (email: string) => email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
 
 export async function verifyWalletAccess(idToken: string, requestedScope: string) {
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+  const firebaseApiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!firebaseApiKey) {
+    throw new Error('Firebase authentication is not configured on the QPOS server.');
+  }
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`, {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idToken}),
   });
   const payload = await response.json().catch(() => ({}));

@@ -1,6 +1,5 @@
 import {getAdminDb} from '../_firebase-admin.js';
 
-const FIREBASE_API_KEY = 'AIzaSyBca_Gy8lvnaqSJXjjYrY71T_IWa2ZjyCk';
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_PUBLIC_INVOICE_PDF_BASE64_LENGTH = 900_000;
 
@@ -24,7 +23,9 @@ async function sign(value: string, secret: string) {
 }
 
 async function getFirebaseUser(idToken: string) {
-  const result = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+  const firebaseApiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!firebaseApiKey) throw new Error('Firebase authentication is not configured on the QPOS server.');
+  const result = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`, {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idToken}),
   });
   const payload = await result.json().catch(() => ({}));
