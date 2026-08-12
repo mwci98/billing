@@ -18,15 +18,6 @@ export function getAdminDb() {
   return getFirestore(getAdminApp(), process.env.FIREBASE_DATABASE_ID || QPOS_FIRESTORE_DATABASE_ID);
 }
 
-export async function getVerifiedFirebaseUser(idToken: string) {
-  // Load Auth only inside authenticated routes. This keeps lightweight API routes
-  // from failing during Vercel's module initialization.
-  const {getAuth} = await import('firebase-admin/auth');
-  const token = await getAuth(getAdminApp()).verifyIdToken(idToken);
-  if (!token.email) throw new Error('The signed-in Firebase user has no email address.');
-  return {email: token.email};
-}
-
 export async function updateTenantSubscription(
   tenantId: string,
   subscription: Record<string, unknown>,

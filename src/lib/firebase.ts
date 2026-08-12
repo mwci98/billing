@@ -11,6 +11,7 @@ import firebaseConfig from '../../firebase-applet-config.json'; // resolve from 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth();
+export const firebaseWebApiKey = firebaseConfig.apiKey;
 export const authPersistenceReady = setPersistence(auth, browserLocalPersistence);
 
 import { doc, getDocFromServer } from 'firebase/firestore';

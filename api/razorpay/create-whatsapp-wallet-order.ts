@@ -5,6 +5,7 @@ const ALLOWED_AMOUNTS = new Set([10000, 20000, 50000]);
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') return response.status(405).json({error: 'Method not allowed'});
   const idToken = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const firebaseApiKey = String(request.headers['x-firebase-api-key'] || '');
   const {workspaceScope, amountPaise} = request.body || {};
   const amount = Number(amountPaise);
   if (!ALLOWED_AMOUNTS.has(amount)) return response.status(400).json({error: 'Choose a valid wallet top-up amount.'});
@@ -13,7 +14,7 @@ export default async function handler(request: any, response: any) {
   if (!keyId || !keySecret) return response.status(503).json({error: 'Razorpay is not configured yet.'});
 
   try {
-    const access = await verifyWalletAccess(idToken, String(workspaceScope || ''));
+    const access = await verifyWalletAccess(idToken, String(workspaceScope || ''), firebaseApiKey);
     if (!access) return response.status(401).json({error: 'Sign in is required to top up this wallet.'});
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
     const result = await fetch('https://api.razorpay.com/v1/orders', {

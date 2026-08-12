@@ -1,19 +1,19 @@
-import {getAdminDb, getVerifiedFirebaseUser} from './_firebase-admin.js';
+import {getAdminDb} from './_firebase-admin.js';
 
 export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
 
 const emailScope = (email: string) => email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
 
-export async function verifyWalletAccess(idToken: string, requestedScope: string) {
-  if (!idToken || !requestedScope) return null;
-  let user: {email: string};
-  try {
-    user = await getVerifiedFirebaseUser(idToken);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Unknown Firebase Admin verification error.';
-    throw new Error(`Wallet authentication server setup failed: ${reason}`);
-  }
-  const email = user.email;
+export async function verifyWalletAccess(idToken: string, requestedScope: string, firebaseApiKey: string) {
+  if (!idToken || !requestedScope || !firebaseApiKey) return null;
+  const verification = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(firebaseApiKey)}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({idToken}),
+  });
+  const payload = await verification.json().catch(() => ({}));
+  const email = String(payload.users?.[0]?.email || '');
+  if (!verification.ok || !email) return null;
 
   const db = getAdminDb();
   const identityScope = emailScope(email);

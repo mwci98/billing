@@ -11,7 +11,7 @@ import {
 import { useAppState } from '../lib/stateContext';
 import { BusinessMode, getBusinessMode } from '../lib/businessMode';
 import { DashboardWidgetSettings } from '../types';
-import { auth } from '../lib/firebase';
+import { auth, firebaseWebApiKey } from '../lib/firebase';
 
 const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetSettings = {
   revenue: true,
@@ -114,7 +114,7 @@ export const SettingsPage: React.FC = () => {
     try {
       const token = await user.getIdToken(true);
       const response = await fetch(`/api/whatsapp-wallet?workspaceScope=${encodeURIComponent(whatsappWorkspaceScope)}`, {
-        headers: {Authorization: `Bearer ${token}`},
+        headers: {Authorization: `Bearer ${token}`, 'x-firebase-api-key': firebaseWebApiKey},
       });
       const wallet = await readPaymentApiResponse(response);
       if (!response.ok) throw new Error(wallet.error || 'Unable to load the WhatsApp wallet.');
@@ -153,7 +153,7 @@ export const SettingsPage: React.FC = () => {
       const token = await user.getIdToken();
       const orderResponse = await fetch('/api/razorpay/create-whatsapp-wallet-order', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
+        headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-firebase-api-key': firebaseWebApiKey},
         body: JSON.stringify({workspaceScope: whatsappWorkspaceScope, amountPaise}),
       });
       const order = await readPaymentApiResponse(orderResponse);
@@ -171,7 +171,7 @@ export const SettingsPage: React.FC = () => {
           try {
             const verificationResponse = await fetch('/api/razorpay/verify-whatsapp-wallet-payment', {
               method: 'POST',
-              headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
+              headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-firebase-api-key': firebaseWebApiKey},
               body: JSON.stringify({
                 workspaceScope: whatsappWorkspaceScope,
                 razorpayOrderId: payment.razorpay_order_id,

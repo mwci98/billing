@@ -1,4 +1,4 @@
-import {getAdminDb, getVerifiedFirebaseUser} from '../_firebase-admin.js';
+import {getAdminDb} from '../_firebase-admin.js';
 
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_PUBLIC_INVOICE_PDF_BASE64_LENGTH = 900_000;
@@ -24,17 +24,27 @@ async function sign(value: string, secret: string) {
 
 const emailScope = (email: string) => email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
 
+async function getFirebaseUser(idToken: string, firebaseApiKey: string) {
+  if (!firebaseApiKey) return null;
+  const result = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(firebaseApiKey)}`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idToken}),
+  });
+  const payload = await result.json().catch(() => ({}));
+  return result.ok ? payload.users?.[0] : null;
+}
+
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') return response.status(405).json({error: 'Method not allowed'});
 
   const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const firebaseApiKey = String(request.headers['x-firebase-api-key'] || '');
   const secret = process.env.PUBLIC_INVOICE_SECRET || process.env.CRM_WEBHOOK_SECRET;
   if (!token) return response.status(401).json({error: 'Sign in is required to create an invoice link.'});
   if (!secret) return response.status(503).json({error: 'Public invoice links are not configured yet.'});
 
   try {
-    const user = await getVerifiedFirebaseUser(token).catch(() => null);
-    const email = user?.email || '';
+    const user = await getFirebaseUser(token, firebaseApiKey);
+    const email = String(user?.email || '');
     const body = request.body || {};
     const scope = String(body.workspaceScope || '');
     const saleId = String(body.saleId || '');

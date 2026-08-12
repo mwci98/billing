@@ -16,6 +16,7 @@ export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') return response.status(405).json({error: 'Method not allowed'});
 
   const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const firebaseApiKey = String(request.headers['x-firebase-api-key'] || '');
   if (!token) return response.status(401).json({error: 'Sign in is required to send an invoice.'});
 
   const endpoint = process.env.CRM_QPOS_WHATSAPP_INVOICE_URL
@@ -36,7 +37,7 @@ export default async function handler(request: any, response: any) {
 
   const body = JSON.stringify(payload);
   try {
-    const access = await verifyWalletAccess(token, String(payload.workspaceScope));
+    const access = await verifyWalletAccess(token, String(payload.workspaceScope), firebaseApiKey);
     if (!access) return response.status(401).json({error: 'Your sign-in session has expired. Please sign in again.'});
     const wallet = await getWallet(access.db, access.workspaceScope);
     if (wallet.balancePaise < WHATSAPP_INVOICE_PRICE_PAISE) {
