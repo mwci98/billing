@@ -84,6 +84,7 @@ export const SettingsPage: React.FC = () => {
   const [upiPayeeName, setUpiPayeeName] = useState<string>(settings.upiPayeeName || settings.storeName);
   const [whatsappInvoiceEnabled, setWhatsappInvoiceEnabled] = useState<boolean>(settings.whatsappInvoiceEnabled ?? false);
   const [whatsappWalletBalance, setWhatsappWalletBalance] = useState<number | null>(null);
+  const [whatsappWalletError, setWhatsappWalletError] = useState<string | null>(null);
   const [isLoadingWhatsappWallet, setIsLoadingWhatsappWallet] = useState(false);
   const [isAddingWhatsappCredit, setIsAddingWhatsappCredit] = useState(false);
   const [businessType, setBusinessType] = useState<BusinessMode>(getBusinessMode(settings.businessType));
@@ -109,8 +110,9 @@ export const SettingsPage: React.FC = () => {
     const user = auth.currentUser;
     if (!user || !whatsappWorkspaceScope) return;
     setIsLoadingWhatsappWallet(true);
+    setWhatsappWalletError(null);
     try {
-      const token = await user.getIdToken();
+      const token = await user.getIdToken(true);
       const response = await fetch(`/api/whatsapp-wallet?workspaceScope=${encodeURIComponent(whatsappWorkspaceScope)}`, {
         headers: {Authorization: `Bearer ${token}`},
       });
@@ -119,7 +121,9 @@ export const SettingsPage: React.FC = () => {
       setWhatsappWalletBalance(Number(wallet.balancePaise || 0));
     } catch (error) {
       setWhatsappWalletBalance(null);
-      triggerToast(error instanceof Error ? error.message : 'Unable to load the WhatsApp wallet.', 'error');
+      const message = error instanceof Error ? error.message : 'Unable to load the WhatsApp wallet.';
+      setWhatsappWalletError(message);
+      triggerToast(message, 'error');
     } finally {
       setIsLoadingWhatsappWallet(false);
     }
@@ -743,6 +747,7 @@ export const SettingsPage: React.FC = () => {
                     <p className="font-mono text-sm font-bold text-emerald-600">
                       {isLoadingWhatsappWallet ? 'Loading...' : whatsappWalletBalance === null ? 'Unavailable' : `Rs ${(whatsappWalletBalance / 100).toFixed(2)}`}
                     </p>
+                    {whatsappWalletError && <p className="mt-1 max-w-52 text-[10px] leading-snug text-rose-500 dark:text-rose-300">{whatsappWalletError}</p>}
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
