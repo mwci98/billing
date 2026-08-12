@@ -5,9 +5,15 @@ export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
 const emailScope = (email: string) => email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
 
 export async function verifyWalletAccess(idToken: string, requestedScope: string) {
-  const user = await getVerifiedFirebaseUser(idToken).catch(() => null);
-  const email = user?.email || '';
-  if (!email || !requestedScope) return null;
+  if (!idToken || !requestedScope) return null;
+  let user: {email: string};
+  try {
+    user = await getVerifiedFirebaseUser(idToken);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown Firebase Admin verification error.';
+    throw new Error(`Wallet authentication server setup failed: ${reason}`);
+  }
+  const email = user.email;
 
   const db = getAdminDb();
   const identityScope = emailScope(email);
