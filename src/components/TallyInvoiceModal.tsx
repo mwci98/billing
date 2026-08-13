@@ -756,8 +756,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       <div className="relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col rounded-xl border border-gray-800 bg-gray-900 p-2 shadow-2xl sm:max-h-[94vh] sm:p-3">
         <button
           onClick={onClose}
-          className="fixed right-3 top-3 z-[60] flex h-9 w-9 items-center justify-center rounded-lg bg-gray-950/90 text-gray-400 shadow-lg transition hover:bg-gray-800 hover:text-white"
+          className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-900 shadow-lg transition hover:bg-gray-100"
           aria-label="Close invoice preview"
+          title="Close invoice preview"
         >
           <X className="h-5 w-5" />
         </button>
