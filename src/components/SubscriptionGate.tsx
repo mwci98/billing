@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {CreditCard, Loader2, LockKeyhole, LogOut, ShieldCheck} from 'lucide-react';
+import {CheckCircle2, CreditCard, Loader2, LockKeyhole, LogOut, ShieldCheck} from 'lucide-react';
 import {useAppState} from '../lib/stateContext';
 import {UserRole} from '../types';
 import {isInternalTestingAccount, isInternalWorkspace} from '../lib/internalEntitlements';
@@ -139,40 +139,62 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
 
       {isBlocked && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0A0A0B]/95 p-4 backdrop-blur-xl">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#141416] p-7 text-center shadow-2xl">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
-              {isOwner ? <CreditCard className="h-7 w-7" /> : <LockKeyhole className="h-7 w-7" />}
+          <div className="w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/10 bg-[#141416] shadow-2xl">
+            <div className={`grid ${isOwner ? 'md:grid-cols-[0.9fr_1.1fr]' : ''}`}>
+              <section className="relative overflow-hidden bg-emerald-500 p-7 text-[#06261C] sm:p-9">
+                <div className="absolute -right-14 -top-16 h-52 w-52 rounded-full border-[28px] border-white/10" />
+                <div className="relative">
+                  <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-12 w-12 rounded-2xl bg-white/15 p-1.5" />
+                  <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-[#06261C]/70">QPOS subscription</p>
+                  <h2 className="mt-2 text-3xl font-black leading-tight">
+                    {isOwner ? 'Keep your store running.' : 'Store subscription required'}
+                  </h2>
+                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#06261C]/80">
+                    {isOwner
+                      ? 'Restore billing, inventory, reports, and staff access with one yearly plan.'
+                      : 'The store owner needs to renew the QPOS subscription before staff can continue working.'}
+                  </p>
+                  {isOwner && <div className="mt-8 rounded-2xl border border-[#06261C]/10 bg-white/15 p-4 backdrop-blur-sm">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#06261C]/60">Today&apos;s checkout</p>
+                    <div className="mt-1 flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-bold">Basic plan</span>
+                      <span className="font-mono text-xl font-black">₹6,000/year</span>
+                    </div>
+                  </div>}
+                </div>
+              </section>
+
+              <section className="p-7 sm:p-9">
+                {isOwner ? <>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400">Plan overview</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">Basic Plan</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">One subscription covers this workspace and its staff accounts.</p>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    {['Fast billing and GST invoices', 'Inventory and stock control', 'Restaurant and retail workflows', 'Reports, staff, and workspaces'].map(feature => (
+                      <div key={feature} className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-xs font-semibold text-gray-200">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={startSubscription} disabled={loading}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-black text-[#06261C] transition hover:bg-emerald-400 disabled:opacity-50">
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                    Continue to secure payment
+                  </button>
+                  <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-gray-500"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Payment is processed securely by Razorpay</p>
+                </> : <>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400"><LockKeyhole className="h-6 w-6" /></div>
+                  <h3 className="mt-5 text-2xl font-black text-white">Access is paused</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">Please contact your store owner or manager to renew the subscription and restore your staff access.</p>
+                </>}
+                <button onClick={logout}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-3 text-xs font-bold text-gray-400 transition hover:bg-white/5">
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </section>
             </div>
-            <h2 className="mt-5 text-2xl font-black text-white">{isOwner ? 'Your 5-day trial has ended' : 'Store subscription required'}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-400">
-              {isOwner
-                ? 'Subscribe to the Basic plan to restore access for your store and all staff accounts.'
-                : 'Your store subscription has ended. Please contact the store owner or manager to restore staff access.'}
-            </p>
-
-            {isOwner && <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-left">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white">Basic Plan</span>
-                <span className="font-mono text-lg font-black text-emerald-400">₹6,000/year</span>
-              </div>
-              <p className="mt-2 flex items-center gap-2 text-xs text-gray-400">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                Recurring billing secured by Razorpay
-              </p>
-            </div>}
-
-            {isOwner && (
-              <button onClick={startSubscription} disabled={loading}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                Subscribe with Razorpay
-              </button>
-            )}
-            <button onClick={logout}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-3 text-xs font-bold text-gray-400 hover:bg-white/5">
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
           </div>
         </div>
       )}
