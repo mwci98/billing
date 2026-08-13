@@ -383,7 +383,7 @@ export const ReportsView: React.FC = () => {
               }`}
             >
               Profit & Loss ledger
-            </button>
+            </button>}
           </div>
 
           {activeReportTab !== 'profit' && <div className="flex flex-wrap items-center gap-2">
@@ -406,7 +406,7 @@ export const ReportsView: React.FC = () => {
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
               <span>Download {activeReportTab === 'tax' ? 'GST' : 'Sales'} CSV</span>
-            </button>}
+            </button>
           </div>}
         </div>
 
