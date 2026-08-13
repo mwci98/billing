@@ -76,7 +76,6 @@ export const POSBilling: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
 
   // Toggle to show/hide out-of-stock items (default: false, hide out of stock)
-  const [showOutOfStock, setShowOutOfStock] = useState<boolean>(false);
 
   const scrollCategorySlider = (direction: 'left' | 'right') => {
     if (categorySliderRef.current) {
@@ -253,7 +252,7 @@ export const POSBilling: React.FC = () => {
                            p.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
                            p.barcode.includes(productSearch);
         const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
-        const matchStock = p.itemType === 'Service' || showOutOfStock || p.stock > 0;
+        const matchStock = p.itemType === 'Service' || p.stock > 0;
         return matchQuery && matchCategory && matchStock;
       })
     : [];
@@ -469,8 +468,8 @@ export const POSBilling: React.FC = () => {
           >
             {categoriesList.map((cat) => {
               const count = cat === 'All' 
-                ? products.filter(p => p.itemType === 'Service' || showOutOfStock || p.stock > 0).length
-                : products.filter(p => (p.itemType === 'Service' || showOutOfStock || p.stock > 0) && p.category === cat).length;
+                ? products.filter(p => p.itemType === 'Service' || p.stock > 0).length
+                : products.filter(p => (p.itemType === 'Service' || p.stock > 0) && p.category === cat).length;
               return (
                 <button
                   key={cat}
@@ -505,20 +504,6 @@ export const POSBilling: React.FC = () => {
             <ChevronRight className="h-4 w-4" />
           </button>
 
-          {/* Toggle Out Of Stock Filter */}
-          <button
-            type="button"
-            onClick={() => setShowOutOfStock(!showOutOfStock)}
-            className={`h-8 px-2.5 rounded-xl border text-[10px] font-bold font-mono transition cursor-pointer shrink-0 flex items-center gap-1 active:scale-95 ${
-              showOutOfStock 
-                ? 'bg-amber-500/15 text-amber-500 border-amber-500/30' 
-                : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
-            }`}
-            title="Toggle showing out-of-stock items in POS catalog"
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${showOutOfStock ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-            <span>{showOutOfStock ? 'Showing Out-of-Stock' : 'In Stock Only'}</span>
-          </button>
         </div>
         )}
 
