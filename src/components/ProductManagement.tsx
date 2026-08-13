@@ -568,9 +568,9 @@ export const ProductManagement: React.FC = () => {
     <div className="space-y-6">
       
       {/* 1. Header controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-950 p-6 rounded-3xl border border-gray-100 dark:border-gray-900 shadow-sm">
+      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:rounded-3xl sm:p-6">
         <div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white">{isRestaurantBusiness ? 'Restaurant Menu' : 'Services & Materials Catalog'}</h2>
+          <h2 className="text-xl font-black leading-tight text-gray-950 dark:text-white sm:text-2xl">{isRestaurantBusiness ? 'Restaurant Menu' : 'Services & Materials Catalog'}</h2>
           <p className="text-xs text-gray-400">{isRestaurantBusiness ? 'Menu dishes and beverages' : 'Total billable catalog items'}: {products.length}</p>
         </div>
 
@@ -585,7 +585,7 @@ export const ProductManagement: React.FC = () => {
       </div>
 
       {/* 2. Filters & List display */}
-      <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 shadow-sm overflow-hidden p-6 space-y-4">
+      <div className="space-y-4 overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-6">
         
         <div className="flex flex-col lg:flex-row gap-3.5 items-center justify-between">
           <div className="relative w-full lg:w-72">
@@ -694,8 +694,101 @@ export const ProductManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Catalog Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile catalog cards */}
+        <div className="grid grid-cols-1 gap-3 md:hidden">
+          {filtered.map((p) => {
+            const nearLowStock = p.itemType !== 'Service' && p.stock <= p.lowStockAlert;
+            return (
+              <article key={p.id} className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900/40">
+                <div className="flex min-w-0 items-start gap-3">
+                  <ProductImage value={p.imageUrl} name={p.name} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold leading-tight text-gray-950 dark:text-white">{p.name}</p>
+                    <p className="mt-1 truncate text-[10px] text-gray-400">{p.category} · {p.sku}</p>
+                  </div>
+                  <span className="shrink-0 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {p.itemType === 'Service' ? 'Service' : p.sourcingType === 'Manufactured' ? 'In-house' : 'Material'}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 border-y border-gray-100 py-3 dark:border-gray-800">
+                  <div>
+                    <p className="text-[8px] font-bold uppercase text-gray-400">Cost</p>
+                    <p className="font-mono text-[10px] text-gray-600 dark:text-gray-300">
+                      {p.itemType === 'Service' ? '—' : `${settings.currency}${p.purchasePrice.toFixed(2)}`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[8px] font-bold uppercase text-gray-400">Selling price</p>
+                    <p className="font-mono text-[11px] font-bold text-gray-950 dark:text-white">{settings.currency}{p.sellingPrice.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-[9px] font-bold uppercase text-gray-400">Stock</span>
+                  {p.itemType === 'Service' ? (
+                    <span className="text-[10px] font-semibold text-gray-400">Not tracked</span>
+                  ) : editingStockId === p.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={editingStockVal}
+                        onChange={(event) => setEditingStockVal(event.target.value)}
+                        className="w-16 rounded-md border border-emerald-500 bg-white px-2 py-1 text-center font-mono text-xs font-bold outline-none dark:bg-gray-950"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const value = parseInt(editingStockVal);
+                          if (!isNaN(value) && value >= 0) adjustStock(p.id, value, 'Adjustment', 'Direct manual stock count update');
+                          setEditingStockId(null);
+                        }}
+                        className="rounded-md bg-emerald-500 p-1.5 text-white"
+                        aria-label="Save stock count"
+                      ><Check className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => setEditingStockId(null)} className="rounded-md bg-gray-200 p-1.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300" aria-label="Cancel stock edit"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => p.stock > 0 && adjustStock(p.id, p.stock - 1, 'Adjustment', 'Quick stock decrease')}
+                        disabled={p.stock <= 0}
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-xs font-black disabled:opacity-30 dark:border-gray-700 dark:bg-gray-950"
+                        aria-label={`Decrease ${p.name} stock`}
+                      >−</button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingStockId(p.id); setEditingStockVal(p.stock.toString()); }}
+                        className="flex min-w-14 items-center justify-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] font-bold text-gray-950 dark:text-white"
+                        title="Edit stock count"
+                      >
+                        <span className={`h-2 w-2 rounded-full ${nearLowStock ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                        {p.stock}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => adjustStock(p.id, p.stock + 1, 'Adjustment', 'Quick stock increase')}
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-xs font-black dark:border-gray-700 dark:bg-gray-950"
+                        aria-label={`Increase ${p.name} stock`}
+                      >+</button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-center justify-center gap-2 border-t border-gray-100 pt-2 dark:border-gray-800">
+                  {p.itemType !== 'Service' && <button onClick={() => setActiveLabels(p)} className="rounded-lg p-2 text-gray-500 hover:text-emerald-500" aria-label={`Labels for ${p.name}`}><Eye className="h-4 w-4" /></button>}
+                  <button onClick={() => openEditModal(p)} className="rounded-lg p-2 text-gray-500 hover:text-blue-500" aria-label={`Edit ${p.name}`}><Edit2 className="h-4 w-4" /></button>
+                  <button onClick={() => setProductToDelete(p)} className="rounded-lg p-2 text-gray-500 hover:text-red-500" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {/* Tablet and desktop catalog table */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-900 text-gray-400 uppercase tracking-wider text-[9px] font-extrabold">
