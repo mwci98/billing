@@ -338,7 +338,83 @@ export const ReportsView: React.FC = () => {
                 className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 py-2.5 pl-10 pr-3 text-xs focus:border-emerald-500 focus:outline-none"
               />
             </div>
-            <div className="overflow-x-auto min-h-[14rem]">
+            <div className="space-y-2 md:hidden">
+              {visibleSales.map((s) => (
+                <article
+                  key={s.id}
+                  className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900/40"
+                >
+                  <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2 dark:border-gray-800">
+                    <div className="min-w-0">
+                      <p className="break-all font-mono text-[11px] font-bold text-emerald-500">{s.id}</p>
+                      <p className="mt-0.5 text-[9px] text-gray-400">{new Date(s.date).toLocaleString()}</p>
+                    </div>
+                    <span className="shrink-0 rounded-md bg-white px-2 py-1 text-[9px] font-bold uppercase text-gray-600 dark:bg-gray-950 dark:text-gray-300">
+                      {s.paymentMethod}
+                    </span>
+                  </div>
+
+                  <p className="truncate py-2 text-xs font-semibold text-gray-950 dark:text-white">
+                    {s.customerName || 'Walk-in customer'}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                    <div>
+                      <p className="text-[8px] font-bold uppercase text-gray-400">Tax</p>
+                      <p className="font-mono text-[10px] text-gray-600 dark:text-gray-300">
+                        {settings.currency}{s.taxAmount.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-bold uppercase text-gray-400">Paid total</p>
+                      <p className="font-mono text-[11px] font-bold text-gray-950 dark:text-white">
+                        {settings.currency}{s.total.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[8px] font-bold uppercase text-gray-400">Cashier</p>
+                      <p className="truncate text-[10px] font-semibold uppercase text-gray-600 dark:text-gray-300">
+                        {s.employeeName || '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-center gap-2 border-t border-gray-100 pt-2 dark:border-gray-800">
+                    <button
+                      onClick={() => setPrintingSale(s)}
+                      title="Print or download invoice"
+                      aria-label="Print or download invoice"
+                      className="rounded-lg p-2 text-gray-500 hover:bg-emerald-500/10 hover:text-emerald-500"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openSaleEditor(s)}
+                      title="Edit sales record"
+                      aria-label="Edit sales record"
+                      className="rounded-lg p-2 text-gray-500 hover:bg-blue-500/10 hover:text-blue-500"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setSaleToDelete(s)}
+                      title="Delete and reverse invoice"
+                      aria-label="Delete and reverse invoice"
+                      className="rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {visibleSales.length === 0 && (
+                <div className="py-14 text-center text-xs text-gray-400">
+                  No sales records match your search.
+                </div>
+              )}
+            </div>
+
+            <div className="hidden min-h-[14rem] overflow-x-auto md:block">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-900 text-gray-400 uppercase tracking-widest text-[9px] font-bold">
