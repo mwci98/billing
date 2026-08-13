@@ -730,33 +730,28 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           <p className="text-xs text-gray-400">
             Sale Completed • <span className="text-white font-semibold">{activeReceipt.items.length} Items Billed</span>
           </p>
-          <div className="grid grid-cols-3 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             {settings.whatsappInvoiceEnabled && <button
               onClick={sendInvoiceOnWhatsApp}
               disabled={isWhatsAppSending}
-              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-500 disabled:opacity-50"
               title="Send this invoice PDF through the configured Neospec WhatsApp Business number"
+              aria-label={isWhatsAppSending ? 'Sending invoice on WhatsApp' : 'Send invoice on WhatsApp'}
             >
               {isWhatsAppSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-              <span>{isWhatsAppSending ? 'Sending...' : 'WhatsApp'}</span>
             </button>}
             <button
               onClick={downloadPDF}
               disabled={isPdfLoading}
-              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-800 text-gray-200 transition hover:bg-gray-700 disabled:opacity-50"
+              title="Download invoice PDF"
+              aria-label={isPdfLoading ? 'Saving invoice PDF' : 'Download invoice PDF'}
             >
               {isPdfLoading ? <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
-              <span>{isPdfLoading ? 'Saving PDF...' : 'Save as PDF'}</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="min-w-0 px-2 sm:px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold transition cursor-pointer"
-            >
-              Close
             </button>
             <button
               onClick={printInvoice}
-              className="flex min-w-0 items-center justify-center gap-1.5 px-2 sm:px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-500 sm:flex-none sm:px-5"
             >
               <Printer className="h-4 w-4" />
               <span>Print A5</span>
