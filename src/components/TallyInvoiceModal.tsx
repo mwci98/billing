@@ -203,8 +203,10 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
     source.dataset.pdfInvoice = 'true';
     source.style.cssText = [
       'position: fixed',
-      'left: -10000px',
+      'left: 0',
       'top: 0',
+      'z-index: 0',
+      'pointer-events: none',
       'width: 142mm',
       'max-width: 142mm',
       'height: auto',
@@ -224,7 +226,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       margin: [3, 3, 3, 3] as [number, number, number, number],
       filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
+      html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, scrollX: 0, scrollY: 0, onclone: prepareInvoiceForPdf },
       jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
     };
     try {
@@ -244,7 +246,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         margin: [3, 3, 3, 3] as [number, number, number, number],
         filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, scrollX: 0, scrollY: 0, onclone: prepareInvoiceForPdf },
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
       }).from(pdfSource).save();
     } catch (err) {
