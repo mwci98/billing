@@ -19,6 +19,7 @@ async function loadRazorpayCheckout() {
 }
 
 const RAZORPAY_CHECKOUT_LOGO = 'https://qpos.neospec.co.in/icons/qpos-icon-source.png';
+const RAZORPAY_THEME_COLOR = '#00BC7D';
 
 async function readApiResponse(response: Response) {
   const body = await response.text();
@@ -103,9 +104,9 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
         currency: order.currency,
         name: 'QPOS',
         image: RAZORPAY_CHECKOUT_LOGO,
-        description: 'Additional store add-on · one-time ₹500',
+        description: 'QPOS workspace add-on · one-time ₹500',
         prefill: {name: currentUser.name, email: currentUser.email},
-        theme: {color: '#10B981'},
+        theme: {color: RAZORPAY_THEME_COLOR},
         handler: async (payment: any) => {
           const verificationResponse = await fetch('/api/razorpay/verify-addon-payment', {
             method: 'POST',

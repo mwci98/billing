@@ -23,6 +23,7 @@ async function loadRazorpayCheckout() {
 
 // Razorpay fetches this public URL to display the merchant mark in Checkout.
 const RAZORPAY_CHECKOUT_LOGO = 'https://qpos.neospec.co.in/icons/qpos-icon-source.png';
+const RAZORPAY_THEME_COLOR = '#00BC7D';
 
 async function readApiResponse(response: Response) {
   const body = await response.text();
@@ -88,9 +89,9 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
         subscription_id: subscription.subscriptionId,
         name: 'QPOS',
         image: RAZORPAY_CHECKOUT_LOGO,
-        description: 'Basic Plan · ₹6,000 per year',
+        description: 'QPOS Basic Plan · ₹6,000/year',
         prefill: {name: currentUser.name, email: currentUser.email},
-        theme: {color: '#10B981'},
+        theme: {color: RAZORPAY_THEME_COLOR},
         handler: async (payment: any) => {
           const verificationResponse = await fetch('/api/razorpay/verify', {
             method: 'POST',
