@@ -319,21 +319,21 @@ export const Dashboard: React.FC = () => {
       {canViewFinancials && (dashboardWidgets.weeklyRevenue || dashboardWidgets.topSellingSkus) && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {dashboardWidgets.weeklyRevenue && (
-            <section className={`${dashboardWidgets.topSellingSkus ? 'lg:col-span-2' : 'lg:col-span-3'} rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-900 dark:bg-gray-950`}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
+            <section className={`${dashboardWidgets.topSellingSkus ? 'lg:col-span-2' : 'lg:col-span-3'} rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:p-6`}>
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+                <div className="min-w-0">
+                  <h3 className="flex items-center gap-2 whitespace-nowrap text-base font-bold text-gray-900 dark:text-white sm:text-lg">
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                     Weekly Revenue Trend
                   </h3>
-                  <p className="text-xs text-gray-400">Completed sales across the last seven days</p>
+                  <p className="mt-1 text-[11px] text-gray-400 sm:text-xs">Completed sales across the last seven days</p>
                 </div>
-                <span className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-500">
+                <span className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                   7-Day Total: {formatWholeCurrency(weeklyRevenueTotal)}
                 </span>
               </div>
 
-              <div className="mt-8 flex h-48 items-end justify-between gap-3 border-b border-gray-100 px-2 pb-8 dark:border-gray-900">
+              <div className="mt-5 flex h-44 items-end justify-between gap-2 border-b border-gray-100 px-1 pb-8 dark:border-gray-900 sm:mt-8 sm:h-48 sm:gap-3 sm:px-2">
                 {weeklyChartData.map(day => (
                   <div key={day.label} className="relative flex h-full flex-1 items-end justify-center">
                     <div
