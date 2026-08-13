@@ -28,6 +28,7 @@ export const ReportsView: React.FC = () => {
   const [editPaymentMethod, setEditPaymentMethod] = useState<Sale['paymentMethod']>('Cash');
   const [editDiscount, setEditDiscount] = useState('');
   const [editItems, setEditItems] = useState<SaleItem[]>([]);
+  const [hoveredProfitMonth, setHoveredProfitMonth] = useState<number | null>(null);
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
@@ -62,6 +63,59 @@ export const ReportsView: React.FC = () => {
   }, 0);
 
   const netProfits = Math.max(0, grossSalesVolume - totalGstCollected - totalStockCostSold);
+
+  const monthStarts = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setHours(0, 0, 0, 0);
+    date.setMonth(date.getMonth() - (5 - index));
+    return date;
+  });
+  const monthlyProfitData = monthStarts.map((monthStart) => {
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+    const monthSales = completedSales.filter((sale) => {
+      const date = new Date(sale.date);
+      return date >= monthStart && date < monthEnd;
+    });
+    const revenue = monthSales.reduce((sum, sale) => sum + sale.total, 0);
+    const tax = monthSales.reduce((sum, sale) => sum + sale.taxAmount, 0);
+    const cost = monthSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => {
+      const product = products.find((candidate) => candidate.id === item.productId);
+      return itemSum + (product?.purchasePrice ?? item.price * 0.5) * item.quantity;
+    }, 0), 0);
+    const purchaseSpend = purchases
+      .filter((purchase) => {
+        const date = new Date(purchase.date);
+        return date >= monthStart && date < monthEnd;
+      })
+      .reduce((sum, purchase) => sum + purchase.subtotal, 0);
+    return {
+      label: monthStart.toLocaleDateString(undefined, { month: 'short' }),
+      revenue,
+      cost,
+      tax,
+      profit: revenue - tax - cost,
+      purchaseSpend,
+    };
+  });
+  const chartWidth = 600;
+  const chartHeight = 220;
+  const chartLeft = 48;
+  const chartRight = 16;
+  const chartTop = 16;
+  const chartBottom = 34;
+  const plotWidth = chartWidth - chartLeft - chartRight;
+  const plotHeight = chartHeight - chartTop - chartBottom;
+  const chartValues = monthlyProfitData.flatMap((month) => [month.revenue, month.cost, month.profit]);
+  const chartMin = Math.min(0, ...chartValues);
+  const chartMax = Math.max(1, ...chartValues);
+  const chartRange = chartMax - chartMin || 1;
+  const chartX = (index: number) => chartLeft + (plotWidth * index / Math.max(1, monthlyProfitData.length - 1));
+  const chartY = (value: number) => chartTop + ((chartMax - value) / chartRange) * plotHeight;
+  const chartPoints = (key: 'revenue' | 'cost' | 'profit') => monthlyProfitData
+    .map((month, index) => `${chartX(index)},${chartY(month[key])}`)
+    .join(' ');
+  const hasProfitHistory = monthlyProfitData.some((month) => month.revenue || month.cost || month.tax || month.purchaseSpend);
 
   const openSaleEditor = (sale: Sale) => {
     setEditingSale(sale);
@@ -556,45 +610,62 @@ export const ReportsView: React.FC = () => {
         {activeReportTab === 'profit' && (
           <div className="space-y-6">
             
-            {/* Hand-crafted graphical line comparisons SVG */}
-            <div className="rounded-2xl border border-gray-150 p-5 bg-gray-55/30">
-              <span className="block text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">MoM Operating Margin Visualization:</span>
-              <div className="h-44 w-full">
-                <svg viewBox="0 0 500 120" className="h-full w-full">
-                  <line x1="10" y1="100" x2="490" y2="100" stroke="#cbd5e1" strokeWidth="2" />
-                  
-                  {/* Revenue line curve (Green) */}
-                  <path 
-                    d="M 20 90 Q 120 40 240 70 T 480 20" 
-                    fill="none" 
-                    stroke="#10b981" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                  />
-                  {/* Stock cost curve (Orange) */}
-                  <path 
-                    d="M 20 95 Q 120 70 240 85 T 480 60" 
-                    fill="none" 
-                    stroke="#f59e0b" 
-                    strokeWidth="2.5" 
-                    strokeDasharray="4"
-                    strokeLinecap="round" 
-                  />
-
-                  {/* Graphic key specs */}
-                  <text x="20" y="117" className="font-mono text-[9px] fill-gray-400">Past Months margin comparisons (sales vs costs lines)</text>
-                </svg>
+            <div className="rounded-lg border border-gray-150 bg-gray-55/30 p-3 sm:rounded-2xl sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold uppercase text-gray-500">Six-month operating performance</h3>
+                  <p className="mt-0.5 text-[10px] text-gray-400">Completed sales, cost of goods, and net profit</p>
+                </div>
+                <span className="shrink-0 text-[9px] font-semibold text-gray-400">Monthly</span>
               </div>
 
-              <div className="flex gap-4 pt-4 border-t border-gray-200 mt-2 text-[10px] font-bold">
-                <div className="flex items-center gap-1.5 text-emerald-600">
-                  <span className="h-3 w-3 bg-emerald-500 rounded-full" />
-                  <span>Sales Revenue Revenue ({settings.currency}{grossSalesVolume.toFixed(2)})</span>
+              {hasProfitHistory ? (
+                <div className="relative">
+                  {hoveredProfitMonth !== null && (() => {
+                    const month = monthlyProfitData[hoveredProfitMonth];
+                    return (
+                      <div
+                        className="pointer-events-none absolute top-2 z-10 w-40 rounded-lg border border-gray-200 bg-white p-2.5 text-[9px] shadow-xl dark:border-gray-700 dark:bg-gray-900"
+                        style={{ left: `${(hoveredProfitMonth / 5) * 100}%`, transform: hoveredProfitMonth > 3 ? 'translateX(-100%)' : hoveredProfitMonth < 2 ? 'translateX(0)' : 'translateX(-50%)' }}
+                      >
+                        <p className="mb-1.5 font-bold text-gray-900 dark:text-white">{month.label}</p>
+                        <p className="flex justify-between text-emerald-600"><span>Revenue</span><b>{settings.currency}{month.revenue.toFixed(2)}</b></p>
+                        <p className="flex justify-between text-amber-600"><span>COGS</span><b>{settings.currency}{month.cost.toFixed(2)}</b></p>
+                        <p className="flex justify-between text-red-500"><span>GST</span><b>{settings.currency}{month.tax.toFixed(2)}</b></p>
+                        <p className="flex justify-between text-blue-600"><span>Net profit</span><b>{settings.currency}{month.profit.toFixed(2)}</b></p>
+                        <p className="mt-1 flex justify-between border-t border-gray-100 pt-1 text-gray-400 dark:border-gray-800"><span>Purchases</span><b>{settings.currency}{month.purchaseSpend.toFixed(2)}</b></p>
+                      </div>
+                    );
+                  })()}
+                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-52 w-full overflow-visible" onMouseLeave={() => setHoveredProfitMonth(null)}>
+                    {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                      const y = chartTop + plotHeight * ratio;
+                      const value = chartMax - chartRange * ratio;
+                      return <g key={ratio}><line x1={chartLeft} y1={y} x2={chartWidth - chartRight} y2={y} stroke="currentColor" className="text-gray-200 dark:text-gray-800" strokeWidth="1" /><text x={chartLeft - 6} y={y + 3} textAnchor="end" className="fill-gray-400 text-[8px]">{Math.round(value / 1000)}k</text></g>;
+                    })}
+                    <line x1={chartLeft} y1={chartY(0)} x2={chartWidth - chartRight} y2={chartY(0)} stroke="#94a3b8" strokeWidth="1.2" />
+                    <polyline points={chartPoints('revenue')} fill="none" stroke="#10b981" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+                    <polyline points={chartPoints('cost')} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                    <polyline points={chartPoints('profit')} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                    {monthlyProfitData.map((month, index) => (
+                      <g key={month.label} onMouseEnter={() => setHoveredProfitMonth(index)} onClick={() => setHoveredProfitMonth(index)} className="cursor-pointer">
+                        <rect x={chartX(index) - plotWidth / 12} y={chartTop} width={plotWidth / 6} height={plotHeight + chartBottom} fill="transparent" />
+                        <circle cx={chartX(index)} cy={chartY(month.revenue)} r="3.5" fill="#10b981" />
+                        <circle cx={chartX(index)} cy={chartY(month.cost)} r="3" fill="#f59e0b" />
+                        <circle cx={chartX(index)} cy={chartY(month.profit)} r="3" fill="#2563eb" />
+                        <text x={chartX(index)} y={chartHeight - 9} textAnchor="middle" className="fill-gray-400 text-[9px] font-bold">{month.label}</text>
+                      </g>
+                    ))}
+                  </svg>
                 </div>
-                <div className="flex items-center gap-1.5 text-amber-500">
-                  <span className="h-3 w-3 bg-amber-500 rounded-full border border-dashed" />
-                  <span>Acquisition Stock cost ({settings.currency}{totalStockCostSold.toFixed(2)})</span>
-                </div>
+              ) : (
+                <div className="flex h-52 items-center justify-center text-center text-xs text-gray-400">No completed sales or purchase history in the last six months.</div>
+              )}
+
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 border-t border-gray-200 pt-3 text-[9px] font-bold dark:border-gray-800">
+                <span className="flex items-center gap-1.5 text-emerald-600"><i className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Revenue</span>
+                <span className="flex items-center gap-1.5 text-amber-600"><i className="h-2.5 w-2.5 rounded-full bg-amber-500" />Cost of goods</span>
+                <span className="flex items-center gap-1.5 text-blue-600"><i className="h-2.5 w-2.5 rounded-full bg-blue-600" />Net profit</span>
               </div>
             </div>
 
