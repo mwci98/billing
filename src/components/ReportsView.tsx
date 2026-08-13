@@ -489,15 +489,43 @@ export const ReportsView: React.FC = () => {
         {/* VIEW B: GST TAX REPORT */}
         {activeReportTab === 'tax' && (
           <div className="space-y-4">
-            <div className="flex gap-2 bg-blue-50/25 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 p-4 rounded-2xl">
-              <Info className="h-5 w-5 text-blue-500 translate-y-0.5" />
-              <div className="text-xs text-blue-800 dark:text-blue-350">
+            <div className="flex gap-2 rounded-lg border border-blue-100 bg-blue-50/25 p-3 dark:border-blue-900/50 dark:bg-blue-950/20 sm:rounded-2xl sm:p-4">
+              <Info className="h-4 w-4 shrink-0 translate-y-0.5 text-blue-500 sm:h-5 sm:w-5" />
+              <div className="text-[11px] leading-relaxed text-blue-800 dark:text-blue-350 sm:text-xs">
                 <strong>Tax Compliance Warning:</strong> Tax parameters calculation is compliant with EAN standards.
                 Review active configurations in business settings if tax codes or categories change.
               </div>
             </div>
 
-            <div className="overflow-x-auto min-h-[14rem]">
+            <div className="space-y-2 md:hidden">
+              {completedSales.map((s) => (
+                <article key={s.id} className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900/40">
+                  <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2 dark:border-gray-800">
+                    <p className="break-all font-mono text-[11px] font-bold text-blue-500">{s.id}</p>
+                    <p className="shrink-0 text-right font-mono text-[9px] leading-tight text-gray-400">
+                      {new Date(s.date).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">
+                    <div>
+                      <p className="text-[8px] font-bold uppercase text-gray-400">Purchase value</p>
+                      <p className="font-mono text-[10px] text-gray-600 dark:text-gray-300">{settings.currency}{s.subtotal.toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-bold uppercase text-gray-400">GST amount</p>
+                      <p className="font-mono text-[10px] font-bold text-red-500">+{settings.currency}{s.taxAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+                      <p className="text-[8px] font-bold uppercase text-gray-400">Invoice gross</p>
+                      <p className="font-mono text-[11px] font-bold text-gray-950 dark:text-white">{settings.currency}{s.total.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {completedSales.length === 0 && <div className="py-14 text-center text-xs text-gray-400">No completed sales records.</div>}
+            </div>
+
+            <div className="hidden min-h-[14rem] overflow-x-auto md:block">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-900 text-gray-400 uppercase tracking-widest text-[9px] font-bold">
