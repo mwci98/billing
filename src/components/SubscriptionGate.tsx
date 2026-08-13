@@ -139,15 +139,17 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
       {children}
 
       {isBlocked && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0A0A0B]/95 p-4 backdrop-blur-xl">
-          <div className="w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/10 bg-[#141416] shadow-2xl">
+        <div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-[#0A0A0B]/95 p-0 backdrop-blur-xl sm:items-center sm:p-4">
+          <div className="min-h-[100dvh] w-full max-w-3xl overflow-hidden bg-[#141416] shadow-2xl sm:min-h-0 sm:rounded-[28px] sm:border sm:border-white/10">
             <div className={`grid ${isOwner ? 'md:grid-cols-[0.9fr_1.1fr]' : ''}`}>
-              <section className="relative overflow-hidden bg-emerald-500 p-7 text-white sm:p-9">
+              <section className="relative overflow-hidden bg-emerald-500 p-6 text-white sm:p-9">
                 <div className="absolute -right-14 -top-16 h-52 w-52 rounded-full border-[28px] border-white/10" />
                 <div className="relative">
-                  <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-12 w-12 rounded-2xl bg-white p-1.5 shadow-sm" />
-                  <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/75">QPOS subscription</p>
-                  <h2 className="mt-2 text-3xl font-black leading-tight">
+                  <div className="flex items-center gap-3">
+                    <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-11 w-11 rounded-xl bg-white p-1.5 shadow-sm" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/75">QPOS subscription</p>
+                  </div>
+                  <h2 className="mt-6 text-[2rem] font-black leading-tight sm:text-3xl">
                     {isOwner ? 'Keep your store running.' : 'Store subscription required'}
                   </h2>
                   <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/85">
@@ -155,7 +157,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
                       ? 'Restore billing, inventory, reports, and staff access with one yearly plan.'
                       : 'The store owner needs to renew the QPOS subscription before staff can continue working.'}
                   </p>
-                  {isOwner && <div className="mt-8 rounded-2xl border border-white/70 bg-white p-4 text-emerald-600 shadow-sm">
+                  {isOwner && <div className="mt-6 rounded-2xl border border-white/70 bg-white p-4 text-emerald-600 shadow-sm">
                     <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600/75">Today&apos;s checkout</p>
                     <div className="mt-1 flex items-baseline justify-between gap-3">
                       <span className="text-sm font-bold">Basic plan</span>
@@ -165,14 +167,14 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
                 </div>
               </section>
 
-              <section className="p-7 sm:p-9">
+              <section className="p-6 sm:p-9">
                 {isOwner ? <>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400">Plan overview</p>
                   <h3 className="mt-2 text-2xl font-black text-white">Basic Plan</h3>
                   <p className="mt-2 text-sm leading-relaxed text-gray-400">One subscription covers this workspace and its staff accounts.</p>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
                     {['Fast billing and GST invoices', 'Inventory and stock control', 'Restaurant and retail workflows', 'Reports, staff, and workspaces'].map(feature => (
-                      <div key={feature} className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-xs font-semibold text-gray-200">
+                      <div key={feature} className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs font-semibold text-gray-200">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                         {feature}
                       </div>
