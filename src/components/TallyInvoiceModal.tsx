@@ -622,6 +622,21 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         .tally-table-border td, .tally-table-border th {
           border: 1px solid #000000 !important;
         }
+        .tally-invoice-paper table,
+        .tally-invoice-paper thead,
+        .tally-invoice-paper tbody,
+        .tally-invoice-paper tr,
+        .tally-invoice-paper tr:hover,
+        .tally-invoice-paper td,
+        .tally-invoice-paper th {
+          background-color: #ffffff !important;
+        }
+        .tally-invoice-paper .bg-gray-50 {
+          background-color: #f9fafb !important;
+        }
+        .tally-invoice-paper .bg-gray-100 {
+          background-color: #f3f4f6 !important;
+        }
 
         #printable-tally-a5-invoice-portal {
           display: none;
