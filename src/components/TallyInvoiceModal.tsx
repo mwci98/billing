@@ -568,17 +568,13 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </colgroup>
         <thead>
           <tr className="bg-gray-100 font-bold text-center">
-            <th rowSpan={2} className="p-0.5">HSN/SAC</th>
-            <th rowSpan={2} className="p-0.5">Taxable Value</th>
-            <th colSpan={2} className="p-0.5">Central Tax</th>
-            <th colSpan={2} className="p-0.5">State Tax</th>
-            <th rowSpan={2} className="p-0.5">Total Tax Amount</th>
-          </tr>
-          <tr className="bg-gray-100 font-bold text-center">
-            <th className="p-0.5">Rate</th>
-            <th className="p-0.5">Amount</th>
-            <th className="p-0.5">Rate</th>
-            <th className="p-0.5">Amount</th>
+            <th className="p-0.5">HSN/SAC</th>
+            <th className="p-0.5">Taxable Value</th>
+            <th className="p-0.5">CGST Rate</th>
+            <th className="p-0.5">CGST Amount</th>
+            <th className="p-0.5">SGST Rate</th>
+            <th className="p-0.5">SGST Amount</th>
+            <th className="p-0.5">Total Tax</th>
           </tr>
         </thead>
         <tbody>
@@ -735,6 +731,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         .tally-invoice-paper .invoice-tax-table th,
         .tally-invoice-paper .invoice-tax-table td {
           padding: 1px 2px !important;
+          height: 16px !important;
+          line-height: 12px !important;
+          vertical-align: middle !important;
           white-space: normal !important;
         }
 
