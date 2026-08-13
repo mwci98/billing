@@ -574,7 +574,7 @@ export const POSBilling: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div id="pos-product-catalog" className="flex flex-col gap-2.5 overflow-y-auto max-h-[35rem] pr-1.5 font-sans">
+          <div id="pos-product-catalog" className="grid grid-cols-2 gap-2 overflow-y-auto max-h-[35rem] pr-1 font-sans sm:gap-2.5">
             {filteredProducts.map((p) => {
               const outOfStock = p.itemType !== 'Service' && p.stock <= 0;
               const nearLowStock = p.itemType !== 'Service' && p.stock <= p.lowStockAlert;
@@ -583,38 +583,36 @@ export const POSBilling: React.FC = () => {
                   key={p.id}
                   disabled={outOfStock}
                   onClick={() => addToCart(p)}
-                  className={`relative group grid grid-cols-[3rem_minmax(0,1fr)_2.25rem] items-center gap-3 text-left rounded-2xl bg-white dark:bg-gray-950 p-3 border border-gray-100 dark:border-gray-900 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md transition duration-150 active:scale-99 cursor-pointer ${
+                  className={`group flex min-h-[7rem] min-w-0 flex-col justify-between rounded-xl border border-gray-100 bg-white p-2.5 text-left transition duration-150 hover:border-emerald-500 hover:shadow-md active:scale-99 dark:border-gray-900 dark:bg-gray-950 dark:hover:border-emerald-600 sm:rounded-2xl sm:p-3 ${
                     outOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''
                   }`}
                 >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 text-2xl dark:bg-white/5">{p.imageUrl || '📦'}</span>
-
-                  <div className="min-w-0">
-                    <h4 className="line-clamp-2 text-xs font-bold leading-4 text-gray-800 transition group-hover:text-emerald-500 dark:text-gray-100 dark:group-hover:text-emerald-400">
-                      {p.name}
-                    </h4>
-                    <div className="mt-1 flex min-w-0 items-center gap-1.5">
-                      <span className="truncate font-mono text-[9px] uppercase text-gray-400">SKU: {p.sku}</span>
-                      {p.brand && <span className="truncate text-[9px] font-medium text-gray-500 dark:text-gray-400">{p.brand}</span>}
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between gap-2">
-                      <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                        outOfStock
-                          ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                          : nearLowStock
-                          ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
-                          : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                      }`}>
-                        {p.itemType === 'Service' ? 'Service' : outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
-                      </span>
-                      <p className="whitespace-nowrap text-xs font-black text-gray-950 dark:text-white">
-                        {settings.currency}{p.sellingPrice.toFixed(2)}
-                      </p>
+                  <div className="flex min-w-0 items-start gap-2">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-xl dark:bg-white/5 sm:h-11 sm:w-11 sm:rounded-xl sm:text-2xl">{p.imageUrl || '📦'}</span>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="line-clamp-2 text-[10px] font-bold leading-3.5 text-gray-800 transition group-hover:text-emerald-500 dark:text-gray-100 dark:group-hover:text-emerald-400 sm:text-xs sm:leading-4">
+                        {p.name}
+                      </h4>
+                      <p className="mt-1 truncate font-mono text-[8px] uppercase text-gray-400 sm:text-[9px]">SKU: {p.sku}</p>
                     </div>
                   </div>
 
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 transition duration-150 group-hover:scale-105">
-                    <Plus className="h-3.5 w-3.5 stroke-[3px]" />
+                  <div className="mt-2 flex min-w-0 items-center gap-1.5">
+                    <span className={`min-w-0 truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold sm:px-2 sm:text-[9px] ${
+                      outOfStock
+                        ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                        : nearLowStock
+                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
+                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                    }`}>
+                      {p.itemType === 'Service' ? 'Service' : outOfStock ? 'Out' : nearLowStock ? `Low ${p.stock}` : `${p.stock} units`}
+                    </span>
+                    <p className="ml-auto whitespace-nowrap text-[10px] font-black text-gray-950 dark:text-white sm:text-xs">
+                      {settings.currency}{p.sellingPrice.toFixed(2)}
+                    </p>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm transition group-hover:scale-105 sm:h-8 sm:w-8">
+                      <Plus className="h-3 w-3 stroke-[3px] sm:h-3.5 sm:w-3.5" />
+                    </span>
                   </div>
                 </button>
               );
