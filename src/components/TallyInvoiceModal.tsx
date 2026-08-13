@@ -688,24 +688,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
 
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             <button
-              onClick={downloadPDF}
-              disabled={isPdfLoading}
-              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition cursor-pointer border border-gray-700 disabled:opacity-50"
-              title="Download A5 GST Tax Invoice as PDF file"
-            >
-              {isPdfLoading ? <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
-              <span className="hidden sm:inline">{isPdfLoading ? 'Generating PDF...' : 'Download PDF'}</span>
-            </button>
-            <button
-              onClick={printInvoice}
-              className="flex items-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
-            >
-              <Printer className="h-4 w-4" />
-              <span className="hidden sm:inline">Print A5 Invoice</span>
-            </button>
-            <button
               onClick={onClose}
               className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
+              aria-label="Close invoice preview"
             >
               <X className="h-5 w-5" />
             </button>
