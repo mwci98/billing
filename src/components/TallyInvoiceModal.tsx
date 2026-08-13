@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, Download, CheckCircle2, FileText, Loader2, MessageCircle } from 'lucide-react';
+import { X, Printer, Download, CheckCircle2, Loader2, MessageCircle } from 'lucide-react';
 // @ts-ignore html2pdf module declaration
 import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
@@ -161,6 +161,12 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   const prepareInvoiceForPdf = (clonedDocument: Document) => {
     const invoice = clonedDocument.getElementById('printable-tally-a5-invoice');
     if (!invoice) return;
+
+    invoice.style.setProperty('width', '142mm', 'important');
+    invoice.style.setProperty('max-width', '142mm', 'important');
+    invoice.style.setProperty('min-height', '0', 'important');
+    invoice.style.setProperty('padding', '3mm', 'important');
+    invoice.style.setProperty('box-sizing', 'border-box', 'important');
 
     invoice.querySelectorAll('.bg-gray-100').forEach((element) => {
       (element as HTMLElement).style.setProperty('background-color', '#f3f4f6', 'important');
@@ -478,7 +484,16 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       </div>
 
       {/* Tax Breakdown Grid (Tally Standard HSN/SAC) */}
-      <table className="w-full tally-table-border border-collapse text-[8.5px] mt-1">
+      <table className="invoice-tax-table w-full table-fixed tally-table-border border-collapse text-[8.5px] mt-1">
+        <colgroup>
+          <col className="w-[14%]" />
+          <col className="w-[20%]" />
+          <col className="w-[10%]" />
+          <col className="w-[16%]" />
+          <col className="w-[10%]" />
+          <col className="w-[16%]" />
+          <col className="w-[14%]" />
+        </colgroup>
         <thead>
           <tr className="bg-gray-100 font-bold text-center">
             <th rowSpan={2} className="p-0.5">HSN/SAC</th>
@@ -637,6 +652,18 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         .tally-invoice-paper .bg-gray-100 {
           background-color: #f3f4f6 !important;
         }
+        .tally-invoice-paper table {
+          table-layout: fixed !important;
+        }
+        .tally-invoice-paper th,
+        .tally-invoice-paper td {
+          overflow-wrap: anywhere;
+        }
+        .tally-invoice-paper .invoice-tax-table th,
+        .tally-invoice-paper .invoice-tax-table td {
+          padding: 1px 2px !important;
+          white-space: normal !important;
+        }
 
         #printable-tally-a5-invoice-portal {
           display: none;
@@ -685,40 +712,22 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         document.body
       )}
 
-      <div className="w-full max-w-3xl rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl p-3 sm:p-6 relative flex flex-col my-auto max-h-[calc(100dvh-1rem)] sm:max-h-[92vh]">
-        
-        {/* Header toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-gray-800 text-white shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold flex flex-wrap items-center gap-2">
-                QwickPOS Invoice <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">A5 Paper Ready</span>
-              </h3>
-              <p className="text-xs text-gray-400">Official GST compliant invoice print layout</p>
-            </div>
-          </div>
-
-          <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-              aria-label="Close invoice preview"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
+      <div className="relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col rounded-xl border border-gray-800 bg-gray-900 p-2 shadow-2xl sm:max-h-[94vh] sm:p-3">
+        <button
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-950/90 text-gray-400 transition hover:bg-gray-800 hover:text-white"
+          aria-label="Close invoice preview"
+        >
+          <X className="h-5 w-5" />
+        </button>
 
         {/* Printable / Preview A5 Paper Sheet */}
-        <div className="flex-1 min-h-0 overflow-auto flex justify-center bg-gray-950/60 p-2 sm:p-6 rounded-xl border border-gray-800">
+        <div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-lg bg-gray-950/60 p-1 pt-11 sm:p-3 sm:pt-3">
           
           <div 
             id="printable-tally-a5-invoice" 
             className="tally-invoice-paper w-full max-w-[148mm] bg-white text-black p-2 sm:p-5 shadow-2xl rounded-sm border border-black text-[8px] sm:text-[10px] leading-tight space-y-0"
-            style={{ width: '100%', maxWidth: '148mm', minHeight: '210mm', boxSizing: 'border-box' }}
+            style={{ width: '100%', maxWidth: '148mm', boxSizing: 'border-box' }}
           >
             {renderInvoiceContent()}
           </div>
@@ -726,10 +735,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </div>
 
         {/* Action buttons footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 sm:pt-4 mt-2 border-t border-gray-800 shrink-0">
-          <p className="text-xs text-gray-400">
-            Sale Completed • <span className="text-white font-semibold">{activeReceipt.items.length} Items Billed</span>
-          </p>
+        <div className="mt-2 flex shrink-0 justify-end">
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             {settings.whatsappInvoiceEnabled && <button
               onClick={sendInvoiceOnWhatsApp}
