@@ -236,50 +236,50 @@ export const ReportsView: React.FC = () => {
     <div className="space-y-6">
       
       {/* KPI summaries layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         
-        <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm">
-          <div className="flex justify-between items-center text-gray-400 text-xs font-semibold">
+        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+          <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>Gross Sales Register</span>
-            <span className="rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 p-2"><TrendingUp className="h-4 w-4" /></span>
+            <span className="shrink-0 rounded-full bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 sm:p-2"><TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-4">
+          <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{grossSalesVolume.toFixed(2)}
           </h3>
-          <p className="text-[10px] text-gray-400 mt-1">Total compiled across {salesCount} invoices</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Total compiled across {salesCount} invoices</p>
         </div>
 
-        <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm">
-          <div className="flex justify-between items-center text-gray-400 text-xs font-semibold">
+        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+          <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>GST Tax Receipts Ledger</span>
-            <span className="rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 p-2"><Landmark className="h-4 w-4" /></span>
+            <span className="shrink-0 rounded-full bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-950 dark:text-blue-400 sm:p-2"><Landmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-4">
+          <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{totalGstCollected.toFixed(2)}
           </h3>
-          <p className="text-[10px] text-gray-400 mt-1">Total cumulative collected GST metrics</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Total cumulative collected GST metrics</p>
         </div>
 
-        <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm">
-          <div className="flex justify-between items-center text-gray-400 text-xs font-semibold">
+        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+          <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>Wholesale Purchases Costs</span>
-            <span className="rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400 p-2"><ShoppingBag className="h-4 w-4" /></span>
+            <span className="shrink-0 rounded-full bg-amber-50 p-1.5 text-amber-600 dark:bg-amber-950 dark:text-amber-400 sm:p-2"><ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-4">
+          <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{totalPurchasesVolume.toFixed(2)}
           </h3>
-          <p className="text-[10px] text-gray-400 mt-1">Aggregate stocking payment registers</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Aggregate stocking payment registers</p>
         </div>
 
-        <div className="rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-5 shadow-sm">
-          <div className="flex justify-between items-center text-gray-400 text-xs font-semibold">
+        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+          <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>Accumulated Net Profit</span>
-            <span className="rounded-full bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 p-2"><Coins className="h-4 w-4" /></span>
+            <span className="shrink-0 rounded-full bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-950 dark:text-purple-400 sm:p-2"><Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
           </div>
-          <h3 className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-4">
+          <h3 className="mt-3 whitespace-nowrap text-base font-black text-emerald-500 dark:text-emerald-400 sm:mt-4 sm:text-2xl">
             {settings.currency}{netProfits.toFixed(2)}
           </h3>
-          <p className="text-[10px] text-gray-400 mt-1">Real sales net profit margin</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Real sales net profit margin</p>
         </div>
       </div>
 
