@@ -1488,20 +1488,20 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>}
 
-                <div>
+                <div className="col-span-2 sm:col-span-1">
                   <label className="block text-xs font-semibold mb-2">{isRestaurantBusiness ? 'Menu Picture or Icon' : 'Display Picture or Icon'}</label>
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-700">
                     <ProductImage value={imageUrl} name={name || 'Product preview'} large />
-                    <div className="min-w-0 flex-1"><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-500 transition hover:bg-emerald-500/20"><ImagePlus className="h-4 w-4" />{isImageProcessing ? 'Processing...' : 'Choose picture'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={isImageProcessing} onChange={event => void handleImageUpload(event.target.files?.[0])} className="hidden" /></label><p className="mt-1.5 text-[10px] text-gray-400">JPG, PNG or WebP. The image is compressed automatically.</p></div>
+                    <div className="min-w-0 flex-1"><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-500 transition hover:bg-emerald-500/20"><ImagePlus className="h-4 w-4 shrink-0" />{isImageProcessing ? 'Processing...' : 'Choose picture'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={isImageProcessing} onChange={event => void handleImageUpload(event.target.files?.[0])} className="hidden" /></label><p className="mt-1.5 text-[10px] leading-relaxed text-gray-400">JPG, PNG or WebP. Compressed automatically.</p></div>
                     {isUploadedImage(imageUrl) && <button type="button" onClick={() => setImageUrl('📦')} className="rounded-lg px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10">Remove</button>}
                   </div>
-                  <div className="flex gap-2 items-center flex-wrap">
+                  <div className="grid grid-cols-6 gap-2 min-[420px]:grid-cols-7 sm:flex sm:flex-wrap sm:items-center">
                     {emojiPresets.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => setImageUrl(emoji)}
-                        className={`text-xl p-1 rounded-lg border hover:bg-gray-100 transition ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg border text-xl transition hover:bg-gray-100 ${
                           imageUrl === emoji ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-gray-200 bg-transparent'
                         }`}
                       >
