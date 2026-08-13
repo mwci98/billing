@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, Download, CheckCircle2, Loader2, MessageCircle } from 'lucide-react';
+import { X, Printer, Download, CheckCircle2, Loader2 } from 'lucide-react';
 // @ts-ignore html2pdf module declaration
 import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
@@ -13,6 +13,12 @@ interface TallyInvoiceModalProps {
   settings: StoreSettings;
   onClose: () => void;
 }
+
+const WhatsAppIcon = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 32 32" aria-hidden="true" className={className} fill="currentColor">
+    <path d="M16.04 3C9.4 3 4 8.32 4 14.87c0 2.1.56 4.15 1.63 5.94L4 26.72l6.1-1.58a12.2 12.2 0 0 0 5.93 1.53h.01C22.68 26.67 28 21.35 28 14.8 28 8.27 22.68 3 16.04 3Zm0 21.66h-.01c-1.82 0-3.6-.48-5.16-1.4l-.37-.22-3.62.94.97-3.48-.24-.36a9.68 9.68 0 0 1-1.5-5.27C6.11 9.43 10.56 5 16.04 5c5.47 0 9.84 4.39 9.84 9.8 0 5.43-4.4 9.86-9.84 9.86Zm5.4-7.39c-.3-.15-1.76-.86-2.03-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-1.74-.85-2.88-1.52-4.03-3.45-.3-.52.3-.48.86-1.6.1-.2.05-.37-.03-.52-.07-.15-.66-1.58-.91-2.16-.24-.57-.49-.49-.67-.5h-.57c-.2 0-.52.08-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.87 1.21 3.07c.15.2 2.1 3.17 5.08 4.45.71.3 1.26.49 1.7.63.71.22 1.35.19 1.86.11.57-.08 1.76-.71 2-1.4.25-.7.25-1.3.18-1.42-.08-.13-.27-.2-.57-.35Z" />
+  </svg>
+);
 
 // Helper: Convert number to Words (Rupees & Paise) for Indian Tally standard
 function numberToWords(num: number): string {
@@ -770,29 +776,29 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </div>
 
         {/* Action buttons footer */}
-        <div className="mt-2 flex shrink-0 justify-end">
-          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+        <div className="mt-2 flex shrink-0 justify-center">
+          <div className="flex items-center justify-center gap-2">
             {settings.whatsappInvoiceEnabled && <button
               onClick={sendInvoiceOnWhatsApp}
               disabled={isWhatsAppSending}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-500 disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white shadow-sm transition hover:bg-[#20bd5a] disabled:opacity-50"
               title="Send this invoice PDF through the configured Neospec WhatsApp Business number"
               aria-label={isWhatsAppSending ? 'Sending invoice on WhatsApp' : 'Send invoice on WhatsApp'}
             >
-              {isWhatsAppSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              {isWhatsAppSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <WhatsAppIcon className="h-5 w-5" />}
             </button>}
             <button
               onClick={downloadPDF}
               disabled={isPdfLoading}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-800 text-gray-200 transition hover:bg-gray-700 disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm transition hover:bg-sky-500 disabled:opacity-50"
               title="Download invoice PDF"
               aria-label={isPdfLoading ? 'Saving invoice PDF' : 'Download invoice PDF'}
             >
-              {isPdfLoading ? <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
+              {isPdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             </button>
             <button
               onClick={printInvoice}
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-500 sm:flex-none sm:px-5"
+              className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-5 text-xs font-bold text-white transition hover:bg-emerald-500"
             >
               <Printer className="h-4 w-4" />
               <span>Print A5</span>
