@@ -254,12 +254,27 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       const pageHeight = pdf.internal.pageSize.getHeight();
       const availableWidth = pageWidth - 6;
       const availableHeight = pageHeight - 6;
-      const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height);
-      const imageWidth = canvas.width * scale;
-      const imageHeight = canvas.height * scale;
-      const imageX = (pageWidth - imageWidth) / 2;
+      const pagePixelHeight = Math.floor(canvas.width * (availableHeight / availableWidth));
+      let sourceY = 0;
+      let pageIndex = 0;
 
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', imageX, 3, imageWidth, imageHeight);
+      while (sourceY < canvas.height) {
+        const sliceHeight = Math.min(pagePixelHeight, canvas.height - sourceY);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const context = pageCanvas.getContext('2d');
+        if (!context) throw new Error('Unable to prepare invoice PDF page');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        context.drawImage(canvas, 0, sourceY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+        if (pageIndex > 0) pdf.addPage('a5', 'portrait');
+        const renderedHeight = (sliceHeight / canvas.width) * availableWidth;
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', 3, 3, availableWidth, renderedHeight);
+        sourceY += sliceHeight;
+        pageIndex += 1;
+      }
       return pdf.output('blob');
     } finally {
       pdfSource.remove();
@@ -731,17 +746,17 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         .tally-invoice-paper .invoice-summary-row th,
         .tally-invoice-paper .invoice-summary-row td {
           height: auto !important;
-          padding-top: 5px !important;
-          padding-bottom: 5px !important;
-          line-height: 1.5 !important;
-          vertical-align: middle !important;
+          padding-top: 2px !important;
+          padding-bottom: 6px !important;
+          line-height: 1.25 !important;
+          vertical-align: top !important;
         }
         .tally-invoice-paper .invoice-tax-table th,
         .tally-invoice-paper .invoice-tax-table td {
           height: auto !important;
-          padding: 5px 2px !important;
-          line-height: 1.5 !important;
-          vertical-align: middle !important;
+          padding: 2px 2px 6px !important;
+          line-height: 1.25 !important;
+          vertical-align: top !important;
           white-space: normal !important;
         }
 
