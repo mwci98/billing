@@ -156,6 +156,26 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isWhatsAppSending, setIsWhatsAppSending] = useState(false);
 
+  // html2canvas on some Android WebViews cannot parse Tailwind's oklch colors.
+  // The invoice uses this clone hook so generated PDFs always use plain RGB values.
+  const prepareInvoiceForPdf = (clonedDocument: Document) => {
+    const invoice = clonedDocument.getElementById('printable-tally-a5-invoice');
+    if (!invoice) return;
+
+    invoice.querySelectorAll('.bg-gray-100').forEach((element) => {
+      (element as HTMLElement).style.setProperty('background-color', '#f3f4f6', 'important');
+    });
+    invoice.querySelectorAll('.bg-gray-50').forEach((element) => {
+      (element as HTMLElement).style.setProperty('background-color', '#f9fafb', 'important');
+    });
+    invoice.querySelectorAll('.text-gray-700').forEach((element) => {
+      (element as HTMLElement).style.setProperty('color', '#374151', 'important');
+    });
+    invoice.querySelectorAll('.text-gray-800').forEach((element) => {
+      (element as HTMLElement).style.setProperty('color', '#1f2937', 'important');
+    });
+  };
+
   const createInvoicePdf = async (): Promise<Blob | null> => {
     const printElement = document.getElementById('printable-tally-a5-invoice');
     if (!printElement) return null;
@@ -163,7 +183,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       margin: [3, 3, 3, 3] as [number, number, number, number],
       filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
+      html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
       jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
     };
     return html2pdf().set(options).from(printElement).outputPdf('blob') as Promise<Blob>;
@@ -179,7 +199,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         margin: [3, 3, 3, 3] as [number, number, number, number],
         filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
       }).from(printElement).save();
     } catch (err) {
