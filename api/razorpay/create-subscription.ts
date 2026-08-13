@@ -1,5 +1,3 @@
-const RAZORPAY_PLAN_ID = 'plan_TIA4ucA1UJe67v';
-
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {
     return response.status(405).json({error: 'Method not allowed'});
@@ -7,9 +5,10 @@ export default async function handler(request: any, response: any) {
 
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) {
+  const planId = process.env.RAZORPAY_BASIC_PLAN_ID;
+  if (!keyId || !keySecret || !planId) {
     return response.status(503).json({
-      error: 'Razorpay is not configured yet. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel.',
+      error: 'Razorpay subscriptions are not configured yet. Add RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, and RAZORPAY_BASIC_PLAN_ID in Vercel.',
     });
   }
 
@@ -26,7 +25,7 @@ export default async function handler(request: any, response: any) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      plan_id: RAZORPAY_PLAN_ID,
+      plan_id: planId,
       total_count: 10,
       quantity: 1,
       customer_notify: 1,
@@ -58,6 +57,6 @@ export default async function handler(request: any, response: any) {
   return response.status(200).json({
     keyId,
     subscriptionId: payload.id,
-    planId: RAZORPAY_PLAN_ID,
+    planId,
   });
 }
