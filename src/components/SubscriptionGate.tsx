@@ -155,8 +155,8 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
                       ? 'Restore billing, inventory, reports, and staff access with one yearly plan.'
                       : 'The store owner needs to renew the QPOS subscription before staff can continue working.'}
                   </p>
-                  {isOwner && <div className="mt-8 rounded-2xl border border-white/50 bg-white/10 p-4 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-white/75">Today&apos;s checkout</p>
+                  {isOwner && <div className="mt-8 rounded-2xl border border-white/70 bg-white p-4 text-emerald-600 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600/75">Today&apos;s checkout</p>
                     <div className="mt-1 flex items-baseline justify-between gap-3">
                       <span className="text-sm font-bold">Basic plan</span>
                       <span className="font-mono text-xl font-black">₹6,000/year</span>
