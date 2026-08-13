@@ -145,7 +145,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
               <section className="relative overflow-hidden bg-emerald-500 p-7 text-white sm:p-9">
                 <div className="absolute -right-14 -top-16 h-52 w-52 rounded-full border-[28px] border-white/10" />
                 <div className="relative">
-                  <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-12 w-12 rounded-2xl bg-white/15 p-1.5" />
+                  <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-12 w-12 rounded-2xl bg-white p-1.5 shadow-sm" />
                   <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/75">QPOS subscription</p>
                   <h2 className="mt-2 text-3xl font-black leading-tight">
                     {isOwner ? 'Keep your store running.' : 'Store subscription required'}
@@ -179,7 +179,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
                     ))}
                   </div>
                   <button onClick={startSubscription} disabled={loading}
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-black text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50">
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-black text-black transition hover:bg-gray-100 disabled:opacity-50">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                     Continue to secure payment
                   </button>
