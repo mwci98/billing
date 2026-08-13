@@ -583,7 +583,7 @@ export const POSBilling: React.FC = () => {
                   key={p.id}
                   disabled={outOfStock}
                   onClick={() => addToCart(p)}
-                  className={`relative group grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 text-left rounded-2xl bg-white dark:bg-gray-950 p-3 border border-gray-100 dark:border-gray-900 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md transition duration-150 active:scale-99 cursor-pointer ${
+                  className={`relative group grid grid-cols-[3rem_minmax(0,1fr)_2.25rem] items-center gap-3 text-left rounded-2xl bg-white dark:bg-gray-950 p-3 border border-gray-100 dark:border-gray-900 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md transition duration-150 active:scale-99 cursor-pointer ${
                     outOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''
                   }`}
                 >
@@ -597,28 +597,24 @@ export const POSBilling: React.FC = () => {
                       <span className="truncate font-mono text-[9px] uppercase text-gray-400">SKU: {p.sku}</span>
                       {p.brand && <span className="truncate text-[9px] font-medium text-gray-500 dark:text-gray-400">{p.brand}</span>}
                     </div>
-                    <span className={`mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                      outOfStock 
-                        ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' 
-                        : nearLowStock
-                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
-                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                    }`}>
-                      {p.itemType === 'Service' ? 'Service' : outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
-                    </span>
-                  </div>
-
-                  <div className="flex min-w-[4.75rem] flex-col items-end gap-2">
-                    <div className="text-right">
-                      <p className="text-[9px] font-medium text-gray-400">Price</p>
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                        outOfStock
+                          ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                          : nearLowStock
+                          ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 animate-pulse'
+                          : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                      }`}>
+                        {p.itemType === 'Service' ? 'Service' : outOfStock ? 'Out of stock' : nearLowStock ? `Low: ${p.stock}` : `${p.stock} units`}
+                      </span>
                       <p className="whitespace-nowrap text-xs font-black text-gray-950 dark:text-white">
                         {settings.currency}{p.sellingPrice.toFixed(2)}
                       </p>
                     </div>
+                  </div>
 
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 transition duration-150 group-hover:scale-105">
-                      <Plus className="h-3.5 w-3.5 stroke-[3px]" />
-                    </div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 transition duration-150 group-hover:scale-105">
+                    <Plus className="h-3.5 w-3.5 stroke-[3px]" />
                   </div>
                 </button>
               );
