@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, Download, CheckCircle2, Loader2 } from 'lucide-react';
-// @ts-ignore html2pdf module declaration
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { Sale, StoreSettings } from '../types';
 import { auth, firebaseWebApiKey } from '../lib/firebase';
@@ -222,39 +222,69 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   const createInvoicePdf = async (): Promise<Blob | null> => {
     const pdfSource = createPdfSource();
     if (!pdfSource) return null;
-    const options = {
-      margin: [3, 3, 3, 3] as [number, number, number, number],
-      filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, scrollX: 0, scrollY: 0, onclone: prepareInvoiceForPdf },
-      jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
-    };
+
     try {
-      return await html2pdf().set(options).from(pdfSource).outputPdf('blob') as Blob;
+      await document.fonts?.ready;
+      await Promise.all(Array.from(pdfSource.querySelectorAll('img')).map((image) => {
+        if (image.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          image.addEventListener('load', () => resolve(), { once: true });
+          image.addEventListener('error', () => resolve(), { once: true });
+        });
+      }));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+      const canvas = await html2canvas(pdfSource, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 794,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: prepareInvoiceForPdf,
+      });
+
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Invoice canvas is empty');
+      }
+
+      const pdf = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const availableWidth = pageWidth - 6;
+      const availableHeight = pageHeight - 6;
+      const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height);
+      const imageWidth = canvas.width * scale;
+      const imageHeight = canvas.height * scale;
+      const imageX = (pageWidth - imageWidth) / 2;
+
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', imageX, 3, imageWidth, imageHeight);
+      return pdf.output('blob');
     } finally {
       pdfSource.remove();
     }
   };
 
   const downloadPDF = async () => {
-    const pdfSource = createPdfSource();
-    if (!pdfSource) return;
-
     setIsPdfLoading(true);
     try {
-      await html2pdf().set({
-        margin: [3, 3, 3, 3] as [number, number, number, number],
-        filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, scrollX: 0, scrollY: 0, onclone: prepareInvoiceForPdf },
-        jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
-      }).from(pdfSource).save();
+      const blob = await createInvoicePdf();
+      if (!blob || blob.size < 1000) throw new Error('Generated PDF is empty');
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error("PDF generation error:", err);
       alert("PDF generation failed. Using browser print instead.");
       window.print();
     } finally {
-      pdfSource.remove();
       setIsPdfLoading(false);
     }
   };
