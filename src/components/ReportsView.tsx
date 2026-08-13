@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FileDown, BarChart2, Calendar, Coins, TrendingUp, Landmark, ShieldCheck,
   ShoppingBag, ClipboardList, Info, FileSpreadsheet, Search, Edit2, Trash2, X, Printer
@@ -13,9 +13,11 @@ import { Sale, SaleItem } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { productUsesImeiTracking } from '../lib/serializedInventory';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
+import { getBusinessMode } from '../lib/businessMode';
 
 export const ReportsView: React.FC = () => {
   const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
+  const isRestaurantBusiness = getBusinessMode(settings.businessType) === 'Restaurant';
 
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
   const [reportPeriod, setReportPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
@@ -30,6 +32,10 @@ export const ReportsView: React.FC = () => {
   const [editDiscount, setEditDiscount] = useState('');
   const [editItems, setEditItems] = useState<SaleItem[]>([]);
   const [hoveredProfitMonth, setHoveredProfitMonth] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isRestaurantBusiness && activeReportTab === 'profit') setActiveReportTab('sales');
+  }, [activeReportTab, isRestaurantBusiness]);
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
@@ -302,7 +308,7 @@ export const ReportsView: React.FC = () => {
     <div className="space-y-6">
       
       {/* KPI summaries layout */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${isRestaurantBusiness ? 'lg:grid-cols-2' : 'lg:grid-cols-4'}`}>
         
         <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
           <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
@@ -326,7 +332,7 @@ export const ReportsView: React.FC = () => {
           <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Total cumulative collected GST metrics</p>
         </div>
 
-        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+        {!isRestaurantBusiness && <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
           <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>Wholesale Purchases Costs</span>
             <span className="shrink-0 rounded-full bg-amber-50 p-1.5 text-amber-600 dark:bg-amber-950 dark:text-amber-400 sm:p-2"><ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
@@ -335,9 +341,9 @@ export const ReportsView: React.FC = () => {
             {settings.currency}{totalPurchasesVolume.toFixed(2)}
           </h3>
           <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Aggregate stocking payment registers</p>
-        </div>
+        </div>}
 
-        <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
+        {!isRestaurantBusiness && <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
           <div className="flex items-start justify-between gap-2 text-[10px] font-semibold leading-tight text-gray-400 sm:items-center sm:text-xs">
             <span>Accumulated Net Profit</span>
             <span className="shrink-0 rounded-full bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-950 dark:text-purple-400 sm:p-2"><Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
@@ -346,7 +352,7 @@ export const ReportsView: React.FC = () => {
             {settings.currency}{netProfits.toFixed(2)}
           </h3>
           <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Real sales net profit margin</p>
-        </div>
+        </div>}
       </div>
 
       {/* Reports view panel containing exports and table lists */}
@@ -370,7 +376,7 @@ export const ReportsView: React.FC = () => {
             >
               GST Report
             </button>
-            <button
+            {!isRestaurantBusiness && <button
               onClick={() => setActiveReportTab('profit')}
               className={`px-4 py-1.5 rounded-xl text-xs font-semibold cursor-pointer ${
                 activeReportTab === 'profit' ? 'bg-white dark:bg-gray-950 text-emerald-500 font-bold shadow-sm' : 'text-gray-500'
@@ -400,7 +406,7 @@ export const ReportsView: React.FC = () => {
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
               <span>Download {activeReportTab === 'tax' ? 'GST' : 'Sales'} CSV</span>
-            </button>
+            </button>}
           </div>}
         </div>
 
@@ -642,7 +648,7 @@ export const ReportsView: React.FC = () => {
         )}
 
         {/* VIEW C: PROFIT & LOSS METRIC LEDGER */}
-        {activeReportTab === 'profit' && (
+        {!isRestaurantBusiness && activeReportTab === 'profit' && (
           <div className="space-y-6">
             
             <div className="rounded-lg border border-gray-150 bg-gray-55/30 p-3 sm:rounded-2xl sm:p-5">
