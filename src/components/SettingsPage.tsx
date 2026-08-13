@@ -38,6 +38,7 @@ const DASHBOARD_WIDGET_OPTIONS: Array<{ key: keyof DashboardWidgetSettings; labe
 ];
 
 const WHATSAPP_INVOICE_PRICE_PAISE = 200;
+const RAZORPAY_CHECKOUT_LOGO = 'https://qpos.neospec.co.in/icons/qpos-icon-source.png';
 
 async function loadRazorpayCheckout() {
   if (window.Razorpay) return true;
@@ -164,6 +165,7 @@ export const SettingsPage: React.FC = () => {
         amount: order.amount,
         currency: order.currency,
         name: 'QPOS',
+        image: RAZORPAY_CHECKOUT_LOGO,
         description: `WhatsApp invoice credit - Rs ${(amountPaise / 100).toFixed(0)}`,
         prefill: {name: currentUser?.name, email: currentUser?.email},
         theme: {color: '#10B981'},
