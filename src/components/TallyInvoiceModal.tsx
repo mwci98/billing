@@ -164,7 +164,8 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   // html2canvas on some Android WebViews cannot parse Tailwind's oklch colors.
   // The invoice uses this clone hook so generated PDFs always use plain RGB values.
   const prepareInvoiceForPdf = (clonedDocument: Document) => {
-    const invoice = clonedDocument.getElementById('printable-tally-a5-invoice');
+    const invoice = clonedDocument.querySelector<HTMLElement>('[data-pdf-invoice="true"]')
+      || clonedDocument.getElementById('printable-tally-a5-invoice');
     if (!invoice) return;
 
     invoice.style.setProperty('width', '142mm', 'important');
@@ -187,9 +188,32 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
     });
   };
 
+  const createPdfSource = () => {
+    const preview = document.getElementById('printable-tally-a5-invoice');
+    if (!preview) return null;
+
+    const source = preview.cloneNode(true) as HTMLElement;
+    source.removeAttribute('id');
+    source.dataset.pdfInvoice = 'true';
+    source.style.cssText = [
+      'position: fixed',
+      'left: -10000px',
+      'top: 0',
+      'width: 142mm',
+      'max-width: 142mm',
+      'height: auto',
+      'min-height: 0',
+      'padding: 3mm',
+      'box-sizing: border-box',
+      'background: #fff',
+    ].join(';');
+    document.body.appendChild(source);
+    return source;
+  };
+
   const createInvoicePdf = async (): Promise<Blob | null> => {
-    const printElement = document.getElementById('printable-tally-a5-invoice');
-    if (!printElement) return null;
+    const pdfSource = createPdfSource();
+    if (!pdfSource) return null;
     const options = {
       margin: [3, 3, 3, 3] as [number, number, number, number],
       filename: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
@@ -197,12 +221,16 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
       jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
     };
-    return html2pdf().set(options).from(printElement).outputPdf('blob') as Promise<Blob>;
+    try {
+      return await html2pdf().set(options).from(pdfSource).outputPdf('blob') as Blob;
+    } finally {
+      pdfSource.remove();
+    }
   };
 
   const downloadPDF = async () => {
-    const printElement = document.getElementById('printable-tally-a5-invoice');
-    if (!printElement) return;
+    const pdfSource = createPdfSource();
+    if (!pdfSource) return;
 
     setIsPdfLoading(true);
     try {
@@ -212,12 +240,13 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false, onclone: prepareInvoiceForPdf },
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' as const }
-      }).from(printElement).save();
+      }).from(pdfSource).save();
     } catch (err) {
       console.error("PDF generation error:", err);
       alert("PDF generation failed. Using browser print instead.");
       window.print();
     } finally {
+      pdfSource.remove();
       setIsPdfLoading(false);
     }
   };
