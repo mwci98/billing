@@ -529,11 +529,11 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           {/* CGST / SGST split rows */}
           {Object.entries(taxGroups).map(([rate, group]) => (
             <React.Fragment key={rate}>
-              <tr>
+              <tr className="invoice-summary-row">
                 <td colSpan={6} className="p-1 text-right font-semibold">CGST @ {(Number(rate) / 2).toFixed(1)}%</td>
                 <td className="p-1 text-right font-mono font-semibold">{group.cgst.toFixed(2)}</td>
               </tr>
-              <tr>
+              <tr className="invoice-summary-row">
                 <td colSpan={6} className="p-1 text-right font-semibold">SGST @ {(Number(rate) / 2).toFixed(1)}%</td>
                 <td className="p-1 text-right font-mono font-semibold">{group.sgst.toFixed(2)}</td>
               </tr>
@@ -541,7 +541,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           ))}
 
           {/* Total Line */}
-          <tr className="font-bold bg-gray-50 border-t border-black">
+          <tr className="invoice-summary-row font-bold bg-gray-50 border-t border-black">
             <td colSpan={3} className="p-1 text-right">Total</td>
             <td className="p-1 text-center font-mono">{items.reduce((s, it) => s + it.quantity, 0)} Pcs</td>
             <td colSpan={2} className="p-1"></td>
@@ -728,11 +728,19 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         .tally-invoice-paper td {
           overflow-wrap: anywhere;
         }
+        .tally-invoice-paper .invoice-summary-row th,
+        .tally-invoice-paper .invoice-summary-row td {
+          height: auto !important;
+          padding-top: 5px !important;
+          padding-bottom: 5px !important;
+          line-height: 1.5 !important;
+          vertical-align: middle !important;
+        }
         .tally-invoice-paper .invoice-tax-table th,
         .tally-invoice-paper .invoice-tax-table td {
-          padding: 1px 2px !important;
-          height: 16px !important;
-          line-height: 12px !important;
+          height: auto !important;
+          padding: 5px 2px !important;
+          line-height: 1.5 !important;
           vertical-align: middle !important;
           white-space: normal !important;
         }
