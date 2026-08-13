@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, Download, CheckCircle2, Loader2, MessageCircle } from 'lucide-react';
 // @ts-ignore html2pdf module declaration
@@ -99,6 +99,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
   onClose
 }) => {
   const { activeStore, currentUser } = useAppState();
+  const previewRef = useRef<HTMLDivElement>(null);
   const [upiQrCode, setUpiQrCode] = useState('');
   const upiUri = activeReceipt.paymentMethod === 'UPI' && settings.upiId
     ? `upi://pay?${new URLSearchParams({ pa: settings.upiId, pn: settings.upiPayeeName || settings.storeName, am: activeReceipt.total.toFixed(2), cu: 'INR', tn: `Invoice ${activeReceipt.id}` }).toString()}`
@@ -113,6 +114,10 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       .then(setUpiQrCode)
       .catch(() => setUpiQrCode(''));
   }, [upiUri]);
+
+  useEffect(() => {
+    previewRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [activeReceipt.id]);
 
   const sellerState = getGstStateInfo(settings.gstNumber);
   const buyerState = activeReceipt.customerStateCode
@@ -399,12 +404,12 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         <thead>
           <tr className="bg-gray-100 font-bold text-center">
             <th className="p-1 w-[6%]">Sl No.</th>
-            <th className="p-1 text-left w-[44%]">Description of Goods</th>
-            <th className="p-1 w-[12%]">HSN/SAC</th>
-            <th className="p-1 w-[8%]">Qty</th>
-            <th className="p-1 text-right w-[14%]">Rate ({settings.currency})</th>
+            <th className="p-1 text-left w-[38%]">Description of Goods</th>
+            <th className="p-1 w-[11%]">HSN/SAC</th>
+            <th className="p-1 w-[7%]">Qty</th>
+            <th className="p-1 text-right w-[15%]">Rate ({settings.currency})</th>
             <th className="p-1 w-[6%]">per</th>
-            <th className="p-1 text-right w-[10%]">Amount ({settings.currency})</th>
+            <th className="p-1 text-right w-[17%]">Amount ({settings.currency})</th>
           </tr>
         </thead>
         <tbody>
@@ -426,9 +431,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                 </td>
                 <td className="p-1 text-center font-mono">{hsnCode}</td>
                 <td className="p-1 text-center font-bold">{item.quantity}</td>
-                <td className="p-1 text-right font-mono">{item.price.toFixed(2)}</td>
+                <td className="p-1 text-right font-mono whitespace-nowrap">{item.price.toFixed(2)}</td>
                 <td className="p-1 text-center">Pcs</td>
-                <td className="p-1 text-right font-bold font-mono">{(item.price * item.quantity).toFixed(2)}</td>
+                <td className="p-1 text-right font-bold font-mono whitespace-nowrap">{(item.price * item.quantity).toFixed(2)}</td>
               </tr>
             );
           })}
@@ -473,7 +478,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             <td colSpan={3} className="p-1 text-right">Total</td>
             <td className="p-1 text-center font-mono">{items.reduce((s, it) => s + it.quantity, 0)} Pcs</td>
             <td colSpan={2} className="p-1"></td>
-            <td className="p-1 text-right font-mono text-[10.5px]">{settings.currency}{activeReceipt.total.toFixed(2)}</td>
+            <td className="p-1 text-right font-mono text-[10.5px] whitespace-nowrap">{settings.currency}{activeReceipt.total.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
@@ -570,22 +575,11 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
               <p className="text-[8.5px] leading-tight text-gray-800">
                 We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
               </p>
-              {upiQrCode && (
-                <div className="mt-2 flex items-center gap-2 border-t border-dashed border-black pt-2">
-                  <img src={upiQrCode} alt="UPI payment QR" className="h-16 w-16" />
-                  <div className="text-[8px] leading-tight">
-                    <p className="font-bold">Scan to pay by UPI</p>
-                    <p>{settings.upiPayeeName || settings.storeName}</p>
-                    <p className="font-mono">{settings.upiId}</p>
-                    <p className="font-bold">Amount: {settings.currency}{activeReceipt.total.toFixed(2)}</p>
-                  </div>
-                </div>
-              )}
             </td>
             <td className="w-2/5 p-2 text-right align-top">
               <p className="font-bold uppercase">for {settings.storeName}</p>
               {settings.invoiceSignature ? (
-                <div className="mt-3 h-11">
+                <div className="mt-2 flex h-8 items-center justify-end">
                   <img
                     src={settings.invoiceSignature}
                     alt="Authorised signature"
@@ -594,7 +588,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                       width: 'auto',
                       height: 'auto',
                       maxWidth: '110px',
-                      maxHeight: '36px',
+                      maxHeight: '30px',
                       marginLeft: 'auto',
                       marginRight: '8px',
                       objectFit: 'contain',
@@ -603,9 +597,9 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                   />
                 </div>
               ) : (
-                <div className="h-14" />
+                <div className="h-8" />
               )}
-              <div className="mt-1 pt-2 border-t border-black">
+              <div className="mt-1 border-t border-black pt-1">
                 <p className="font-bold uppercase text-[8.5px]">Authorised Signatory</p>
               </div>
             </td>
@@ -613,7 +607,19 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         </tbody>
       </table>
 
-      <div className="text-center text-[8px] font-bold uppercase mt-3 pb-1 tracking-normal leading-normal text-gray-800">
+      {upiQrCode && (
+        <div className="flex items-center gap-2 border-x border-b border-black bg-white p-1.5">
+          <img src={upiQrCode} alt="UPI payment QR" className="h-14 w-14 shrink-0" />
+          <div className="text-[8px] leading-tight">
+            <p className="font-bold">Scan to pay by UPI</p>
+            <p>{settings.upiPayeeName || settings.storeName}</p>
+            <p className="font-mono">{settings.upiId}</p>
+            <p className="font-bold">Amount: {settings.currency}{activeReceipt.total.toFixed(2)}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white py-1 text-center text-[8px] font-bold uppercase leading-normal text-gray-800">
         THIS IS A COMPUTER GENERATED INVOICE BY QPOS
       </div>
     </>
@@ -715,14 +721,14 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       <div className="relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col rounded-xl border border-gray-800 bg-gray-900 p-2 shadow-2xl sm:max-h-[94vh] sm:p-3">
         <button
           onClick={onClose}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-950/90 text-gray-400 transition hover:bg-gray-800 hover:text-white"
+          className="fixed right-3 top-3 z-[60] flex h-9 w-9 items-center justify-center rounded-lg bg-gray-950/90 text-gray-400 shadow-lg transition hover:bg-gray-800 hover:text-white"
           aria-label="Close invoice preview"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Printable / Preview A5 Paper Sheet */}
-        <div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-lg bg-gray-950/60 p-1 pt-11 sm:p-3 sm:pt-3">
+        <div ref={previewRef} className="flex min-h-0 flex-1 justify-center overflow-auto rounded-lg bg-gray-950/60 p-1 sm:p-3">
           
           <div 
             id="printable-tally-a5-invoice" 
