@@ -768,7 +768,7 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
           <div 
             id="printable-tally-a5-invoice" 
             className="tally-invoice-paper w-full max-w-[148mm] bg-white text-black p-2 sm:p-5 shadow-2xl rounded-sm border border-black text-[8px] sm:text-[10px] leading-tight space-y-0"
-            style={{ width: '100%', maxWidth: '148mm', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: '100%', minHeight: '100%', maxWidth: '148mm', boxSizing: 'border-box' }}
           >
             {renderInvoiceContent()}
           </div>
