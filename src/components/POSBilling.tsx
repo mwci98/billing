@@ -948,7 +948,7 @@ export const POSBilling: React.FC = () => {
                       : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-55 dark:bg-gray-950 dark:border-gray-800 dark:text-gray-400'
                   }`}
                 >
-                  {opt === 'Cash' ? '💵' : opt === 'UPI' ? '📲' : opt === 'Card' ? '💳' : '🥞'}
+                  {opt}
                   <span className="hidden sm:inline">{opt}</span>
                 </button>
               ))}
