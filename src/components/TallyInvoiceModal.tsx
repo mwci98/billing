@@ -520,19 +520,6 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
             );
           })}
 
-          {/* Fill empty rows for standard height Tally format if items < 3 */}
-          {Array.from({ length: Math.max(0, 3 - items.length) }).map((_, i) => (
-            <tr key={`empty-${i}`} className="h-6">
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-              <td className="p-1"></td>
-            </tr>
-          ))}
-
           {/* Tax & Discount Summary Rows */}
           {activeReceipt.discount > 0 && (
             <tr>
