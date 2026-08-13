@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <div className="flex min-h-[100dvh] w-full min-w-0 max-w-full overflow-x-clip">
+      <div className="flex h-[100dvh] min-h-0 w-full min-w-0 max-w-full overflow-hidden">
         
         {/* MOBILE SIDEBAR BACKDROP */}
         <div className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity duration-200 ${
@@ -315,7 +315,7 @@ const AppContent: React.FC = () => {
         </aside>
 
         {/* MAIN DYNAMIC SHELL CONTAINER */}
-        <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-auto">
+        <div className="flex h-full min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-auto overscroll-contain">
           
           {/* NATIVE APP TOP HEADER BAR */}
           <header className="sticky top-0 z-30 flex w-full max-w-full items-center justify-between gap-2 overflow-x-clip border-b border-gray-100 bg-white/90 px-3 py-3 backdrop-blur-md dark:border-white/5 dark:bg-[#0A0A0B]/90 sm:px-4 md:px-6">

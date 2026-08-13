@@ -320,7 +320,7 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {dashboardWidgets.weeklyRevenue && (
             <section className={`${dashboardWidgets.topSellingSkus ? 'lg:col-span-2' : 'lg:col-span-3'} rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:p-6`}>
-              <div className="sticky top-0 z-10 -mx-1 flex flex-col items-start gap-3 bg-white px-1 pb-3 dark:bg-gray-950 sm:static sm:mx-0 sm:flex-row sm:justify-between sm:gap-4 sm:px-0 sm:pb-0">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
                 <div className="min-w-0">
                   <h3 className="flex items-center gap-2 whitespace-nowrap text-base font-bold text-gray-900 dark:text-white sm:text-lg">
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
