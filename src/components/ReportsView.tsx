@@ -18,6 +18,7 @@ export const ReportsView: React.FC = () => {
   const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
 
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
+  const [reportPeriod, setReportPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
   const [salesSearch, setSalesSearch] = useState('');
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [printingSale, setPrintingSale] = useState<Sale | null>(null);
@@ -32,7 +33,18 @@ export const ReportsView: React.FC = () => {
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
-  const visibleSales = completedSales.filter((sale) => {
+  const reportPeriodStart = (() => {
+    const start = new Date();
+    if (reportPeriod === 'weekly') start.setDate(start.getDate() - 6);
+    if (reportPeriod === 'monthly') start.setDate(1);
+    if (reportPeriod === 'yearly') start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  })();
+  const periodSales = completedSales.filter((sale) => new Date(sale.date) >= reportPeriodStart);
+  const periodSalesTotal = periodSales.reduce((sum, sale) => sum + sale.total, 0);
+  const periodGstTotal = periodSales.reduce((sum, sale) => sum + sale.taxAmount, 0);
+  const visibleSales = periodSales.filter((sale) => {
     const query = salesSearch.trim().toLowerCase();
     if (!query) return true;
     return [
@@ -229,11 +241,11 @@ export const ReportsView: React.FC = () => {
   const handleExportCSV = (type: 'sales' | 'inventory' | 'tax') => {
     let headers: string[] = [];
     let rows: string[][] = [];
-    let fileName = `qpos-${type}-report.csv`;
+    let fileName = `qpos-${type}-${reportPeriod}-report.csv`;
 
     if (type === 'sales') {
       headers = ['InvoiceID', 'Customer', 'Subtotal', 'TaxAmount', 'Discount', 'TotalBill', 'PaymentMode', 'Date', 'Operator'];
-      rows = completedSales.map(s => [
+      rows = periodSales.map(s => [
         s.id,
         s.customerName || 'Walk-in',
         s.subtotal.toFixed(2),
@@ -260,7 +272,7 @@ export const ReportsView: React.FC = () => {
       ]);
     } else {
       headers = ['InvoiceID', 'TaxableAmount', 'GSTPercent', 'GSTCollected', 'TotalBill', 'Date'];
-      rows = completedSales.map(s => [
+      rows = periodSales.map(s => [
         s.id,
         s.subtotal.toFixed(2),
         'Unified GST',
@@ -368,29 +380,46 @@ export const ReportsView: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {activeReportTab !== 'profit' && <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-xl border border-gray-150 bg-gray-50 p-1 dark:border-gray-800 dark:bg-gray-900">
+              {(['weekly', 'monthly', 'yearly'] as const).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => setReportPeriod(period)}
+                  className={`rounded-lg px-3 py-1.5 text-[10px] font-bold capitalize transition ${reportPeriod === period ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
             <button
               id="report-export-sales-csv"
-              onClick={() => handleExportCSV(activeReportTab === 'tax' ? 'tax' : activeReportTab === 'sales' ? 'sales' : 'inventory')}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-850 border border-gray-150 dark:border-gray-800 px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-300 transition cursor-pointer select-none"
+              onClick={() => handleExportCSV(activeReportTab === 'tax' ? 'tax' : 'sales')}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-150 bg-gray-50 px-4 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-850"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-              <span>Export CSV Spreadsheet</span>
+              <span>Download {activeReportTab === 'tax' ? 'GST' : 'Sales'} CSV</span>
             </button>
-          </div>
+          </div>}
         </div>
 
         {/* VIEW A: SALES REGISTER */}
         {activeReportTab === 'sales' && (
           <div className="space-y-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                value={salesSearch}
-                onChange={(event) => setSalesSearch(event.target.value)}
-                placeholder="Search invoice, client, GSTIN, payment, operator, or date..."
-                className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 py-2.5 pl-10 pr-3 text-xs focus:border-emerald-500 focus:outline-none"
-              />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full max-w-md">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={salesSearch}
+                  onChange={(event) => setSalesSearch(event.target.value)}
+                  placeholder="Search invoice, client, GSTIN, payment, operator, or date..."
+                  className="w-full rounded-xl border border-gray-150 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 py-2.5 pl-10 pr-3 text-xs focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div className="text-xs font-semibold text-gray-500 sm:text-right">
+                <span className="capitalize">{reportPeriod}</span>: <b className="text-gray-950 dark:text-white">{periodSales.length} invoices · {settings.currency}{periodSalesTotal.toFixed(2)}</b>
+              </div>
             </div>
             <div className="space-y-2 md:hidden">
               {visibleSales.map((s) => (
@@ -551,8 +580,13 @@ export const ReportsView: React.FC = () => {
               </div>
             </div>
 
+            <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-900/50">
+              <span className="font-semibold capitalize text-gray-500">{reportPeriod} GST summary</span>
+              <span className="font-mono font-bold text-red-500">{periodSales.length} invoices · {settings.currency}{periodGstTotal.toFixed(2)}</span>
+            </div>
+
             <div className="space-y-2 md:hidden">
-              {completedSales.map((s) => (
+              {periodSales.map((s) => (
                 <article key={s.id} className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900/40">
                   <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2 dark:border-gray-800">
                     <p className="break-all font-mono text-[11px] font-bold text-blue-500">{s.id}</p>
@@ -576,7 +610,7 @@ export const ReportsView: React.FC = () => {
                   </div>
                 </article>
               ))}
-              {completedSales.length === 0 && <div className="py-14 text-center text-xs text-gray-400">No completed sales records.</div>}
+              {periodSales.length === 0 && <div className="py-14 text-center text-xs text-gray-400">No GST records for this {reportPeriod} period.</div>}
             </div>
 
             <div className="hidden min-h-[14rem] overflow-x-auto md:block">
@@ -591,7 +625,7 @@ export const ReportsView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-900/40">
-                  {completedSales.map((s) => (
+                  {periodSales.map((s) => (
                     <tr key={s.id} className="text-gray-700 dark:text-gray-350 font-medium hover:bg-gray-50/20">
                       <td className="py-3 font-mono text-blue-500 font-semibold">{s.id}</td>
                       <td className="py-3 font-mono text-gray-400">{settings.currency}{s.subtotal.toFixed(2)}</td>
@@ -600,6 +634,7 @@ export const ReportsView: React.FC = () => {
                       <td className="py-3 font-mono text-[10px] text-gray-400">{new Date(s.date).toLocaleString()}</td>
                     </tr>
                   ))}
+                  {periodSales.length === 0 && <tr><td colSpan={5} className="py-14 text-center text-xs text-gray-400">No GST records for this {reportPeriod} period.</td></tr>}
                 </tbody>
               </table>
             </div>
