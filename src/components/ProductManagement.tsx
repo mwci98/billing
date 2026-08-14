@@ -191,14 +191,20 @@ export const ProductManagement: React.FC = () => {
     if (!file.type.startsWith('image/')) return triggerToast('Take or choose a clear product-label photo.', 'warning');
     setIsLabelReading(true);
     try {
-      const [{ recognize }, dataUrl] = await Promise.all([
+      const [tesseract, dataUrl] = await Promise.all([
         import('tesseract.js'),
         compressProductImage(file),
       ]);
-      const result = await recognize(file, 'eng');
-      if (result.data.confidence < 60) {
-        triggerToast('The label is too blurry to identify. Retake it closer, in good light.', 'warning');
-        return;
+      const worker = await tesseract.createWorker('eng');
+      let result;
+      try {
+        await worker.setParameters({
+          tessedit_pageseg_mode: tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: '1',
+        });
+        result = await worker.recognize(file);
+      } finally {
+        await worker.terminate();
       }
       const lines = result.data.text
         .split(/\r?\n/)
@@ -208,10 +214,15 @@ export const ProductManagement: React.FC = () => {
         candidate !== 'Generic / Unbranded' && lines.some((line) => line.toLowerCase().includes(candidate.toLowerCase()))
       );
       const noise = /^(mrp|price|₹|rs\.?|imei|serial|s\/n|barcode|ean|upc|model\s*(no)?|made in|manufactured|marketed|imported|customer care|www\.|https?)/i;
-      const candidates = lines.filter((line) => !noise.test(line) && /[a-z]{3}/i.test(line));
+      const candidates = lines.filter((line) => !noise.test(line) && /[a-z]/i.test(line));
       const modelKeywords = /phone|mobile|smartphone|edge|galaxy|iphone|pixel|note|pro|max|ultra|plus|5g/i;
-      const modelLine = candidates.find((line) => modelKeywords.test(line) && line.toLowerCase() !== detectedBrand?.toLowerCase());
-      const detectedName = modelLine;
+      const modelCode = /\b[a-z]{1,4}[\s-]?\d{2,4}[a-z]?\b/i;
+      const modelLine = candidates.find((line) => {
+        if (line.toLowerCase() === detectedBrand?.toLowerCase()) return false;
+        const withoutNetwork = line.replace(/\b[345]g\b/gi, '').trim();
+        return modelKeywords.test(line) || modelCode.test(withoutNetwork);
+      });
+      const detectedName = modelLine?.replace(/\b([a-z])\s+(\d{2,4})\b/gi, '$1$2');
       if (!detectedName) {
         triggerToast('No reliable product name was found. Retake the front label with the model name visible.', 'warning');
         return;
