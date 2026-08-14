@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowRightLeft, AlertTriangle, PackagePlus, Plus, Search,
-  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders, ImagePlus, Camera
+  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders, ImagePlus, Camera, ScanLine
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
@@ -87,6 +87,13 @@ export const InventoryManagement: React.FC = () => {
   const [activeAddImeis, setActiveAddImeis] = useState<string>('');
   const [payStatus, setPayStatus] = useState<'Paid' | 'Partially Paid' | 'Unpaid'>('Paid');
   const [balanceDue, setBalanceDue] = useState<string>('0');
+  const [isInvoiceScanning, setIsInvoiceScanning] = useState(false);
+  const [invoiceDraft, setInvoiceDraft] = useState<null | {
+    supplierName: string;
+    invoiceNumber: string;
+    invoiceDate: string;
+    items: Array<{name: string; brand: string; model: string; category: string; barcode: string; quantity: number; purchasePrice: number; taxRate: number; imeis: string[]; productId: string}>;
+  }>(null);
 
   // 3. In-House Manufacturing Batch States
   const [mfgProdId, setMfgProdId] = useState<string>('');
@@ -172,6 +179,109 @@ export const InventoryManagement: React.FC = () => {
 
   const handleRemoveTempPurchaseLine = (idx: number) => {
     setBuyItems(buyItems.filter((_, i) => i !== idx));
+  };
+
+  const handleSupplierInvoiceScan = async (file?: File) => {
+    if (!file) return;
+    setIsInvoiceScanning(true);
+    try {
+      const image = file.type === 'application/pdf'
+        ? await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+          })
+        : await compressProductImage(file);
+      const response = await fetch('/api/barcode/lookup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({mode: 'supplier-invoice', image}),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.found) throw new Error(result?.error || 'No invoice lines were found.');
+
+      const normalizedSupplier = String(result.supplierName || '').toLowerCase();
+      const matchedSupplier = normalizedSupplier ? suppliers.find(supplier =>
+        normalizedSupplier.includes(supplier.name.toLowerCase()) ||
+        normalizedSupplier.includes(supplier.companyName.toLowerCase()) ||
+        supplier.companyName.toLowerCase().includes(normalizedSupplier)
+      ) : undefined;
+      if (matchedSupplier) setBuySupplierId(matchedSupplier.id);
+
+      const items = (result.items as any[]).map((line) => {
+        const barcode = String(line.barcode || '').replace(/\D/g, '');
+        const lineName = String(line.name || line.model || '').trim();
+        const matchedProduct = products.find(product =>
+          Boolean(barcode && product.barcode === barcode) ||
+          product.name.toLowerCase() === lineName.toLowerCase() ||
+          product.name.toLowerCase().includes(lineName.toLowerCase()) ||
+          lineName.toLowerCase().includes(product.name.toLowerCase())
+        );
+        return {
+          name: lineName,
+          brand: String(line.brand || '').trim(),
+          model: String(line.model || '').trim(),
+          category: String(line.category || 'General').trim(),
+          barcode,
+          quantity: Math.max(1, Number(line.quantity) || 1),
+          purchasePrice: Math.max(0, Number(line.purchasePrice) || 0),
+          taxRate: Math.max(0, Number(line.taxRate) || 0),
+          imeis: Array.isArray(line.imeis) ? line.imeis.map(String).filter((imei: string) => /^\d{15}$/.test(imei)) : [],
+          productId: matchedProduct?.id || '',
+        };
+      }).filter(line => line.name);
+      setInvoiceDraft({supplierName: result.supplierName || '', invoiceNumber: result.invoiceNumber || '', invoiceDate: result.invoiceDate || '', items});
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Could not scan this supplier invoice.', 'error');
+    } finally {
+      setIsInvoiceScanning(false);
+    }
+  };
+
+  const applyInvoiceDraft = () => {
+    if (!invoiceDraft) return;
+    const invoiceImeis = invoiceDraft.items.flatMap(line => line.imeis);
+    if (invoiceImeis.some(imei => !/^\d{15}$/.test(imei))) {
+      triggerToast('Every extracted IMEI must contain exactly 15 digits.', 'warning');
+      return;
+    }
+    if (invoiceDraft.items.some(line => line.imeis.length > 0 && line.imeis.length !== line.quantity && line.imeis.length !== line.quantity * 2)) {
+      triggerToast('IMEI count must be one or two per handset quantity.', 'warning');
+      return;
+    }
+    const existingImeis = new Set(products.flatMap(product => getSerializedUnits(product).flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])));
+    if (new Set(invoiceImeis).size !== invoiceImeis.length || invoiceImeis.some(imei => existingImeis.has(imei))) {
+      triggerToast('The scanned invoice contains a duplicate or previously registered IMEI.', 'error');
+      return;
+    }
+    const importedItems = invoiceDraft.items.map((line, lineIndex) => {
+      let product = products.find(candidate => candidate.id === line.productId);
+      if (!product) {
+        product = addProduct({
+          name: line.name,
+          sku: `SKU-INV-${Date.now().toString().slice(-6)}-${lineIndex + 1}`,
+          barcode: line.barcode || `INV-${Date.now()}-${lineIndex + 1}`,
+          category: line.category || 'General',
+          brand: line.brand || 'Generic',
+          unit: 'pcs',
+          purchasePrice: line.purchasePrice,
+          sellingPrice: line.purchasePrice,
+          taxRate: line.taxRate,
+          stock: 0,
+          lowStockAlert: 5,
+          trackInventoryByImei: line.imeis.length > 0,
+          sourcingType: 'Purchased',
+        });
+      }
+      const serializedUnits = line.imeis.length === line.quantity * 2
+        ? Array.from({length: line.quantity}, (_, index) => makeSerializedUnit(line.imeis[index * 2], line.imeis[index * 2 + 1]))
+        : line.imeis.slice(0, line.quantity).map(imei => makeSerializedUnit(imei));
+      return {productId: product.id, quantity: line.quantity, purchasePrice: line.purchasePrice, ...(serializedUnits.length ? {serializedUnits} : {})};
+    });
+    setBuyItems(importedItems);
+    setInvoiceDraft(null);
+    triggerToast(`${importedItems.length} invoice lines added for review.`, 'success');
   };
 
   // Compile final purchase incoming
@@ -685,9 +795,23 @@ export const InventoryManagement: React.FC = () => {
           {effectiveRestockSource === 'supplier' ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <form onSubmit={handleSubmitPurchaseBill} className="lg:col-span-12 rounded-3xl border border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950 p-6 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-12 border-b border-gray-100 dark:border-gray-900 pb-3">
-                  <h3 className="text-lg font-bold text-gray-950 dark:text-white">Distributors Restocking Entry</h3>
-                  <p className="text-xs text-gray-400">Add batches of incoming quantities of products supplied by regular Vendors</p>
+                <div className="md:col-span-12 flex flex-col gap-3 border-b border-gray-100 pb-3 dark:border-gray-900 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-950 dark:text-white">Distributors Restocking Entry</h3>
+                    <p className="text-xs text-gray-400">Add batches of incoming quantities of products supplied by regular Vendors</p>
+                  </div>
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">
+                    <ScanLine size={16} />
+                    <span>{isInvoiceScanning ? 'Reading invoice...' : 'Scan Supplier Invoice'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      capture="environment"
+                      disabled={isInvoiceScanning}
+                      onChange={(event) => void handleSupplierInvoiceScan(event.target.files?.[0])}
+                      className="sr-only"
+                    />
+                  </label>
                 </div>
 
                 {/* Select Supplier */}
@@ -1047,6 +1171,60 @@ export const InventoryManagement: React.FC = () => {
       )}
 
       {/* QUICK ADD SUPPLIER MODAL */}
+      {invoiceDraft && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-gray-950 sm:p-6">
+            <div className="mb-4 flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
+              <div>
+                <h3 className="text-lg font-extrabold text-gray-950 dark:text-white">Review Scanned Supplier Invoice</h3>
+                <p className="text-xs text-gray-500">{invoiceDraft.supplierName || 'Supplier not identified'} · Invoice {invoiceDraft.invoiceNumber || 'number not found'} · {invoiceDraft.invoiceDate || 'date not found'}</p>
+              </div>
+              <button type="button" onClick={() => setInvoiceDraft(null)} className="text-xl text-gray-500">×</button>
+            </div>
+
+            <div className="space-y-3">
+              {invoiceDraft.items.map((line, index) => (
+                <div key={`${line.name}-${index}`} className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800 md:grid-cols-12">
+                  <div className="col-span-2 md:col-span-4">
+                    <label className="text-[10px] font-bold uppercase text-gray-500">Match product</label>
+                    <select
+                      value={line.productId}
+                      onChange={(event) => setInvoiceDraft(current => current && ({...current, items: current.items.map((item, itemIndex) => itemIndex === index ? {...item, productId: event.target.value} : item)}))}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                    >
+                      <option value="">Create new: {line.name}</option>
+                      {products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+                    </select>
+                    <p className="mt-1 truncate text-[10px] text-gray-400">{line.brand} {line.model} {line.barcode && `· ${line.barcode}`}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-gray-500">Quantity</label>
+                    <input type="number" min="1" value={line.quantity} onChange={(event) => setInvoiceDraft(current => current && ({...current, items: current.items.map((item, itemIndex) => itemIndex === index ? {...item, quantity: Math.max(1, Number(event.target.value))} : item)}))} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs dark:border-gray-800 dark:bg-gray-900" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-gray-500">Purchase price</label>
+                    <input type="number" min="0" step="0.01" value={line.purchasePrice} onChange={(event) => setInvoiceDraft(current => current && ({...current, items: current.items.map((item, itemIndex) => itemIndex === index ? {...item, purchasePrice: Math.max(0, Number(event.target.value))} : item)}))} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs dark:border-gray-800 dark:bg-gray-900" />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="text-[10px] font-bold uppercase text-gray-500">GST %</label>
+                    <input type="number" min="0" value={line.taxRate} onChange={(event) => setInvoiceDraft(current => current && ({...current, items: current.items.map((item, itemIndex) => itemIndex === index ? {...item, taxRate: Math.max(0, Number(event.target.value))} : item)}))} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs dark:border-gray-800 dark:bg-gray-900" />
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <label className="text-[10px] font-bold uppercase text-gray-500">IMEIs ({line.imeis.length})</label>
+                    <textarea rows={2} value={line.imeis.join('\n')} onChange={(event) => setInvoiceDraft(current => current && ({...current, items: current.items.map((item, itemIndex) => itemIndex === index ? {...item, imeis: event.target.value.split(/\s+/).filter(Boolean)} : item)}))} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-[10px] font-mono dark:border-gray-800 dark:bg-gray-900" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-center gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+              <button type="button" onClick={() => setInvoiceDraft(null)} className="rounded-xl px-5 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-900">Cancel</button>
+              <button type="button" onClick={applyInvoiceDraft} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-600">Apply to Restock Ledger</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isQuickSupplierOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-900 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">

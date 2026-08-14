@@ -70,6 +70,50 @@ async function analyzeProductImage(request: any, response: any) {
   }
 }
 
+async function analyzeSupplierInvoice(request: any, response: any) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return response.status(503).json({found: false, error: 'Gemini invoice scanning is not configured.'});
+  const dataUrl = String(request.body?.image || '');
+  const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,([a-z0-9+/=]+)$/i);
+  if (!match || match[2].length > 8_000_000) return response.status(400).json({found: false, error: 'Invoice file is invalid or too large.'});
+
+  try {
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        contents: [{parts: [
+          {text: 'Extract this Indian supplier purchase invoice for a retail stock-entry draft. Return only values supported by the invoice. Prices must be per-unit purchase prices including GST when the invoice clearly indicates it; otherwise use the displayed per-unit rate. Extract every 15-digit IMEI printed for each line. Never invent a barcode or IMEI.'},
+          {inlineData: {mimeType: match[1], data: match[2]}},
+        ]}],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              found: {type: 'BOOLEAN'}, supplierName: {type: 'STRING'}, invoiceNumber: {type: 'STRING'}, invoiceDate: {type: 'STRING'},
+              items: {type: 'ARRAY', items: {type: 'OBJECT', properties: {
+                name: {type: 'STRING'}, brand: {type: 'STRING'}, model: {type: 'STRING'}, category: {type: 'STRING'}, barcode: {type: 'STRING'},
+                quantity: {type: 'NUMBER'}, purchasePrice: {type: 'NUMBER'}, taxRate: {type: 'NUMBER'}, imeis: {type: 'ARRAY', items: {type: 'STRING'}},
+              }, required: ['name', 'brand', 'model', 'category', 'barcode', 'quantity', 'purchasePrice', 'taxRate', 'imeis']}},
+            }, required: ['found', 'supplierName', 'invoiceNumber', 'invoiceDate', 'items'],
+          },
+        },
+      }),
+    });
+    const payload = await geminiResponse.json();
+    if (!geminiResponse.ok) return response.status(502).json({found: false, error: payload?.error?.message || 'Gemini could not read this invoice.'});
+    const text = payload?.candidates?.[0]?.content?.parts?.find((part: any) => part.text)?.text;
+    const result = text ? JSON.parse(text) : null;
+    if (!result?.found || !Array.isArray(result.items) || !result.items.length) return response.status(200).json({found: false});
+    return response.status(200).json({found: true, ...result, source: 'Gemini Vision'});
+  } catch (error) {
+    console.error('Gemini invoice recognition error:', error);
+    return response.status(502).json({found: false, error: 'Gemini invoice recognition timed out.'});
+  }
+}
+
 async function resolveLabel(fragment: string, response: any) {
   if (!/^[a-z0-9][a-z0-9 -]{1,18}$/.test(fragment)) {
     return response.status(400).json({found: false});
@@ -110,6 +154,7 @@ async function resolveLabel(fragment: string, response: any) {
 }
 
 export default async function handler(request: any, response: any) {
+  if (request.method === 'POST' && request.body?.mode === 'supplier-invoice') return analyzeSupplierInvoice(request, response);
   if (request.method === 'POST') return analyzeProductImage(request, response);
   if (request.method !== 'GET') {
     return response.status(405).json({error: 'Method not allowed'});
