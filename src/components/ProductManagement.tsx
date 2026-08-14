@@ -196,6 +196,10 @@ export const ProductManagement: React.FC = () => {
         compressProductImage(file),
       ]);
       const result = await recognize(file, 'eng');
+      if (result.data.confidence < 60) {
+        triggerToast('The label is too blurry to identify. Retake it closer, in good light.', 'warning');
+        return;
+      }
       const lines = result.data.text
         .split(/\r?\n/)
         .map((line) => line.replace(/[^\p{L}\p{N}\s+&().\-/]/gu, ' ').replace(/\s+/g, ' ').trim())
@@ -207,12 +211,9 @@ export const ProductManagement: React.FC = () => {
       const candidates = lines.filter((line) => !noise.test(line) && /[a-z]{3}/i.test(line));
       const modelKeywords = /phone|mobile|smartphone|edge|galaxy|iphone|pixel|note|pro|max|ultra|plus|5g/i;
       const modelLine = candidates.find((line) => modelKeywords.test(line) && line.toLowerCase() !== detectedBrand?.toLowerCase());
-      const descriptiveLine = candidates
-        .filter((line) => line.toLowerCase() !== detectedBrand?.toLowerCase())
-        .sort((a, b) => Math.min(b.length, 45) - Math.min(a.length, 45))[0];
-      const detectedName = modelLine || descriptiveLine;
+      const detectedName = modelLine;
       if (!detectedName) {
-        triggerToast('The label text was not clear enough. Retake the photo closer, in good light.', 'warning');
+        triggerToast('No reliable product name was found. Retake the front label with the model name visible.', 'warning');
         return;
       }
 
