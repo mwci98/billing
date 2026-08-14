@@ -224,8 +224,9 @@ export const ProductManagement: React.FC = () => {
       });
       const detectedName = modelLine?.replace(/\b([a-z])\s+(\d{2,4})\b/gi, '$1$2');
       const partialModel = candidates.find((line) => /^\d{2,4}[a-z]\b/i.test(line));
-      if (!detectedName && partialModel) {
-        const lookupResponse = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(partialModel)}`);
+      const modelToResolve = !detectedBrand ? (detectedName || partialModel) : (!detectedName ? partialModel : undefined);
+      if (modelToResolve) {
+        const lookupResponse = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(modelToResolve)}`);
         const resolved = lookupResponse.ok ? await lookupResponse.json() : null;
         if (resolved?.found && resolved.name) {
           setName(resolved.name);

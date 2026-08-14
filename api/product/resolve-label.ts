@@ -13,15 +13,20 @@ export default async function handler(request: any, response: any) {
   }
 
   try {
-    const searchResponse = await fetch(
-      `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(`${fragment} 5g phone`)}`,
-      {headers: {'User-Agent': 'Mozilla/5.0 QPOS product lookup'}, signal: AbortSignal.timeout(6000)}
-    );
-    if (!searchResponse.ok) return response.status(200).json({found: false});
-
-    const payload = await searchResponse.json();
-    const suggestions = Array.isArray(payload?.[1]) ? payload[1].map(String) : [];
-    const suggestion = suggestions.find((value: string) => {
+    const variants = [fragment];
+    if (/^[xyv]\d/i.test(fragment)) {
+      for (const prefix of ['x', 'y', 'v']) variants.push(`${prefix}${fragment.slice(1)}`);
+    }
+    const suggestionGroups = await Promise.all(Array.from(new Set(variants)).map(async (variant) => {
+      const searchResponse = await fetch(
+        `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(`${variant} 5g phone`)}`,
+        {headers: {'User-Agent': 'Mozilla/5.0 QPOS product lookup'}, signal: AbortSignal.timeout(6000)}
+      );
+      if (!searchResponse.ok) return [];
+      const payload = await searchResponse.json();
+      return Array.isArray(payload?.[1]) ? payload[1].map(String) : [];
+    }));
+    const suggestion = suggestionGroups.flat().find((value: string) => {
       const lower = value.toLowerCase();
       return PHONE_BRANDS.some((brand) => lower.includes(brand)) &&
         !/cover|case|price|screen|protector|charger|specification/.test(lower);
