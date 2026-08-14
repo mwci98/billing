@@ -20,6 +20,7 @@ import {
   normalizeScannerValue,
   productUsesImeiTracking
 } from '../lib/serializedInventory';
+import { isProductImageValue } from '../lib/productImage';
 
 export const POSBilling: React.FC = () => {
   const { 
@@ -573,7 +574,9 @@ export const POSBilling: React.FC = () => {
                   }`}
                 >
                   <div className="flex min-w-0 items-start gap-2">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-xl dark:bg-white/5 sm:h-11 sm:w-11 sm:rounded-xl sm:text-2xl">{p.imageUrl || '📦'}</span>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-50 text-xl dark:bg-white/5 sm:h-11 sm:w-11 sm:rounded-xl sm:text-2xl">
+                      {isProductImageValue(p.imageUrl) ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : (p.imageUrl || '📦')}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="line-clamp-2 text-[10px] font-bold leading-3.5 text-gray-800 transition group-hover:text-emerald-500 dark:text-gray-100 dark:group-hover:text-emerald-400 sm:text-xs sm:leading-4">
                         {p.name}

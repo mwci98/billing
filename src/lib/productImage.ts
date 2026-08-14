@@ -1,3 +1,6 @@
+export const isProductImageValue = (value?: string) =>
+  Boolean(value && (/^https?:\/\//i.test(value) || /^data:image\//i.test(value) || /^blob:/i.test(value)));
+
 export function compressProductImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const image = new Image();

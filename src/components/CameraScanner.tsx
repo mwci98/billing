@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, RefreshCw, X, ShieldAlert, Sparkles, Search, Zap, Volume2, HardDrive, Keyboard } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Html5Qrcode } from 'html5-qrcode';
+import { isProductImageValue } from '../lib/productImage';
 
 interface CameraScannerProps {
   onScanSuccess: (barcode: string) => void;
@@ -452,8 +453,8 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
                     onClick={() => handleBarcodeSubmit(p.barcode)}
                     className="flex items-center gap-2.5 rounded-xl bg-gray-900 hover:bg-gray-850 border border-white/5 hover:border-emerald-500/40 p-2.5 text-left transition duration-150 active:scale-95 group cursor-pointer"
                   >
-                    <span className="text-xl shrink-0 h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center select-none group-hover:scale-105 transition-transform">
-                      {p.imageUrl || '📦'}
+                    <span className="text-xl shrink-0 h-9 w-9 overflow-hidden rounded-lg bg-white/5 flex items-center justify-center select-none group-hover:scale-105 transition-transform">
+                      {isProductImageValue(p.imageUrl) ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : (p.imageUrl || '📦')}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-semibold text-gray-200 group-hover:text-emerald-400 transition-colors">{p.name}</p>
