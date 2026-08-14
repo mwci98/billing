@@ -1,6 +1,7 @@
 import {getAdminDb} from '../_firebase-admin.js';
 
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+const PDF_CHUNK_SIZE = 700_000;
 
 type LinkPayload = {
   scope: string;
@@ -48,8 +49,13 @@ export default async function handler(request: any, response: any) {
     const scope = String(body.workspaceScope || '');
     const saleId = String(body.saleId || '');
     const invoice = body.invoice || {};
-    if (!email || !scope || !saleId || !invoice.storeName) {
+    const pdfBase64 = String(body.pdfBase64 || '');
+    const fileName = String(body.fileName || `Invoice_${saleId}.pdf`).replace(/[\\/\r\n"]/g, '_');
+    if (!email || !scope || !saleId || !invoice.storeName || !pdfBase64) {
       return response.status(400).json({error: 'Invoice link details are incomplete.'});
+    }
+    if (!/^[a-z0-9+/=]+$/i.test(pdfBase64) || pdfBase64.length > 12_000_000) {
+      return response.status(413).json({error: 'Invoice PDF is invalid or too large.'});
     }
 
     const db = getAdminDb();
@@ -76,6 +82,16 @@ export default async function handler(request: any, response: any) {
     };
     const encoded = base64Url(JSON.stringify(payload));
     const signature = await sign(encoded, secret);
+    const expiresAt = payload.expiresAt;
+    const chunks = Array.from({length: Math.ceil(pdfBase64.length / PDF_CHUNK_SIZE)}, (_, index) =>
+      pdfBase64.slice(index * PDF_CHUNK_SIZE, (index + 1) * PDF_CHUNK_SIZE));
+    const publicInvoiceRef = db.doc(`users/${scope}/public_invoices/${saleId}`);
+    const existingChunks = await publicInvoiceRef.collection('pdf_chunks').get();
+    const batch = db.batch();
+    existingChunks.docs.forEach(document => batch.delete(document.ref));
+    batch.set(publicInvoiceRef, {fileName, expiresAt, chunkCount: chunks.length, updatedAt: Date.now()});
+    chunks.forEach((chunk, index) => batch.set(publicInvoiceRef.collection('pdf_chunks').doc(String(index).padStart(3, '0')), {data: chunk}));
+    await batch.commit();
     return response.status(200).json({url: `https://qpos.neospec.co.in/i/${encoded}.${signature}`, expiresAt: payload.expiresAt});
   } catch (error) {
     console.error('Public invoice link creation failed:', error);

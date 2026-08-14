@@ -255,11 +255,29 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
       const availableWidth = pageWidth - 6;
       const availableHeight = pageHeight - 6;
       const pagePixelHeight = Math.floor(canvas.width * (availableHeight / availableWidth));
+      const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
+      let contentHeight = canvas.height;
+      if (pixels) {
+        for (let y = canvas.height - 1; y >= 0; y -= 1) {
+          let hasInk = false;
+          for (let x = 0; x < canvas.width; x += 4) {
+            const offset = (y * canvas.width + x) * 4;
+            if (pixels[offset + 3] > 10 && (pixels[offset] < 248 || pixels[offset + 1] < 248 || pixels[offset + 2] < 248)) {
+              hasInk = true;
+              break;
+            }
+          }
+          if (hasInk) {
+            contentHeight = Math.min(canvas.height, y + 4);
+            break;
+          }
+        }
+      }
       let sourceY = 0;
       let pageIndex = 0;
 
-      while (sourceY < canvas.height) {
-        const sliceHeight = Math.min(pagePixelHeight, canvas.height - sourceY);
+      while (sourceY < contentHeight) {
+        const sliceHeight = Math.min(pagePixelHeight, contentHeight - sourceY);
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
         pageCanvas.height = sliceHeight;
@@ -349,6 +367,8 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
         body: JSON.stringify({
           workspaceScope,
           saleId: activeReceipt.id,
+          fileName: `Tax_Invoice_${activeReceipt.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+          pdfBase64,
           invoice: {
             storeName: settings.storeName,
             storeAddress: settings.address,

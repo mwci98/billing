@@ -25,12 +25,15 @@ export default async function handler(request: any, response: any) {
     const db = getAdminDb();
     const publicInvoice = await db.doc(`users/${payload.scope}/public_invoices/${payload.saleId}`).get();
     const storedPdf = publicInvoice.exists ? publicInvoice.data() as any : null;
-    if (storedPdf?.pdfBase64 && Number(storedPdf.expiresAt || 0) >= Date.now()) {
+    if (Number(storedPdf?.chunkCount || 0) > 0 && Number(storedPdf.expiresAt || 0) >= Date.now()) {
+      const chunkSnapshot = await publicInvoice.ref.collection('pdf_chunks').orderBy('__name__').get();
+      const pdfBase64 = chunkSnapshot.docs.map(document => String(document.data().data || '')).join('');
+      if (!pdfBase64) return response.status(404).send('Invoice PDF is unavailable.');
       const fileName = String(storedPdf.fileName || `Invoice_${payload.saleId}.pdf`).replace(/[\\/\r\n"]/g, '_');
       response.setHeader('Content-Type', 'application/pdf');
       response.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
       response.setHeader('Cache-Control', 'private, no-store');
-      return response.status(200).send(Buffer.from(String(storedPdf.pdfBase64), 'base64'));
+      return response.status(200).send(Buffer.from(pdfBase64, 'base64'));
     }
 
     const saleDoc = await db.doc(`users/${payload.scope}/sales/${payload.saleId}`).get();
