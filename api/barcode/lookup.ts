@@ -6,6 +6,7 @@ const PHONE_BRANDS = [
 
 async function analyzeProductImage(request: any, response: any) {
   const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   if (!apiKey) return response.status(503).json({found: false, error: 'Gemini product recognition is not configured.'});
 
   const dataUrl = String(request.body?.image || '');
@@ -16,7 +17,7 @@ async function analyzeProductImage(request: any, response: any) {
 
   const prompt = `Identify the retail product shown in this image. Read the packaging carefully and return only grounded product data. Do not invent a barcode, price, model, storage size, color, or specification that is not visible or confidently recognizable. Set found=false when a specific retail product cannot be identified. For phones, category must be Smartphones and trackInventoryByImei must be true. taxRate is the likely Indian GST percentage for this product category.`;
   try {
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
       signal: AbortSignal.timeout(25000),
@@ -72,13 +73,14 @@ async function analyzeProductImage(request: any, response: any) {
 
 async function analyzeSupplierInvoice(request: any, response: any) {
   const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   if (!apiKey) return response.status(503).json({found: false, error: 'Gemini invoice scanning is not configured.'});
   const dataUrl = String(request.body?.image || '');
   const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,([a-z0-9+/=]+)$/i);
   if (!match || match[2].length > 8_000_000) return response.status(400).json({found: false, error: 'Invoice file is invalid or too large.'});
 
   try {
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
       signal: AbortSignal.timeout(30000),
