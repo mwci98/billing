@@ -258,7 +258,8 @@ export const ProductManagement: React.FC = () => {
       setCategory(isPhone ? 'Smartphones' : externalCategory.split(' > ').pop() || 'General');
       setUnit('Unit');
       setSku(`SKU-${cleanBarcode.slice(-6)}`);
-      setImageUrl(isPhone ? '📱' : '📦');
+      const externalImage = String(payload.image || '').trim();
+      setImageUrl(/^https?:\/\//i.test(externalImage) ? externalImage : isPhone ? '📱' : '📦');
       triggerToast(
         `Loaded verified barcode details from ${payload.source}. Enter your prices, stock, GST and supplier.`,
         'success'

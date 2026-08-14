@@ -56,10 +56,56 @@ export default async function handler(request: any, response: any) {
       return response.status(502).json({error: 'The barcode service returned an invalid response.'});
     }
 
-    if (lookupResponse.status === 404 || !payload?.items?.length) {
-      return response.status(404).json({
-        error: 'No verified product information was found for this barcode.',
-      });
+    if (!lookupResponse.ok || !payload?.items?.length) {
+      const codeVariants = Array.from(new Set([code, code.padStart(12, '0'), code.padStart(13, '0')]));
+      const openFactsHosts = [
+        'world.openfoodfacts.org',
+        'world.openproductsfacts.org',
+        'world.openbeautyfacts.org',
+      ];
+      const fallbackResults = await Promise.all(openFactsHosts.flatMap((host) =>
+        codeVariants.map(async (candidateCode) => {
+          try {
+            const fallbackResponse = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(candidateCode)}.json`, {
+              headers: {Accept: 'application/json', 'User-Agent': 'QPOS/1.0 (barcode lookup)'},
+              signal: AbortSignal.timeout(6000),
+            });
+            if (!fallbackResponse.ok) return null;
+            const fallbackPayload = await fallbackResponse.json();
+            const product = fallbackPayload?.product;
+            const productName = String(product?.product_name || product?.generic_name || '').trim();
+            if (!productName) return null;
+            const categoryTag = Array.isArray(product.categories_tags) ? product.categories_tags.at(-1) : '';
+            return {
+              found: true,
+              barcode: candidateCode,
+              name: productName,
+              brand: String(product.brands || '').split(',')[0].trim(),
+              category: String(product.categories || categoryTag || '').replace(/^en:/, '').trim(),
+              description: String(product.generic_name || '').trim(),
+              image: String(product.image_front_url || product.image_url || '').trim(),
+              source: host.includes('openfoodfacts')
+                ? 'Open Food Facts'
+                : host.includes('openbeautyfacts')
+                  ? 'Open Beauty Facts'
+                  : 'Open Products Facts',
+            };
+          } catch {
+            return null;
+          }
+        })
+      ));
+      const fallbackProduct = fallbackResults.find(Boolean);
+      if (fallbackProduct) {
+        response.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
+        return response.status(200).json(fallbackProduct);
+      }
+
+      if (lookupResponse.status === 404 || !payload?.items?.length) {
+        return response.status(404).json({
+          error: 'No public product record exists for this barcode. Enter the item details manually once; QPOS will load them from your catalog next time.',
+        });
+      }
     }
     if (!lookupResponse.ok) {
       return response.status(lookupResponse.status).json({
