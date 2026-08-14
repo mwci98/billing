@@ -48,6 +48,7 @@ export const InventoryManagement: React.FC = () => {
   const [isQuickProductOpen, setIsQuickProductOpen] = useState<boolean>(false);
   const [quickProdTitle, setQuickProdTitle] = useState<string>('');
   const [quickProdCategory, setQuickProdCategory] = useState<string>('General');
+  const [quickProdBrand, setQuickProdBrand] = useState<string>('');
   const [quickProdBuyPrice, setQuickProdBuyPrice] = useState<string>('10.00');
   const [quickProdSellPrice, setQuickProdSellPrice] = useState<string>('15.00');
   const [quickProdStock, setQuickProdStock] = useState<string>('0');
@@ -324,6 +325,14 @@ export const InventoryManagement: React.FC = () => {
       triggerToast('Scan or enter the retail barcode.', 'warning');
       return;
     }
+    if (businessMode === 'Retail' && !quickProdBrand.trim()) {
+      triggerToast('Enter or identify the product brand.', 'warning');
+      return;
+    }
+    if (businessMode === 'Retail' && !quickProdCategory.trim()) {
+      triggerToast('Enter the product category.', 'warning');
+      return;
+    }
     if (quickProdBarcode.trim() && products.some(product => product.barcode === quickProdBarcode.trim())) {
       triggerToast('This barcode is already assigned to another product.', 'warning');
       return;
@@ -337,7 +346,7 @@ export const InventoryManagement: React.FC = () => {
       sku: `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
       barcode: quickProdBarcode.trim() || `${Math.floor(8900000000000 + Math.random() * 100000000000)}`,
       category: quickProdCategory || 'General',
-      brand: 'Generic',
+      brand: quickProdBrand.trim() || 'Generic',
       unit: quickProdUnit || 'pcs',
       purchasePrice: buyPrice,
       sellingPrice: sellPrice,
@@ -359,6 +368,7 @@ export const InventoryManagement: React.FC = () => {
     setQuickProdBuyPrice('10.00');
     setQuickProdSellPrice('15.00');
     setQuickProdStock('0');
+    setQuickProdBrand('');
     setQuickProdBarcode('');
     setQuickProdTrackImei(false);
     setIsQuickProductOpen(false);
@@ -394,6 +404,7 @@ export const InventoryManagement: React.FC = () => {
         const resolved = response.ok ? await response.json() : null;
         if (resolved?.found) {
           setQuickProdTitle(resolved.name);
+          if (resolved.brand) setQuickProdBrand(resolved.brand);
           setQuickProdCategory(resolved.category || 'Smartphones');
           setQuickProdUnit('pcs');
           setQuickProdTrackImei(true);
@@ -407,6 +418,7 @@ export const InventoryManagement: React.FC = () => {
           ? `${detectedBrand} ${detectedModel}`
           : detectedModel;
         setQuickProdTitle(title);
+        if (detectedBrand) setQuickProdBrand(detectedBrand);
         setQuickProdCategory('Smartphones');
         setQuickProdUnit('pcs');
         setQuickProdTrackImei(true);
@@ -1206,16 +1218,29 @@ export const InventoryManagement: React.FC = () => {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <div className={businessMode === 'Hybrid' ? '' : 'col-span-2'}>
-                  <label className="block text-xs font-semibold mb-1">Category</label>
+                <div className={businessMode === 'Retail' || businessMode === 'Hybrid' ? '' : 'col-span-2'}>
+                  <label className="block text-xs font-semibold mb-1">Category {businessMode === 'Retail' && '*'}</label>
                   <input
                     type="text"
+                    required={businessMode === 'Retail'}
                     value={quickProdCategory}
                     onChange={(e) => setQuickProdCategory(e.target.value)}
                     placeholder="e.g. Beverages, Bakery, Electronics"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
                   />
                 </div>
+
+                {businessMode === 'Retail' && <div>
+                  <label className="block text-xs font-semibold mb-1">Brand *</label>
+                  <input
+                    type="text"
+                    required
+                    value={quickProdBrand}
+                    onChange={(event) => setQuickProdBrand(event.target.value)}
+                    placeholder="e.g. Vivo, Samsung, Motorola"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white"
+                  />
+                </div>}
 
                 {businessMode === 'Hybrid' && <div>
                   <label className="block text-xs font-semibold mb-1">Sourcing Origin</label>
