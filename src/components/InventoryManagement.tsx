@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowRightLeft, AlertTriangle, PackagePlus, Plus, Search,
-  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders
+  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders, ImagePlus
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
@@ -52,6 +52,7 @@ export const InventoryManagement: React.FC = () => {
   const [quickProdStock, setQuickProdStock] = useState<string>('0');
   const [quickProdSourcing, setQuickProdSourcing] = useState<'Purchased' | 'Manufactured' | 'Both'>('Purchased');
   const [quickProdUnit, setQuickProdUnit] = useState<string>('pcs');
+  const [isQuickProdReading, setIsQuickProdReading] = useState(false);
 
   // 1. Manual Adjust Form States
   const [selectedProdId, setSelectedProdId] = useState<string>('');
@@ -346,6 +347,62 @@ export const InventoryManagement: React.FC = () => {
     setQuickProdSellPrice('15.00');
     setQuickProdStock('0');
     setIsQuickProductOpen(false);
+  };
+
+  const handleQuickProductLabelScan = async (file?: File) => {
+    if (!file) return;
+    setIsQuickProdReading(true);
+    try {
+      const tesseract = await import('tesseract.js');
+      const worker = await tesseract.createWorker('eng');
+      let text = '';
+      try {
+        await worker.setParameters({tessedit_pageseg_mode: tesseract.PSM.SPARSE_TEXT});
+        text = (await worker.recognize(file)).data.text;
+      } finally {
+        await worker.terminate();
+      }
+
+      const lines = text.split(/\r?\n/)
+        .map(line => line.replace(/[^a-z0-9\s+&().\-/]/gi, ' ').replace(/\s+/g, ' ').trim())
+        .filter(line => line.length >= 2 && line.length <= 80);
+      const brands = ['Apple', 'Samsung', 'OPPO', 'Vivo', 'Xiaomi', 'Redmi', 'Realme', 'OnePlus', 'Nothing', 'Google', 'Motorola', 'Nokia', 'Honor', 'Huawei', 'Poco', 'Infinix', 'Tecno', 'Lava', 'Asus', 'Sony', 'Lenovo', 'LG', 'Jio', 'Itel'];
+      const detectedBrand = brands.find(brand => lines.some(line => line.toLowerCase().includes(brand.toLowerCase())));
+      const modelCode = /\b[a-z]{1,4}[\s-]?\d{2,4}[a-z]?\b/i;
+      const numericFragment = /^\d{2,4}[a-z]\b/i;
+      const modelLine = lines.find(line => line.toLowerCase() !== detectedBrand?.toLowerCase() && modelCode.test(line));
+      const partialModel = lines.find(line => numericFragment.test(line));
+      const detectedModel = modelLine?.replace(/\b([a-z])\s+(\d{2,4})\b/gi, '$1$2');
+
+      if (!detectedBrand && (detectedModel || partialModel)) {
+        const response = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(detectedModel || partialModel || '')}`);
+        const resolved = response.ok ? await response.json() : null;
+        if (resolved?.found) {
+          setQuickProdTitle(resolved.name);
+          setQuickProdCategory(resolved.category || 'Smartphones');
+          setQuickProdUnit('pcs');
+          triggerToast(`Identified "${resolved.name}".`, 'success');
+          return;
+        }
+      }
+
+      if (detectedModel) {
+        const title = detectedBrand && !detectedModel.toLowerCase().includes(detectedBrand.toLowerCase())
+          ? `${detectedBrand} ${detectedModel}`
+          : detectedModel;
+        setQuickProdTitle(title);
+        setQuickProdCategory('Smartphones');
+        setQuickProdUnit('pcs');
+        triggerToast(`Identified "${title}".`, 'success');
+        return;
+      }
+      triggerToast('No reliable product name was found. Use a closer front-facing photo.', 'warning');
+    } catch (error) {
+      console.error('Quick product label recognition failed:', error);
+      triggerToast('Could not read that product label.', 'error');
+    } finally {
+      setIsQuickProdReading(false);
+    }
   };
 
   return (
@@ -1066,6 +1123,19 @@ export const InventoryManagement: React.FC = () => {
             </div>
 
             <form onSubmit={handleQuickAddProductSubmit} className="space-y-3">
+              <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <ImagePlus size={16} />
+                <span>{isQuickProdReading ? 'Reading product label...' : 'Scan Product Label'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  disabled={isQuickProdReading}
+                  onChange={(event) => void handleQuickProductLabelScan(event.target.files?.[0])}
+                  className="sr-only"
+                />
+              </label>
+
               <div>
                 <label className="block text-xs font-semibold mb-1">Product Title / Item Name *</label>
                 <input
