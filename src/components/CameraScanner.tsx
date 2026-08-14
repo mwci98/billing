@@ -28,6 +28,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const hasScannedRef = useRef(false);
 
   // Play a retro-futuristic laser beep on successful barcode scanning
   const playBeep = () => {
@@ -57,6 +58,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
     let isActive = true;
 
     if (activeTab === 'camera') {
+      hasScannedRef.current = false;
       setIsInitializing(true);
       setCameraError(null);
       setHasPermission(null);
@@ -84,6 +86,8 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
               aspectRatio: 1.333333
             },
             (decodedText) => {
+              if (hasScannedRef.current) return;
+              hasScannedRef.current = true;
               // Beep & forward
               playBeep();
               onScanSuccess(decodedText);

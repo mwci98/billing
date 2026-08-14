@@ -102,7 +102,8 @@ export default async function handler(request: any, response: any) {
       }
 
       if (lookupResponse.status === 404 || !payload?.items?.length) {
-        return response.status(404).json({
+        return response.status(200).json({
+          found: false,
           error: 'No public product record exists for this barcode. Enter the item details manually once; QPOS will load them from your catalog next time.',
         });
       }
