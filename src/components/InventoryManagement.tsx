@@ -390,7 +390,7 @@ export const InventoryManagement: React.FC = () => {
       const detectedModel = modelLine?.replace(/\b([a-z])\s+(\d{2,4})\b/gi, '$1$2');
 
       if (!detectedBrand && (detectedModel || partialModel)) {
-        const response = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(detectedModel || partialModel || '')}`);
+        const response = await fetch(`/api/barcode/lookup?label=${encodeURIComponent(detectedModel || partialModel || '')}`);
         const resolved = response.ok ? await response.json() : null;
         if (resolved?.found) {
           setQuickProdTitle(resolved.name);

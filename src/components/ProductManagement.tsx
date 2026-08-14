@@ -226,7 +226,7 @@ export const ProductManagement: React.FC = () => {
       const partialModel = candidates.find((line) => /^\d{2,4}[a-z]\b/i.test(line));
       const modelToResolve = !detectedBrand ? (detectedName || partialModel) : (!detectedName ? partialModel : undefined);
       if (modelToResolve) {
-        const lookupResponse = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(modelToResolve)}`);
+        const lookupResponse = await fetch(`/api/barcode/lookup?label=${encodeURIComponent(modelToResolve)}`);
         const resolved = lookupResponse.ok ? await lookupResponse.json() : null;
         if (resolved?.found && resolved.name) {
           setName(resolved.name);
