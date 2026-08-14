@@ -223,6 +223,22 @@ export const ProductManagement: React.FC = () => {
         return modelKeywords.test(line) || modelCode.test(withoutNetwork);
       });
       const detectedName = modelLine?.replace(/\b([a-z])\s+(\d{2,4})\b/gi, '$1$2');
+      const partialModel = candidates.find((line) => /^\d{2,4}[a-z]\b/i.test(line));
+      if (!detectedName && partialModel) {
+        const lookupResponse = await fetch(`/api/product/resolve-label?text=${encodeURIComponent(partialModel)}`);
+        const resolved = lookupResponse.ok ? await lookupResponse.json() : null;
+        if (resolved?.found && resolved.name) {
+          setName(resolved.name);
+          if (resolved.brand) setBrand(resolved.brand);
+          setCategory(resolved.category || 'Smartphones');
+          setUnit('Unit');
+          setSku(`SKU-${barcode.replace(/\D/g, '').slice(-6) || Date.now().toString().slice(-6)}`);
+          setImageUrl(dataUrl);
+          setNeedsLabelScan(false);
+          triggerToast(`Identified "${resolved.name}" from the product label.`, 'success');
+          return;
+        }
+      }
       if (!detectedName) {
         triggerToast('No reliable product name was found. Retake the front label with the model name visible.', 'warning');
         return;
