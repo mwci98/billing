@@ -6,12 +6,13 @@
 import React, { useState } from 'react';
 import { 
   ArrowRightLeft, AlertTriangle, PackagePlus, Plus, Search,
-  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders, ImagePlus
+  Calendar, Users, Eye, History, FileDown, PlusCircle, Sliders, ImagePlus, Camera
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 import { getSerializedUnits, makeSerializedUnit, parseSerializedUnitLines, productUsesImeiTracking } from '../lib/serializedInventory';
 import { SerializedInventoryUnit } from '../types';
+import { CameraScanner } from './CameraScanner';
 
 export const InventoryManagement: React.FC = () => {
   const { 
@@ -52,7 +53,10 @@ export const InventoryManagement: React.FC = () => {
   const [quickProdStock, setQuickProdStock] = useState<string>('0');
   const [quickProdSourcing, setQuickProdSourcing] = useState<'Purchased' | 'Manufactured' | 'Both'>('Purchased');
   const [quickProdUnit, setQuickProdUnit] = useState<string>('pcs');
+  const [quickProdBarcode, setQuickProdBarcode] = useState<string>('');
+  const [quickProdTrackImei, setQuickProdTrackImei] = useState(false);
   const [isQuickProdReading, setIsQuickProdReading] = useState(false);
+  const [isQuickBarcodeScannerOpen, setIsQuickBarcodeScannerOpen] = useState(false);
 
   // 1. Manual Adjust Form States
   const [selectedProdId, setSelectedProdId] = useState<string>('');
@@ -316,6 +320,14 @@ export const InventoryManagement: React.FC = () => {
       triggerToast("Please enter product title!", "warning");
       return;
     }
+    if (businessMode === 'Retail' && !quickProdBarcode.trim()) {
+      triggerToast('Scan or enter the retail barcode.', 'warning');
+      return;
+    }
+    if (quickProdBarcode.trim() && products.some(product => product.barcode === quickProdBarcode.trim())) {
+      triggerToast('This barcode is already assigned to another product.', 'warning');
+      return;
+    }
     const buyPrice = parseFloat(quickProdBuyPrice) || 0;
     const sellPrice = parseFloat(quickProdSellPrice) || 0;
     const stock = parseInt(quickProdStock) || 0;
@@ -323,7 +335,7 @@ export const InventoryManagement: React.FC = () => {
     const newProd = addProduct({
       name: quickProdTitle,
       sku: `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
-      barcode: `${Math.floor(8900000000000 + Math.random() * 100000000000)}`,
+      barcode: quickProdBarcode.trim() || `${Math.floor(8900000000000 + Math.random() * 100000000000)}`,
       category: quickProdCategory || 'General',
       brand: 'Generic',
       unit: quickProdUnit || 'pcs',
@@ -332,6 +344,7 @@ export const InventoryManagement: React.FC = () => {
       taxRate: 18,
       stock,
       lowStockAlert: 5,
+      trackInventoryByImei: businessMode === 'Retail' && quickProdTrackImei,
       sourcingType: businessMode === 'Hybrid' ? quickProdSourcing : sourcingForBusinessMode(businessMode)
     });
 
@@ -346,6 +359,8 @@ export const InventoryManagement: React.FC = () => {
     setQuickProdBuyPrice('10.00');
     setQuickProdSellPrice('15.00');
     setQuickProdStock('0');
+    setQuickProdBarcode('');
+    setQuickProdTrackImei(false);
     setIsQuickProductOpen(false);
   };
 
@@ -381,6 +396,7 @@ export const InventoryManagement: React.FC = () => {
           setQuickProdTitle(resolved.name);
           setQuickProdCategory(resolved.category || 'Smartphones');
           setQuickProdUnit('pcs');
+          setQuickProdTrackImei(true);
           triggerToast(`Identified "${resolved.name}".`, 'success');
           return;
         }
@@ -393,6 +409,7 @@ export const InventoryManagement: React.FC = () => {
         setQuickProdTitle(title);
         setQuickProdCategory('Smartphones');
         setQuickProdUnit('pcs');
+        setQuickProdTrackImei(true);
         triggerToast(`Identified "${title}".`, 'success');
         return;
       }
@@ -1148,6 +1165,46 @@ export const InventoryManagement: React.FC = () => {
                 />
               </div>
 
+              {businessMode === 'Retail' && (
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Retail Barcode *</label>
+                    <input
+                      type="text"
+                      required
+                      inputMode="numeric"
+                      value={quickProdBarcode}
+                      onChange={(event) => setQuickProdBarcode(event.target.value.trim())}
+                      placeholder="Scan or enter UPC / EAN / GTIN"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickBarcodeScannerOpen(true)}
+                    title="Scan barcode with camera"
+                    className="mt-5 flex size-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                  >
+                    <Camera size={17} />
+                  </button>
+                </div>
+              )}
+
+              {businessMode === 'Retail' && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900">
+                  <input
+                    type="checkbox"
+                    checked={quickProdTrackImei}
+                    onChange={(event) => setQuickProdTrackImei(event.target.checked)}
+                    className="mt-0.5 size-4 accent-emerald-500"
+                  />
+                  <span>
+                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Track every handset by IMEI</span>
+                    <span className="mt-0.5 block text-[11px] text-gray-500">IMEIs are entered and validated on the incoming restock line.</span>
+                  </span>
+                </label>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div className={businessMode === 'Hybrid' ? '' : 'col-span-2'}>
                   <label className="block text-xs font-semibold mb-1">Category</label>
@@ -1227,6 +1284,16 @@ export const InventoryManagement: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {isQuickBarcodeScannerOpen && (
+        <CameraScanner
+          onScanSuccess={(value) => {
+            setQuickProdBarcode(value);
+            setIsQuickBarcodeScannerOpen(false);
+          }}
+          onClose={() => setIsQuickBarcodeScannerOpen(false)}
+        />
       )}
     </div>
   );
