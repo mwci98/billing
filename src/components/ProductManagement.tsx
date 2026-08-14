@@ -162,6 +162,8 @@ export const ProductManagement: React.FC = () => {
   const [itemType, setItemType] = useState<'Material' | 'Service'>('Material');
   const [menuVariants, setMenuVariants] = useState<Array<{id: string; name: string; price: string}>>([]);
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
+  const [isLabelReading, setIsLabelReading] = useState(false);
+  const [needsLabelScan, setNeedsLabelScan] = useState(false);
   const businessMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
   const isRestaurantBusiness = businessMode === 'Restaurant';
   const effectiveSourcingType = businessMode === 'Hybrid'
@@ -181,6 +183,55 @@ export const ProductManagement: React.FC = () => {
       triggerToast('Could not process that image. Please try another one.', 'error');
     } finally {
       setIsImageProcessing(false);
+    }
+  };
+
+  const handleProductLabelScan = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return triggerToast('Take or choose a clear product-label photo.', 'warning');
+    setIsLabelReading(true);
+    try {
+      const [{ recognize }, dataUrl] = await Promise.all([
+        import('tesseract.js'),
+        compressProductImage(file),
+      ]);
+      const result = await recognize(file, 'eng');
+      const lines = result.data.text
+        .split(/\r?\n/)
+        .map((line) => line.replace(/[^\p{L}\p{N}\s+&().\-/]/gu, ' ').replace(/\s+/g, ' ').trim())
+        .filter((line) => line.length >= 3 && line.length <= 80);
+      const detectedBrand = PRODUCT_BRANDS.find((candidate) =>
+        candidate !== 'Generic / Unbranded' && lines.some((line) => line.toLowerCase().includes(candidate.toLowerCase()))
+      );
+      const noise = /^(mrp|price|₹|rs\.?|imei|serial|s\/n|barcode|ean|upc|model\s*(no)?|made in|manufactured|marketed|imported|customer care|www\.|https?)/i;
+      const candidates = lines.filter((line) => !noise.test(line) && /[a-z]{3}/i.test(line));
+      const modelKeywords = /phone|mobile|smartphone|edge|galaxy|iphone|pixel|note|pro|max|ultra|plus|5g/i;
+      const modelLine = candidates.find((line) => modelKeywords.test(line) && line.toLowerCase() !== detectedBrand?.toLowerCase());
+      const descriptiveLine = candidates
+        .filter((line) => line.toLowerCase() !== detectedBrand?.toLowerCase())
+        .sort((a, b) => Math.min(b.length, 45) - Math.min(a.length, 45))[0];
+      const detectedName = modelLine || descriptiveLine;
+      if (!detectedName) {
+        triggerToast('The label text was not clear enough. Retake the photo closer, in good light.', 'warning');
+        return;
+      }
+
+      const fullName = detectedBrand && !detectedName.toLowerCase().includes(detectedBrand.toLowerCase())
+        ? `${detectedBrand} ${detectedName}`
+        : detectedName;
+      setName(fullName);
+      if (detectedBrand) setBrand(detectedBrand);
+      setCategory(modelKeywords.test(`${fullName} ${detectedBrand || ''}`) ? 'Smartphones' : 'General');
+      setUnit('Unit');
+      setSku(`SKU-${barcode.replace(/\D/g, '').slice(-6) || Date.now().toString().slice(-6)}`);
+      setImageUrl(dataUrl);
+      setNeedsLabelScan(false);
+      triggerToast(`Identified "${fullName}" from the product label.`, 'success');
+    } catch (error) {
+      console.error('Product label recognition failed:', error);
+      triggerToast('Could not read the label. Retake the photo closer and avoid glare.', 'error');
+    } finally {
+      setIsLabelReading(false);
     }
   };
 
@@ -229,6 +280,7 @@ export const ProductManagement: React.FC = () => {
 
     const existingProduct = products.find(product => product.barcode === cleanBarcode);
     if (existingProduct) {
+      setNeedsLabelScan(false);
       setName(existingProduct.name);
       setSku(existingProduct.sku);
       setCategory(existingProduct.category);
@@ -243,6 +295,7 @@ export const ProductManagement: React.FC = () => {
     }
 
     if (![8, 12, 13, 14].includes(cleanBarcode.length)) {
+      setNeedsLabelScan(true);
       triggerToast('Scan the complete barcode. Public UPC/EAN/GTIN codes contain 8, 12, 13, or 14 digits.', 'warning');
       return;
     }
@@ -252,11 +305,13 @@ export const ProductManagement: React.FC = () => {
       const lookupResponse = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(cleanBarcode)}`);
       const payload = await lookupResponse.json().catch(() => ({}));
       if (!lookupResponse.ok || !payload.found) {
+        setNeedsLabelScan(true);
         triggerToast(payload.error || 'No verified product information was found.', 'warning');
         return;
       }
 
       const externalCategory = String(payload.category || '');
+      setNeedsLabelScan(false);
       const isPhone = /phone|mobile|smartphone|cellular/i.test(`${payload.name} ${externalCategory}`);
       setName(String(payload.name || ''));
       setBrand(String(payload.brand || ''));
@@ -270,6 +325,7 @@ export const ProductManagement: React.FC = () => {
         'success'
       );
     } catch {
+      setNeedsLabelScan(true);
       triggerToast('Unable to look up this barcode right now. Please try again.', 'error');
     } finally {
       setIsBarcodeLookupLoading(false);
@@ -403,6 +459,7 @@ export const ProductManagement: React.FC = () => {
 
   const openAddModal = () => {
     setEditingItem(null);
+    setNeedsLabelScan(false);
     setName('');
     // Auto generate cool SKUs & Barcodes optionally
     const autoId = Math.floor(Math.random() * 900000) + 100000;
@@ -430,6 +487,7 @@ export const ProductManagement: React.FC = () => {
   };
 
   const openEditModal = (p: Product) => {
+    setNeedsLabelScan(false);
     setEditingItem(p);
     setName(p.name);
     setSku(p.sku);
@@ -1269,6 +1327,20 @@ export const ProductManagement: React.FC = () => {
                       <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-500/10 animate-pulse">Catalog Match</span>
                     )}
                   </div>
+                  {needsLabelScan && (
+                    <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-500/25 bg-blue-500/10 px-3 py-2 text-[10px] font-bold text-blue-600 transition hover:bg-blue-500/15 dark:text-blue-400">
+                      <Camera className="h-3.5 w-3.5" />
+                      <span>{isLabelReading ? 'Reading product label…' : 'Scan Product Label'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        disabled={isLabelReading}
+                        onChange={(event) => void handleProductLabelScan(event.target.files?.[0])}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>}
 
                 <div>
