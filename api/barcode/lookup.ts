@@ -4,6 +4,72 @@ const PHONE_BRANDS = [
   'tecno', 'lava', 'asus', 'sony', 'lenovo', 'lg', 'jio', 'itel',
 ];
 
+async function analyzeProductImage(request: any, response: any) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return response.status(503).json({found: false, error: 'Gemini product recognition is not configured.'});
+
+  const dataUrl = String(request.body?.image || '');
+  const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([a-z0-9+/=]+)$/i);
+  if (!match || match[2].length > 8_000_000) {
+    return response.status(400).json({found: false, error: 'Send a JPEG, PNG, or WebP image smaller than 6 MB.'});
+  }
+
+  const prompt = `Identify the retail product shown in this image. Read the packaging carefully and return only grounded product data. Do not invent a barcode, price, model, storage size, color, or specification that is not visible or confidently recognizable. Set found=false when a specific retail product cannot be identified. For phones, category must be Smartphones and trackInventoryByImei must be true. taxRate is the likely Indian GST percentage for this product category.`;
+  try {
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
+      signal: AbortSignal.timeout(25000),
+      body: JSON.stringify({
+        contents: [{parts: [{text: prompt}, {inlineData: {mimeType: match[1], data: match[2]}}]}],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              found: {type: 'BOOLEAN'},
+              name: {type: 'STRING'},
+              brand: {type: 'STRING'},
+              model: {type: 'STRING'},
+              category: {type: 'STRING'},
+              unit: {type: 'STRING'},
+              barcode: {type: 'STRING'},
+              taxRate: {type: 'NUMBER'},
+              trackInventoryByImei: {type: 'BOOLEAN'},
+              description: {type: 'STRING'},
+            },
+            required: ['found', 'name', 'brand', 'model', 'category', 'unit', 'barcode', 'taxRate', 'trackInventoryByImei', 'description'],
+          },
+        },
+      }),
+    });
+    const payload = await geminiResponse.json();
+    if (!geminiResponse.ok) {
+      console.error('Gemini product recognition failed:', payload?.error?.message || geminiResponse.status);
+      return response.status(502).json({found: false, error: 'Gemini could not analyze this image.'});
+    }
+    const resultText = payload?.candidates?.[0]?.content?.parts?.find((part: any) => part.text)?.text;
+    const result = resultText ? JSON.parse(resultText) : null;
+    if (!result?.found || !result?.name || !result?.brand) return response.status(200).json({found: false});
+    return response.status(200).json({
+      found: true,
+      name: String(result.name).trim(),
+      brand: String(result.brand).trim(),
+      model: String(result.model || '').trim(),
+      category: String(result.category || 'General').trim(),
+      unit: String(result.unit || 'Unit').trim(),
+      barcode: String(result.barcode || '').replace(/\D/g, ''),
+      taxRate: Number.isFinite(Number(result.taxRate)) ? Number(result.taxRate) : 18,
+      trackInventoryByImei: Boolean(result.trackInventoryByImei),
+      description: String(result.description || '').trim(),
+      source: 'Gemini Vision',
+    });
+  } catch (error) {
+    console.error('Gemini product recognition error:', error);
+    return response.status(502).json({found: false, error: 'Gemini product recognition timed out.'});
+  }
+}
+
 async function resolveLabel(fragment: string, response: any) {
   if (!/^[a-z0-9][a-z0-9 -]{1,18}$/.test(fragment)) {
     return response.status(400).json({found: false});
@@ -44,6 +110,7 @@ async function resolveLabel(fragment: string, response: any) {
 }
 
 export default async function handler(request: any, response: any) {
+  if (request.method === 'POST') return analyzeProductImage(request, response);
   if (request.method !== 'GET') {
     return response.status(405).json({error: 'Method not allowed'});
   }

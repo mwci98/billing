@@ -13,6 +13,7 @@ import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 import { getSerializedUnits, makeSerializedUnit, parseSerializedUnitLines, productUsesImeiTracking } from '../lib/serializedInventory';
 import { SerializedInventoryUnit } from '../types';
 import { CameraScanner } from './CameraScanner';
+import { compressProductImage } from '../lib/productImage';
 
 export const InventoryManagement: React.FC = () => {
   const { 
@@ -378,6 +379,24 @@ export const InventoryManagement: React.FC = () => {
     if (!file) return;
     setIsQuickProdReading(true);
     try {
+      const dataUrl = await compressProductImage(file);
+      const visionResponse = await fetch('/api/barcode/lookup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({image: dataUrl}),
+      });
+      const visionProduct = visionResponse.ok ? await visionResponse.json() : null;
+      if (visionProduct?.found) {
+        setQuickProdTitle(visionProduct.name);
+        setQuickProdBrand(visionProduct.brand);
+        setQuickProdCategory(visionProduct.category || 'General');
+        setQuickProdUnit(visionProduct.unit || 'pcs');
+        setQuickProdTrackImei(Boolean(visionProduct.trackInventoryByImei));
+        if (visionProduct.barcode) setQuickProdBarcode(visionProduct.barcode);
+        triggerToast(`Identified "${visionProduct.name}" with Gemini.`, 'success');
+        return;
+      }
+
       const tesseract = await import('tesseract.js');
       const worker = await tesseract.createWorker('eng');
       let text = '';
