@@ -4,8 +4,8 @@ export default async function handler(request: any, response: any) {
   }
 
   const code = String(request.query?.code || '').replace(/\D/g, '');
-  if (!/^\d{8,14}$/.test(code)) {
-    return response.status(400).json({error: 'Enter a valid 8 to 14 digit UPC, EAN, or GTIN barcode.'});
+  if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(code)) {
+    return response.status(400).json({error: 'Scan the complete retail barcode. UPC/EAN/GTIN codes must contain 8, 12, 13, or 14 digits.'});
   }
 
   const verifiedLabelProducts: Record<string, {

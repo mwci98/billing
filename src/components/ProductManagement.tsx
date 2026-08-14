@@ -242,6 +242,11 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
+    if (![8, 12, 13, 14].includes(cleanBarcode.length)) {
+      triggerToast('Scan the complete barcode. Public UPC/EAN/GTIN codes contain 8, 12, 13, or 14 digits.', 'warning');
+      return;
+    }
+
     setIsBarcodeLookupLoading(true);
     try {
       const lookupResponse = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(cleanBarcode)}`);
