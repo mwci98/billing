@@ -1138,7 +1138,7 @@ export const ProductManagement: React.FC = () => {
                   />
                 </div>
 
-                {itemType === 'Material' && !isRestaurantBusiness && <div className="col-span-2">
+                {itemType === 'Material' && businessMode !== 'Service' && !isRestaurantBusiness && <div className="col-span-2">
                   <label className="mb-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs font-semibold dark:border-gray-800 dark:bg-gray-900">
                     <span>
                       Track every handset by IMEI
