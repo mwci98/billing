@@ -45,6 +45,7 @@ export const POSBilling: React.FC = () => {
   // Quick customer registration details
   const [newCustName, setNewCustName] = useState<string>('');
   const [newCustPhone, setNewCustPhone] = useState<string>('');
+  const [newCustAddress, setNewCustAddress] = useState<string>('');
 
   // Cart Active State
   const [cart, setCart] = useState<{
@@ -286,18 +287,20 @@ export const POSBilling: React.FC = () => {
 
   // 6. Fast Quick Customer creation inside screen
   const handleAddNewCustomer = () => {
-    if (!newCustName || !newCustPhone) {
+    if (!newCustName.trim() || !newCustPhone.trim()) {
       triggerToast("Please fill in both customer name and phone!", "warning");
       return;
     }
     const created = addCustomer({
-      name: newCustName,
-      phone: newCustPhone,
+      name: newCustName.trim(),
+      phone: newCustPhone.trim(),
+      ...(newCustAddress.trim() ? { billingAddress: newCustAddress.trim() } : {}),
       loyaltyPoints: 0
     });
     setAttachedCustomer(created);
     setNewCustName('');
     setNewCustPhone('');
+    setNewCustAddress('');
     setIsAddingCustomer(false);
     triggerToast(`Customer ${created.name} registered and attached!`, 'success');
   };
@@ -778,6 +781,14 @@ export const POSBilling: React.FC = () => {
                 placeholder="10-digit Phone..."
                 className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 p-2 text-xs text-gray-800"
               />
+              <textarea
+                id="pos-cust-reg-address"
+                rows={2}
+                value={newCustAddress}
+                onChange={(event) => setNewCustAddress(event.target.value)}
+                placeholder="Billing address (optional)..."
+                className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs text-gray-800 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+              />
               <div className="flex items-center gap-1.5 justify-end">
                 <button
                   onClick={() => setIsAddingCustomer(false)}
@@ -803,6 +814,9 @@ export const POSBilling: React.FC = () => {
                   🌟 {attachedCustomer.name}
                 </span>
                 <span className="text-[10px] text-gray-400 font-mono">Phone: {attachedCustomer.phone} • Points: {attachedCustomer.loyaltyPoints}</span>
+                {attachedCustomer.billingAddress && (
+                  <span className="mt-0.5 block truncate text-[10px] text-gray-400">{attachedCustomer.billingAddress}</span>
+                )}
               </div>
               <button
                 onClick={() => setAttachedCustomer(null)}

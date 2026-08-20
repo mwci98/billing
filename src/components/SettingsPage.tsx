@@ -75,6 +75,7 @@ export const SettingsPage: React.FC = () => {
   const [loyaltyPointsPerDollar, setLoyaltyPointsPerDollar] = useState<string>(settings.loyaltyPointsPerDollar.toString());
   const [receiptHeader, setReceiptHeader] = useState<string>(settings.receiptHeader);
   const [receiptFooter, setReceiptFooter] = useState<string>(settings.receiptFooter);
+  const [invoiceDeclaration, setInvoiceDeclaration] = useState<string>(settings.invoiceDeclaration || 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.');
   const [invoiceSignature, setInvoiceSignature] = useState<string>(settings.invoiceSignature || '');
   const [showBankDetailsOnInvoice, setShowBankDetailsOnInvoice] = useState<boolean>(settings.showBankDetailsOnInvoice ?? false);
   const [bankAccountHolder, setBankAccountHolder] = useState<string>(settings.bankAccountHolder || '');
@@ -221,6 +222,7 @@ export const SettingsPage: React.FC = () => {
       loyaltyPointsPerDollar: parseFloat(loyaltyPointsPerDollar) || 1,
       receiptHeader,
       receiptFooter,
+      invoiceDeclaration: invoiceDeclaration.trim(),
       invoiceSignature,
       showBankDetailsOnInvoice,
       bankAccountHolder: bankAccountHolder.trim(),
@@ -616,6 +618,19 @@ export const SettingsPage: React.FC = () => {
                   className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2 text-xs text-white"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Invoice Declaration</label>
+              <textarea
+                id="set-invoice-declaration"
+                rows={3}
+                value={invoiceDeclaration}
+                onChange={(event) => setInvoiceDeclaration(event.target.value)}
+                placeholder="Declaration shown near the bottom of the invoice"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+              />
+              <p className="mt-1 text-[10px] text-gray-400">This text appears on printed, downloaded, and WhatsApp invoices.</p>
             </div>
 
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">

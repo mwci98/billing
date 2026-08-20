@@ -219,6 +219,7 @@ export interface StoreSettings {
   currency: string; // e.g. "₹", "$", "€"
   receiptHeader: string;
   receiptFooter: string;
+  invoiceDeclaration?: string;
   invoiceSignature?: string;
   showBankDetailsOnInvoice?: boolean;
   bankAccountHolder?: string;
@@ -277,6 +278,7 @@ export interface SaaSStore {
     currency?: string;
     receiptHeader?: string;
     receiptFooter?: string;
+    invoiceDeclaration?: string;
     invoiceSignature?: string;
     showBankDetailsOnInvoice?: boolean;
     bankAccountHolder?: string;

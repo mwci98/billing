@@ -657,8 +657,8 @@ export const TallyInvoiceModal: React.FC<TallyInvoiceModalProps> = ({
                 </div>
               )}
               <p className="font-bold underline">Declaration:</p>
-              <p className="text-[8.5px] leading-tight text-gray-800">
-                We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+              <p className="whitespace-pre-line text-[8.5px] leading-tight text-gray-800">
+                {settings.invoiceDeclaration?.trim() || 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.'}
               </p>
             </td>
             <td className="w-2/5 p-2 text-right align-top">
