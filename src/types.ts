@@ -48,6 +48,7 @@ export interface Product {
   itemType?: 'Material' | 'Service';
   imeiNumbers?: string[];
   trackInventoryByImei?: boolean;
+  inventoryTrackingType?: 'none' | 'imei' | 'serial';
   serializedUnits?: SerializedInventoryUnit[];
   category: string;
   brand: string;
@@ -98,6 +99,7 @@ export interface SaleItem {
     unitId: string;
     imei1: string;
     imei2?: string;
+    trackingType?: 'imei' | 'serial';
   }>;
 }
 

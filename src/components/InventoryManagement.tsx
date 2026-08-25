@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
-import { getSerializedUnits, makeSerializedUnit, parseSerializedUnitLines, productUsesImeiTracking } from '../lib/serializedInventory';
+import { getInventoryTrackingType, getSerializedUnits, makeSerializedUnit, parseSerializedUnitLines, productUsesImeiTracking } from '../lib/serializedInventory';
 import { SerializedInventoryUnit } from '../types';
 import { CameraScanner } from './CameraScanner';
 import { compressProductImage } from '../lib/productImage';
@@ -57,6 +57,7 @@ export const InventoryManagement: React.FC = () => {
   const [quickProdUnit, setQuickProdUnit] = useState<string>('pcs');
   const [quickProdBarcode, setQuickProdBarcode] = useState<string>('');
   const [quickProdTrackImei, setQuickProdTrackImei] = useState(false);
+  const [quickProdTrackingType, setQuickProdTrackingType] = useState<'none' | 'imei' | 'serial'>('none');
   const [isQuickProdReading, setIsQuickProdReading] = useState(false);
   const [isQuickBarcodeScannerOpen, setIsQuickBarcodeScannerOpen] = useState(false);
 
@@ -116,7 +117,7 @@ export const InventoryManagement: React.FC = () => {
     }
     const selectedProduct = products.find(product => product.id === selectedProdId);
     if (selectedProduct && productUsesImeiTracking(selectedProduct)) {
-      triggerToast('IMEI-tracked stock cannot be changed as a number. Add incoming handset IMEIs through Restock Purchase.', 'warning');
+      triggerToast(`${getInventoryTrackingType(selectedProduct) === 'serial' ? 'Serial-number' : 'IMEI'} tracked stock cannot be changed as a number. Add each incoming unit through Restock Purchase.`, 'warning');
       return;
     }
     adjustStock(selectedProdId, qty, adjustType, adjustDesc);
@@ -134,8 +135,9 @@ export const InventoryManagement: React.FC = () => {
     }
     const p = products.find(prod => prod.id === activeAddProdId);
     if (!p) return;
-    const parsedUnits = parseSerializedUnitLines(activeAddImeis);
-    const invalidImeiLine = activeAddImeis
+    const trackingType = getInventoryTrackingType(p);
+    const parsedUnits = parseSerializedUnitLines(activeAddImeis, trackingType === 'serial' ? 'serial' : 'imei');
+    const invalidImeiLine = trackingType === 'imei' && activeAddImeis
       .split(/\r?\n/)
       .map(line => line.trim())
       .filter(Boolean)
@@ -148,7 +150,7 @@ export const InventoryManagement: React.FC = () => {
       return;
     }
     if (productUsesImeiTracking(p) && parsedUnits.length !== (parseInt(activeAddQty) || 0)) {
-      triggerToast('For IMEI-tracked products, enter one handset line for every incoming unit.', 'warning');
+      triggerToast(`For ${trackingType === 'serial' ? 'serial-number' : 'IMEI'} tracked products, enter one identifier line for every incoming unit.`, 'warning');
       return;
     }
     const incomingImeis = parsedUnits.flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[]);
@@ -158,7 +160,7 @@ export const InventoryManagement: React.FC = () => {
       (item.serializedUnits || []).some(unit => incomingImeis.includes(unit.imei1) || Boolean(unit.imei2 && incomingImeis.includes(unit.imei2)))
     );
     if (duplicateImei || new Set(incomingImeis).size !== incomingImeis.length) {
-      triggerToast('One or more incoming IMEIs are duplicated or already registered.', 'error');
+      triggerToast(`One or more incoming ${trackingType === 'serial' ? 'serial numbers are' : 'IMEIs are'} duplicated or already registered.`, 'error');
       return;
     }
 
@@ -465,6 +467,7 @@ export const InventoryManagement: React.FC = () => {
       stock,
       lowStockAlert: 5,
       trackInventoryByImei: businessMode === 'Retail' && quickProdTrackImei,
+      inventoryTrackingType: businessMode === 'Retail' ? quickProdTrackingType : 'none',
       sourcingType: businessMode === 'Hybrid' ? quickProdSourcing : sourcingForBusinessMode(businessMode)
     });
 
@@ -482,6 +485,7 @@ export const InventoryManagement: React.FC = () => {
     setQuickProdBrand('');
     setQuickProdBarcode('');
     setQuickProdTrackImei(false);
+    setQuickProdTrackingType('none');
     setIsQuickProductOpen(false);
   };
 
@@ -502,6 +506,7 @@ export const InventoryManagement: React.FC = () => {
         setQuickProdCategory(visionProduct.category || 'General');
         setQuickProdUnit(visionProduct.unit || 'pcs');
         setQuickProdTrackImei(Boolean(visionProduct.trackInventoryByImei));
+        setQuickProdTrackingType(visionProduct.trackInventoryByImei ? 'imei' : 'none');
         if (visionProduct.barcode) setQuickProdBarcode(visionProduct.barcode);
         triggerToast(`Identified "${visionProduct.name}" with Gemini.`, 'success');
         return;
@@ -537,6 +542,7 @@ export const InventoryManagement: React.FC = () => {
           setQuickProdCategory(resolved.category || 'Smartphones');
           setQuickProdUnit('pcs');
           setQuickProdTrackImei(true);
+          setQuickProdTrackingType('imei');
           triggerToast(`Identified "${resolved.name}".`, 'success');
           return;
         }
@@ -551,6 +557,7 @@ export const InventoryManagement: React.FC = () => {
         setQuickProdCategory('Smartphones');
         setQuickProdUnit('pcs');
         setQuickProdTrackImei(true);
+        setQuickProdTrackingType('imei');
         triggerToast(`Identified "${title}".`, 'success');
         return;
       }
@@ -928,10 +935,10 @@ export const InventoryManagement: React.FC = () => {
                     <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
                       <div className="mb-1 flex items-center justify-between">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                          Incoming handset IMEIs
+                          Incoming {getInventoryTrackingType(products.find(product => product.id === activeAddProdId)!) === 'serial' ? 'serial numbers' : 'handset IMEIs'}
                         </label>
                         <span className="text-[10px] font-mono text-gray-400">
-                          {parseSerializedUnitLines(activeAddImeis).length}/{parseInt(activeAddQty) || 0} units
+                          {parseSerializedUnitLines(activeAddImeis, getInventoryTrackingType(products.find(product => product.id === activeAddProdId)!) === 'serial' ? 'serial' : 'imei').length}/{parseInt(activeAddQty) || 0} units
                         </span>
                       </div>
                       <textarea
@@ -944,7 +951,7 @@ export const InventoryManagement: React.FC = () => {
                           }
                         }}
                         rows={4}
-                        placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
+                        placeholder={getInventoryTrackingType(products.find(product => product.id === activeAddProdId)!) === 'serial' ? 'One serial number per line' : 'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
                         className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-mono text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                       />
                     </div>
@@ -1400,18 +1407,25 @@ export const InventoryManagement: React.FC = () => {
               )}
 
               {businessMode === 'Retail' && (
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900">
-                  <input
-                    type="checkbox"
-                    checked={quickProdTrackImei}
-                    onChange={(event) => setQuickProdTrackImei(event.target.checked)}
-                    className="mt-0.5 size-4 accent-emerald-500"
-                  />
-                  <span>
-                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Track every handset by IMEI</span>
-                    <span className="mt-0.5 block text-[11px] text-gray-500">IMEIs are entered and validated on the incoming restock line.</span>
-                  </span>
-                </label>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900">
+                  <span className="block text-xs font-bold text-gray-900 dark:text-white">Individual unit tracking</span>
+                  <span className="mt-0.5 block text-[11px] text-gray-500">Use IMEI for phones or serial numbers for accessories.</span>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {(['none', 'imei', 'serial'] as const).map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setQuickProdTrackingType(type);
+                          setQuickProdTrackImei(type !== 'none');
+                        }}
+                        className={`rounded-lg border px-2 py-2 text-[10px] font-bold ${quickProdTrackingType === type ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600' : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-950'}`}
+                      >
+                        {type === 'none' ? 'None' : type === 'imei' ? 'IMEI' : 'Serial No.'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">

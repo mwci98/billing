@@ -16,6 +16,7 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { getBusinessMode, sourcingForBusinessMode } from '../lib/businessMode';
 import {
   getSerializedUnits,
+  getInventoryTrackingType,
   makeSerializedUnit,
   normalizeScannerValue,
   parseSerializedUnitLines,
@@ -136,6 +137,7 @@ export const ProductManagement: React.FC = () => {
   const [productionNotes, setProductionNotes] = useState<string>('');
   const [imeiInput, setImeiInput] = useState<string>('');
   const [trackInventoryByImei, setTrackInventoryByImei] = useState<boolean>(false);
+  const [inventoryTrackingType, setInventoryTrackingType] = useState<'none' | 'imei' | 'serial'>('none');
   const [itemType, setItemType] = useState<'Material' | 'Service'>('Material');
   const [menuVariants, setMenuVariants] = useState<Array<{id: string; name: string; price: string}>>([]);
   const [isBarcodeLookupLoading, setIsBarcodeLookupLoading] = useState<boolean>(false);
@@ -182,6 +184,7 @@ export const ProductManagement: React.FC = () => {
         setUnit(visionProduct.unit || 'Unit');
         setTaxRate(String(visionProduct.taxRate ?? 18));
         setTrackInventoryByImei(Boolean(visionProduct.trackInventoryByImei));
+        setInventoryTrackingType(visionProduct.trackInventoryByImei ? 'imei' : 'none');
         if (visionProduct.barcode) setBarcode(visionProduct.barcode);
         const skuSource = visionProduct.barcode || visionProduct.model || Date.now().toString();
         setSku(`SKU-${String(skuSource).replace(/[^a-z0-9]/gi, '').slice(-8).toUpperCase()}`);
@@ -507,6 +510,7 @@ export const ProductManagement: React.FC = () => {
     setProductionNotes('');
     setImeiInput('');
     setTrackInventoryByImei(false);
+    setInventoryTrackingType('none');
     setItemType(businessMode === 'Service' || isRestaurantBusiness ? 'Service' : 'Material');
     setMenuVariants([]);
     setIsFormOpen(true);
@@ -534,6 +538,7 @@ export const ProductManagement: React.FC = () => {
     setProductionNotes(p.productionNotes || '');
     const units = getSerializedUnits(p);
     setTrackInventoryByImei(productUsesImeiTracking(p));
+    setInventoryTrackingType(getInventoryTrackingType(p));
     setItemType(p.itemType || 'Material');
     setMenuVariants((p.menuVariants || []).map(variant => ({...variant, price: String(variant.price)})));
     setImeiInput(
@@ -552,9 +557,10 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
-    const parsedUnits = parseSerializedUnitLines(imeiInput);
+    const serializedType = inventoryTrackingType === 'serial' ? 'serial' : 'imei';
+    const parsedUnits = parseSerializedUnitLines(imeiInput, serializedType);
     const imeiLines = imeiInput.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    const invalidImeiLine = imeiLines.find(line => {
+    const invalidImeiLine = inventoryTrackingType === 'imei' && imeiLines.find(line => {
       const matches = line.match(/\d{15}/g) || [];
       return matches.length < 1 || matches.length > 2;
     });
@@ -564,11 +570,11 @@ export const ProductManagement: React.FC = () => {
     }
     const enteredImeis = parsedUnits.flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[]);
     if (trackInventoryByImei && parsedUnits.length === 0 && !editingItem) {
-      triggerToast('Add one handset per line with its 15-digit IMEI before saving.', 'warning');
+      triggerToast(inventoryTrackingType === 'serial' ? 'Add one serial number per physical unit before saving.' : 'Add one handset per line with its 15-digit IMEI before saving.', 'warning');
       return;
     }
     if (new Set(enteredImeis).size !== enteredImeis.length) {
-      triggerToast('The same IMEI was entered more than once.', 'warning');
+      triggerToast(`The same ${inventoryTrackingType === 'serial' ? 'serial number' : 'IMEI'} was entered more than once.`, 'warning');
       return;
     }
     const duplicateProduct = products.find(product =>
@@ -578,7 +584,7 @@ export const ProductManagement: React.FC = () => {
       )
     );
     if (duplicateProduct) {
-      triggerToast(`An IMEI is already registered under "${duplicateProduct.name}".`, 'error');
+      triggerToast(`That ${inventoryTrackingType === 'serial' ? 'serial number' : 'IMEI'} is already registered under "${duplicateProduct.name}".`, 'error');
       return;
     }
 
@@ -604,6 +610,7 @@ export const ProductManagement: React.FC = () => {
       itemType,
       imeiNumbers: trackInventoryByImei ? enteredImeis : undefined,
       trackInventoryByImei,
+      inventoryTrackingType,
       serializedUnits,
       category,
       brand,
@@ -645,8 +652,8 @@ export const ProductManagement: React.FC = () => {
                           p.sku.toLowerCase().includes(search.toLowerCase()) ||
                           p.barcode.includes(search) ||
                           Boolean(getSerializedUnits(p).some(unit =>
-                            unit.imei1.includes(search.replace(/\D/g, '')) ||
-                            Boolean(unit.imei2?.includes(search.replace(/\D/g, '')))
+                            unit.imei1.toLowerCase().includes(search.toLowerCase()) ||
+                            Boolean(unit.imei2?.toLowerCase().includes(search.toLowerCase()))
                           ));
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     const itemSourcing = p.sourcingType || 'Purchased';
@@ -1148,6 +1155,7 @@ export const ProductManagement: React.FC = () => {
                             setItemType(type);
                             if (type === 'Service') {
                               setTrackInventoryByImei(false);
+                              setInventoryTrackingType('none');
                               setStock('0');
                               setCategory('Services');
                               setUnit('Job');
@@ -1229,24 +1237,32 @@ export const ProductManagement: React.FC = () => {
                 </div>
 
                 {itemType === 'Material' && businessMode !== 'Service' && !isRestaurantBusiness && <div className="col-span-2">
-                  <label className="mb-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs font-semibold dark:border-gray-800 dark:bg-gray-900">
-                    <span>
-                      Track every handset by IMEI
-                      <span className="mt-0.5 block text-[10px] font-normal text-gray-400">Recommended for phones and cellular devices</span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={trackInventoryByImei}
-                      onChange={(event) => setTrackInventoryByImei(event.target.checked)}
-                      className="h-4 w-4 accent-emerald-500"
-                    />
-                  </label>
+                  <div className="mb-2 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900">
+                    <span className="block text-xs font-semibold">Individual unit tracking</span>
+                    <span className="mt-0.5 block text-[10px] text-gray-400">Choose IMEI for phones, serial number for accessories, or none for ordinary stock.</span>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {(['none', 'imei', 'serial'] as const).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setInventoryTrackingType(type);
+                            setTrackInventoryByImei(type !== 'none');
+                            if (type === 'none') setImeiInput('');
+                          }}
+                          className={`rounded-lg border px-2 py-2 text-[10px] font-bold transition ${inventoryTrackingType === type ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600' : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-950'}`}
+                        >
+                          {type === 'none' ? 'No tracking' : type === 'imei' ? 'IMEI' : 'Serial No.'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   {trackInventoryByImei && (
                     <>
                       <div className="mb-1 flex items-center justify-between">
-                        <label className="text-xs font-semibold">Handset IMEI inventory</label>
+                        <label className="text-xs font-semibold">{inventoryTrackingType === 'serial' ? 'Serial-number inventory' : 'Handset IMEI inventory'}</label>
                         <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
-                          {parseSerializedUnitLines(imeiInput).length} handsets
+                          {parseSerializedUnitLines(imeiInput, inventoryTrackingType === 'serial' ? 'serial' : 'imei').length} units
                         </span>
                       </div>
                       <textarea
@@ -1260,7 +1276,7 @@ export const ProductManagement: React.FC = () => {
                             setImeiInput(current => `${current.trimEnd()}\n`);
                           }
                         }}
-                        placeholder={'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
+                        placeholder={inventoryTrackingType === 'serial' ? 'One serial number per line:\nC4H123ABC456\nC4H123ABC457' : 'One handset per line:\nIMEI 1\nIMEI 1, IMEI 2  (dual SIM)'}
                         className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                       />
                       <button
@@ -1272,10 +1288,10 @@ export const ProductManagement: React.FC = () => {
                         className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
                       >
                         <Camera className="h-3.5 w-3.5" />
-                        Scan handset IMEI
+                        Scan {inventoryTrackingType === 'serial' ? 'serial number' : 'handset IMEI'}
                       </button>
                       <p className="mt-1 text-[10px] text-gray-400">
-                        Each line is one physical device. Stock is calculated automatically from available handset records. Sold IMEIs cannot be removed here.
+                        Each line is one physical unit. Stock is calculated automatically from available records. Sold identifiers cannot be removed here.
                       </p>
                     </>
                   )}
@@ -1432,9 +1448,9 @@ export const ProductManagement: React.FC = () => {
                     id="form-prod-stock"
                     type="number"
                     disabled={Boolean(editingItem || trackInventoryByImei)} // Serialized stock is derived from handset records.
-                    value={trackInventoryByImei ? parseSerializedUnitLines(imeiInput).length : stock}
+                    value={trackInventoryByImei ? parseSerializedUnitLines(imeiInput, inventoryTrackingType === 'serial' ? 'serial' : 'imei').length : stock}
                     onChange={(e) => setStock(e.target.value)}
-                    placeholder={trackInventoryByImei ? 'Calculated from IMEIs' : 'Enter opening stock'}
+                    placeholder={trackInventoryByImei ? `Calculated from ${inventoryTrackingType === 'serial' ? 'serial numbers' : 'IMEIs'}` : 'Enter opening stock'}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-2.5 text-xs font-mono text-gray-900 dark:text-white disabled:opacity-50"
                   />
                 </div>}
@@ -1819,21 +1835,27 @@ export const ProductManagement: React.FC = () => {
       {isBarcodeCameraOpen && (
         <CameraScanner
           onScanSuccess={(scannedCode) => {
-            const normalizedCode = normalizeScannerValue(scannedCode);
+            const normalizedCode = scannerTarget === 'imei' && inventoryTrackingType === 'serial'
+              ? scannedCode.trim()
+              : normalizeScannerValue(scannedCode);
             if (scannerTarget === 'imei') {
-              if (!/^\d{15}$/.test(normalizedCode)) {
+              if (inventoryTrackingType === 'imei' && !/^\d{15}$/.test(normalizedCode)) {
                 triggerToast('The scanned value is not a valid 15-digit IMEI.', 'warning');
                 return;
               }
-              const existingImeis = parseSerializedUnitLines(imeiInput)
+              if (inventoryTrackingType === 'serial' && !normalizedCode) {
+                triggerToast('The scanned serial number is empty.', 'warning');
+                return;
+              }
+              const existingImeis = parseSerializedUnitLines(imeiInput, inventoryTrackingType === 'serial' ? 'serial' : 'imei')
                 .flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean));
               if (existingImeis.includes(normalizedCode)) {
-                triggerToast('That IMEI is already entered for this product.', 'warning');
+                triggerToast(`That ${inventoryTrackingType === 'serial' ? 'serial number' : 'IMEI'} is already entered for this product.`, 'warning');
                 setIsBarcodeCameraOpen(false);
                 return;
               }
               setImeiInput(current => `${current.trimEnd()}${current.trim() ? '\n' : ''}${normalizedCode}`);
-              triggerToast(`IMEI ${normalizedCode} added as a handset.`, 'success');
+              triggerToast(`${inventoryTrackingType === 'serial' ? 'Serial number' : 'IMEI'} ${normalizedCode} added.`, 'success');
             } else {
               setBarcode(normalizedCode);
               // Immediately pull metadata upon successful product barcode scan

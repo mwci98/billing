@@ -16,6 +16,7 @@ import { BarcodeGenerator } from './BarcodeGenerator';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
 import {
   getAvailableSerializedUnits,
+  getInventoryTrackingType,
   getSerializedUnits,
   normalizeScannerValue,
   productUsesImeiTracking
@@ -104,11 +105,14 @@ export const POSBilling: React.FC = () => {
   };
 
   const injectItemByBarcode = (code: string) => {
+    const rawCode = code.trim();
     const cleanCode = normalizeScannerValue(code);
     const imeiMatch = products
       .map(product => ({
         product,
-        unit: getAvailableSerializedUnits(product).find(unit => unit.imei1 === cleanCode || unit.imei2 === cleanCode)
+        unit: getAvailableSerializedUnits(product).find(unit =>
+          unit.imei1 === cleanCode || unit.imei2 === cleanCode || unit.imei1 === rawCode || unit.imei2 === rawCode
+        )
       }))
       .find(match => match.unit);
     const p = imeiMatch?.product || products.find(prod => prod.barcode === cleanCode || prod.sku.toLowerCase() === cleanCode.toLowerCase());
@@ -153,7 +157,7 @@ export const POSBilling: React.FC = () => {
       ? availableUnits.find(unit => unit.id === requestedUnitId && !alreadySelected.includes(unit.id))
       : availableUnits.find(unit => !alreadySelected.includes(unit.id));
     if (trackedByImei && !nextUnit) {
-      triggerToast('No unselected, in-stock IMEI is available for this product.', 'warning');
+      triggerToast(`No unselected, in-stock ${getInventoryTrackingType(currentProduct) === 'serial' ? 'serial number' : 'IMEI'} is available for this product.`, 'warning');
       return;
     }
     if (existing) {
@@ -227,7 +231,7 @@ export const POSBilling: React.FC = () => {
       if (item.product.id !== productId) return item;
       const selected = [...(item.selectedUnitIds || [])];
       if (selected.some((id, selectedIndex) => id === unitId && selectedIndex !== index)) {
-        triggerToast('That IMEI is already selected for this sale.', 'warning');
+        triggerToast(`That ${getInventoryTrackingType(item.product) === 'serial' ? 'serial number' : 'IMEI'} is already selected for this sale.`, 'warning');
         return item;
       }
       selected[index] = unitId;
@@ -315,7 +319,7 @@ export const POSBilling: React.FC = () => {
       productUsesImeiTracking(item.product) && (item.selectedUnitIds?.length || 0) !== item.quantity
     );
     if (incompleteSerializedItem) {
-      triggerToast(`Select one available IMEI for every "${incompleteSerializedItem.product.name}" handset.`, 'error');
+      triggerToast(`Select one available ${getInventoryTrackingType(incompleteSerializedItem.product) === 'serial' ? 'serial number' : 'IMEI'} for every "${incompleteSerializedItem.product.name}" unit.`, 'error');
       return;
     }
 
@@ -329,7 +333,7 @@ export const POSBilling: React.FC = () => {
       const serializedUnits = productUsesImeiTracking(item.product)
         ? (item.selectedUnitIds || []).map(unitId => {
             const unit = getSerializedUnits(item.product).find(candidate => candidate.id === unitId)!;
-            return { unitId: unit.id, imei1: unit.imei1, ...(unit.imei2 ? { imei2: unit.imei2 } : {}) };
+            return { unitId: unit.id, imei1: unit.imei1, ...(unit.imei2 ? { imei2: unit.imei2 } : {}), trackingType: getInventoryTrackingType(item.product) === 'serial' ? 'serial' as const : 'imei' as const };
           })
         : undefined;
       return {
@@ -698,7 +702,7 @@ export const POSBilling: React.FC = () => {
                                   value={unit.id}
                                   disabled={(item.selectedUnitIds || []).some((id, selectedIndex) => id === unit.id && selectedIndex !== index)}
                                 >
-                                  IMEI {unit.imei1}{unit.imei2 ? ` / ${unit.imei2}` : ''}
+                                  {getInventoryTrackingType(item.product) === 'serial' ? 'Serial' : 'IMEI'} {unit.imei1}{unit.imei2 ? ` / ${unit.imei2}` : ''}
                                 </option>
                               ))}
                             </select>
