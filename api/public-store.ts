@@ -30,6 +30,7 @@ export default async function handler(request: any, response: any) {
     const settingsSnapshot = await db.doc(`users/${ownerScope}/store_settings/active`).get();
     const settings = settingsSnapshot.data() || {};
     const store = settings.onlineStore || {};
+    const isRestaurant = String(settings.businessType || '').toLowerCase().includes('restaurant');
     if (!settingsSnapshot.exists || !store.enabled || store.slug !== slug) {
       return response.status(404).json({error: 'This online store is unavailable'});
     }
@@ -55,7 +56,7 @@ export default async function handler(request: any, response: any) {
       const location = locationDefinitions[index];
       snapshot.docs.forEach(document => {
         const product = document.data();
-        if (product.showOnline !== true) return;
+        if (isRestaurant ? product.showOnline === false : product.showOnline !== true) return;
         const existing = publicProducts.get(document.id) || {
           id: document.id,
           name: String(product.name || 'Product'),

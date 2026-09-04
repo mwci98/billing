@@ -522,7 +522,7 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert('');
     setExpiryDate('');
     setImageUrl('📦');
-    setShowOnline(false);
+    setShowOnline(isRestaurantBusiness);
     setOnlineImage('');
     setOnlineDescription('');
     setOnlinePrice('');
@@ -554,7 +554,7 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert(p.lowStockAlert.toString());
     setExpiryDate(p.expiryDate || '');
     setImageUrl(p.imageUrl || '📦');
-    setShowOnline(p.showOnline ?? false);
+    setShowOnline(p.showOnline ?? isRestaurantBusiness);
     setOnlineImage(p.onlineImage || '');
     setOnlineDescription(p.onlineDescription || '');
     setOnlinePrice(p.onlinePrice?.toString() || '');
@@ -832,7 +832,7 @@ export const ProductManagement: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold leading-tight text-gray-950 dark:text-white">{p.name}</p>
                     <p className="mt-1 truncate text-[10px] text-gray-400">{p.category} · {p.sku}</p>
-                    {p.showOnline && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
+                    {(isRestaurantBusiness ? p.showOnline !== false : p.showOnline) && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
                   </div>
                   <span className="shrink-0 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                     {p.itemType === 'Service' ? 'Service' : p.sourcingType === 'Manufactured' ? 'In-house' : 'Material'}
@@ -940,7 +940,7 @@ export const ProductManagement: React.FC = () => {
                     <td className="py-3 px-2"><ProductImage value={p.imageUrl} name={p.name} /></td>
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
-                      {p.showOnline && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
+                      {(isRestaurantBusiness ? p.showOnline !== false : p.showOnline) && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
                       {isRestaurantBusiness && Boolean(p.menuVariants?.length) && (
                         <p className="mt-0.5 text-[10px] font-bold text-emerald-500">{p.menuVariants?.length} variants</p>
                       )}
@@ -1667,8 +1667,8 @@ export const ProductManagement: React.FC = () => {
               <section className="border-t border-gray-100 pt-4 dark:border-gray-900">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Online Store visibility</h3>
-                    <p className="mt-0.5 text-[10px] text-gray-400">Use this same POS item in the public store or restaurant menu.</p>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">{isRestaurantBusiness ? 'Sell Online' : 'Online Store visibility'}</h3>
+                    <p className="mt-0.5 text-[10px] text-gray-400">Use this same {isRestaurantBusiness ? 'menu item' : 'POS item'} online without entering it again.</p>
                   </div>
                   <label className="flex cursor-pointer items-center gap-2 text-xs font-bold">
                     <span>{showOnline ? 'Shown online' : 'Hidden online'}</span>

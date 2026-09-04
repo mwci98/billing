@@ -68,6 +68,7 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
   if (!settingsKey) return null;
   const settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
   const store = settings.onlineStore;
+  const isRestaurant = String(settings.businessType || '').toLowerCase().includes('restaurant');
   if (!store?.enabled) return null;
   const ownerScope = settingsKey.slice(4, -9);
   const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
@@ -81,7 +82,7 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
   const products = new Map<string, PublicStoreProduct>();
   locations.forEach((location: any) => {
     const cached = JSON.parse(localStorage.getItem(`pos_${location.scope}_products`) || '[]');
-    cached.filter((product: any) => product.showOnline === true).forEach((product: any) => {
+    cached.filter((product: any) => isRestaurant ? product.showOnline !== false : product.showOnline === true).forEach((product: any) => {
       const existing = products.get(product.id) || {id: product.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
       existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
       products.set(product.id, existing);
