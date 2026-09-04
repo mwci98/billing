@@ -26,11 +26,12 @@ interface Props {
   paymentMethod: 'COD' | 'PAY_AT_STORE' | 'ONLINE';
   setPaymentMethod: (value: 'COD' | 'PAY_AT_STORE' | 'ONLINE') => void;
   onClose: () => void;
-  onSubmitted: (idToken: string) => Promise<void>;
+  onSubmitted: (idToken?: string) => Promise<void>;
   submittedOrder?: {orderNumber: string; status: string};
 }
 
 export const VerifiedOnlineCheckout: React.FC<Props> = props => {
+  const otpEnabled = import.meta.env.VITE_ONLINE_ORDER_OTP_ENABLED === 'true';
   const [otpConfirmation, setOtpConfirmation] = useState<CustomerOtpConfirmation | null>(null);
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,7 +48,10 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
     event.preventDefault();
     if (!selectedCheck || selectedCheck.unavailable.length || belowMinimum || !availablePayments.length) return;
     setBusy(true); setError('');
-    try { setOtpConfirmation(await sendCustomerOtp(props.mobile, 'qpos-order-recaptcha')); }
+    try {
+      if (otpEnabled) setOtpConfirmation(await sendCustomerOtp(props.mobile, 'qpos-order-recaptcha'));
+      else await props.onSubmitted();
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not send the verification code'); }
     finally { setBusy(false); }
   };
@@ -69,11 +73,11 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
         <Section title="3. Customer details"><div className="grid gap-2"><input required value={props.customerName} onChange={event => props.setCustomerName(event.target.value)} placeholder="Full name" className="verified-field" /><input required type="tel" inputMode="tel" value={props.mobile} onChange={event => props.setMobile(event.target.value)} placeholder="Mobile number" className="verified-field" />{props.fulfilment === 'DELIVERY' && <textarea required rows={3} value={props.address} onChange={event => props.setAddress(event.target.value)} placeholder="Delivery address" className="verified-field resize-none" />}</div></Section>
         <Section title="4. Payment">{availablePayments.length ? <select value={props.paymentMethod} onChange={event => props.setPaymentMethod(event.target.value as Props['paymentMethod'])} className="verified-field">{availablePayments.map(method => <option key={method} value={method}>{method === 'COD' ? 'Cash on delivery' : 'Pay at store'}</option>)}</select> : <p className="rounded-md bg-amber-50 p-3 text-xs font-bold text-amber-800">Online payment checkout is not active yet. Ask the store to enable Cash on delivery or Pay at store.</p>}</Section>
         <div className="rounded-md bg-gray-50 p-4 text-sm"><Row label="Items" value={String(props.cart.reduce((sum, line) => sum + line.quantity, 0))} /><Row label="Subtotal" value={`${props.payload.store.currency}${props.subtotal.toFixed(2)}`} />{props.fulfilment === 'DELIVERY' && <Row label="Delivery" value={`${props.payload.store.currency}${props.payload.store.deliveryCharge.toFixed(2)}`} />}<div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-black"><span>Total</span><span className="font-mono">{props.payload.store.currency}{props.total.toFixed(2)}</span></div></div>
-        {otpConfirmation && <Section title="5. Verify mobile"><div className="flex gap-2"><input autoFocus required inputMode="numeric" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))} placeholder="6-digit OTP" className="verified-field min-w-0 flex-1" /><button type="button" disabled={busy || otp.length !== 6} onClick={() => void submitOrder()} className="rounded-md bg-emerald-500 px-5 text-xs font-black text-white disabled:bg-gray-200">Verify</button></div><button type="button" onClick={() => setOtpConfirmation(null)} className="mt-2 text-xs font-bold text-gray-500">Change mobile number</button></Section>}
+        {otpEnabled && otpConfirmation && <Section title="5. Verify mobile"><div className="flex gap-2"><input autoFocus required inputMode="numeric" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))} placeholder="6-digit OTP" className="verified-field min-w-0 flex-1" /><button type="button" disabled={busy || otp.length !== 6} onClick={() => void submitOrder()} className="rounded-md bg-emerald-500 px-5 text-xs font-black text-white disabled:bg-gray-200">Verify</button></div><button type="button" onClick={() => setOtpConfirmation(null)} className="mt-2 text-xs font-bold text-gray-500">Change mobile number</button></Section>}
         {error && <p role="alert" className="rounded-md bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}
-        <div id="qpos-order-recaptcha" />
+        {otpEnabled && <div id="qpos-order-recaptcha" />}
       </div>
-      {!otpConfirmation && <div className="sticky bottom-0 border-t border-gray-200 bg-white p-4"><button type="submit" disabled={busy || !props.selectedLocation || selectedCheck?.unavailable.length !== 0 || belowMinimum || !availablePayments.length} className="h-12 w-full rounded-md bg-emerald-500 text-sm font-black text-white disabled:bg-gray-200 disabled:text-gray-500">{busy ? 'Sending code...' : `Verify mobile & submit · ${props.payload.store.currency}${props.total.toFixed(2)}`}</button>{belowMinimum && <p className="mt-2 text-center text-[11px] font-bold text-amber-700">Minimum delivery order is {props.payload.store.currency}{props.payload.store.minimumOrder.toFixed(2)}</p>}</div>}
+      {!otpConfirmation && <div className="sticky bottom-0 border-t border-gray-200 bg-white p-4"><button type="submit" disabled={busy || !props.selectedLocation || selectedCheck?.unavailable.length !== 0 || belowMinimum || !availablePayments.length} className="h-12 w-full rounded-md bg-emerald-500 text-sm font-black text-white disabled:bg-gray-200 disabled:text-gray-500">{busy ? (otpEnabled ? 'Sending code...' : 'Placing order...') : `${otpEnabled ? 'Verify mobile & submit' : 'Place order'} · ${props.payload.store.currency}${props.total.toFixed(2)}`}</button>{belowMinimum && <p className="mt-2 text-center text-[11px] font-bold text-amber-700">Minimum delivery order is {props.payload.store.currency}{props.payload.store.minimumOrder.toFixed(2)}</p>}</div>}
     </form>}
     <style>{`.verified-field{width:100%;border:1px solid #e5e7eb;border-radius:.375rem;background:#fff;padding:.8rem;font-size:.875rem;outline:none}.verified-field:focus{border-color:#10b981}`}</style>
   </section></div>;

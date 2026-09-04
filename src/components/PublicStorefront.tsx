@@ -86,11 +86,13 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
     if (!selectedLocation) setSelectedLocation(locationChecks.find(location => location.unavailable.length === 0)?.key || '');
   };
 
-  const submitOrder = async (idToken: string) => {
+  const submitOrder = async (idToken?: string) => {
     const idempotencyStorageKey = `qpos-order-key:${slug}:${selectedLocation}`;
     const idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || crypto.randomUUID();
     sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
-    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${idToken}`}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
+    const phoneDigits = mobile.replace(/\D/g, '');
+    const normalizedPhone = mobile.trim().startsWith('+') ? `+${phoneDigits}` : phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
+    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'The order could not be submitted');
     setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});

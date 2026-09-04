@@ -6,9 +6,10 @@ const cleanText = (value: unknown, max: number) => String(value || '').trim().re
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') return response.status(405).json({error: 'Method not allowed'});
   try {
-    const decoded = await verifyBearer(request);
-    const verifiedPhone = String(decoded.phone_number || '').replace(/\s/g, '');
-    if (!verifiedPhone) return response.status(401).json({error: 'Verify the customer mobile number first'});
+    const otpEnabled = process.env.ONLINE_ORDER_OTP_ENABLED === 'true';
+    const decoded = otpEnabled ? await verifyBearer(request) : null;
+    const verifiedPhone = String(otpEnabled ? decoded?.phone_number : request.body?.customerPhone || '').replace(/[\s()-]/g, '');
+    if (!/^\+[1-9]\d{7,14}$/.test(verifiedPhone)) return response.status(400).json({error: 'Enter a valid mobile number with country code'});
 
     const slug = cleanText(request.body?.slug, 60).toLowerCase();
     const locationKey = cleanText(request.body?.locationKey, 80).toLowerCase();
