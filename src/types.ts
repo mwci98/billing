@@ -15,6 +15,10 @@ export interface StaffPermissions {
   canManageCustomers: boolean;
   canViewDashboard: boolean;
   canViewFinancials: boolean;
+  canManageOnlineStore: boolean;
+  canViewOnlineOrders: boolean;
+  canManageOnlineOrders: boolean;
+  canManageTableQr: boolean;
 }
 
 export interface Staff {
@@ -60,6 +64,10 @@ export interface Product {
   lowStockAlert: number;
   expiryDate?: string; // YYYY-MM-DD
   imageUrl?: string;
+  showOnline?: boolean;
+  onlineImage?: string;
+  onlineDescription?: string;
+  onlinePrice?: number;
   sourcingType?: 'Purchased' | 'Manufactured' | 'Both'; // Origin of product
   manufacturingCost?: number; // Direct production/raw material cost per unit
   batchNo?: string; // Production batch number
@@ -248,6 +256,24 @@ export interface StoreSettings {
   storeBranches?: SaaSStore[];
   activeStoreId?: string;
   dashboardWidgets?: DashboardWidgetSettings;
+  onlineStore?: OnlineStoreConfig;
+}
+
+export interface OnlineStoreConfig {
+  enabled: boolean;
+  publicName: string;
+  logo?: string;
+  description: string;
+  contactNumber: string;
+  whatsappNumber: string;
+  slug: string;
+  participatingLocationIds: string[];
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  deliveryCharge: number;
+  minimumOrder: number;
+  maximumDeliveryDistanceKm?: number;
+  paymentMethods: Array<'COD' | 'PAY_AT_STORE' | 'ONLINE'>;
 }
 
 export interface DashboardWidgetSettings {
@@ -293,6 +319,7 @@ export interface SaaSStore {
     upiPayeeName?: string;
     whatsappInvoiceEnabled?: boolean;
     dashboardWidgets?: DashboardWidgetSettings;
+    onlineStore?: OnlineStoreConfig;
   };
 }
 

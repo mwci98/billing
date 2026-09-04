@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList
+  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -32,6 +32,7 @@ import {isInternalTestingAccount} from './lib/internalEntitlements';
 import {getBusinessMode} from './lib/businessMode';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { SplashScreen } from './components/SplashScreen';
+import { OnlineStoreSettings } from './components/OnlineStoreSettings';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -133,6 +134,7 @@ const AppContent: React.FC = () => {
     { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
     ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
+    { id: 'online-store', name: 'Online Store', icon: Store, permission: 'canManageOnlineStore' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: isRestaurantBusiness ? 'Guests & Customers' : isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
@@ -161,6 +163,9 @@ const AppContent: React.FC = () => {
       case 'products':
         if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
+      case 'online-store':
+        if (!canAccessTab('online-store')) return <SecurityBarrier />;
+        return <OnlineStoreSettings />;
       case 'open-orders':
         if (!isRestaurantBusiness || !canAccessTab('open-orders')) return <SecurityBarrier />;
         return <RestaurantOpenOrders />;

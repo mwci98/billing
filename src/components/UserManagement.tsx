@@ -9,7 +9,11 @@ const DEFAULT_PERMISSIONS: StaffPermissions = {
   canManageProducts: false,
   canManageCustomers: true,
   canViewDashboard: false,
-  canViewFinancials: false
+  canViewFinancials: false,
+  canManageOnlineStore: false,
+  canViewOnlineOrders: false,
+  canManageOnlineOrders: false,
+  canManageTableQr: false
 };
 
 const permissionLabels: Array<{key: keyof StaffPermissions; label: string; description: string}> = [
@@ -18,7 +22,11 @@ const permissionLabels: Array<{key: keyof StaffPermissions; label: string; descr
   {key: 'canManageProducts', label: 'Product catalog', description: 'Add and edit SKU products'},
   {key: 'canManageCustomers', label: 'Customers & suppliers', description: 'Manage customer and supplier records'},
   {key: 'canViewDashboard', label: 'Dashboard', description: 'Open the operational dashboard'},
-  {key: 'canViewFinancials', label: 'Financial totals', description: 'See revenue, sales totals, profit, and reports'}
+  {key: 'canViewFinancials', label: 'Financial totals', description: 'See revenue, sales totals, profit, and reports'},
+  {key: 'canManageOnlineStore', label: 'Online store settings', description: 'Configure online storefront and participating locations'},
+  {key: 'canViewOnlineOrders', label: 'View online orders', description: 'See online and table QR orders'},
+  {key: 'canManageOnlineOrders', label: 'Manage online orders', description: 'Accept, reject, and update online order status'},
+  {key: 'canManageTableQr', label: 'Table QR management', description: 'Generate and replace restaurant table QR codes'}
 ];
 
 export const UserManagement: React.FC = () => {

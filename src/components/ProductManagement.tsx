@@ -130,6 +130,10 @@ export const ProductManagement: React.FC = () => {
   const [lowStockAlert, setLowStockAlert] = useState<string>('5');
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('📦');
+  const [showOnline, setShowOnline] = useState(false);
+  const [onlineImage, setOnlineImage] = useState<string>('');
+  const [onlineDescription, setOnlineDescription] = useState<string>('');
+  const [onlinePrice, setOnlinePrice] = useState<string>('');
   const [isImageProcessing, setIsImageProcessing] = useState(false);
   const [sourcingType, setSourcingType] = useState<'Purchased' | 'Manufactured' | 'Both'>('Purchased');
   const [manufacturingCost, setManufacturingCost] = useState<string>('');
@@ -160,6 +164,20 @@ export const ProductManagement: React.FC = () => {
       triggerToast('Menu picture added.', 'success');
     } catch {
       triggerToast('Could not process that image. Please try another one.', 'error');
+    } finally {
+      setIsImageProcessing(false);
+    }
+  };
+
+  const handleOnlineImageUpload = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return triggerToast('Please choose an image file.', 'warning');
+    setIsImageProcessing(true);
+    try {
+      setOnlineImage(await compressProductImage(file));
+      triggerToast('Online product picture added.', 'success');
+    } catch {
+      triggerToast('Could not process that image.', 'error');
     } finally {
       setIsImageProcessing(false);
     }
@@ -504,6 +522,10 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert('');
     setExpiryDate('');
     setImageUrl('📦');
+    setShowOnline(false);
+    setOnlineImage('');
+    setOnlineDescription('');
+    setOnlinePrice('');
     setSourcingType(sourcingForBusinessMode(businessMode));
     setManufacturingCost('');
     setBatchNo('');
@@ -532,6 +554,10 @@ export const ProductManagement: React.FC = () => {
     setLowStockAlert(p.lowStockAlert.toString());
     setExpiryDate(p.expiryDate || '');
     setImageUrl(p.imageUrl || '📦');
+    setShowOnline(p.showOnline ?? false);
+    setOnlineImage(p.onlineImage || '');
+    setOnlineDescription(p.onlineDescription || '');
+    setOnlinePrice(p.onlinePrice?.toString() || '');
     setSourcingType(p.sourcingType || 'Purchased');
     setManufacturingCost(p.manufacturingCost ? p.manufacturingCost.toString() : '');
     setBatchNo(p.batchNo || '');
@@ -622,6 +648,10 @@ export const ProductManagement: React.FC = () => {
       lowStockAlert: parseInt(lowStockAlert) || 0,
       expiryDate: expiryDate || undefined,
       imageUrl,
+      showOnline,
+      onlineImage: onlineImage || undefined,
+      onlineDescription: onlineDescription.trim() || undefined,
+      onlinePrice: onlinePrice ? Math.max(0, parseFloat(onlinePrice) || 0) : undefined,
       sourcingType: effectiveSourcingType,
       manufacturingCost: effectiveSourcingType !== 'Purchased' && manufacturingCost ? parseFloat(manufacturingCost) : undefined,
       batchNo: effectiveSourcingType !== 'Purchased' && batchNo ? batchNo : undefined,
@@ -802,6 +832,7 @@ export const ProductManagement: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold leading-tight text-gray-950 dark:text-white">{p.name}</p>
                     <p className="mt-1 truncate text-[10px] text-gray-400">{p.category} · {p.sku}</p>
+                    {p.showOnline && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
                   </div>
                   <span className="shrink-0 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                     {p.itemType === 'Service' ? 'Service' : p.sourcingType === 'Manufactured' ? 'In-house' : 'Material'}
@@ -909,6 +940,7 @@ export const ProductManagement: React.FC = () => {
                     <td className="py-3 px-2"><ProductImage value={p.imageUrl} name={p.name} /></td>
                     <td className="py-3 min-w-[8rem]">
                       <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
+                      {p.showOnline && <span className="mt-1 inline-flex rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">ONLINE</span>}
                       {isRestaurantBusiness && Boolean(p.menuVariants?.length) && (
                         <p className="mt-0.5 text-[10px] font-bold text-emerald-500">{p.menuVariants?.length} variants</p>
                       )}
@@ -1631,6 +1663,26 @@ export const ProductManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              <section className="border-t border-gray-100 pt-4 dark:border-gray-900">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Online Store visibility</h3>
+                    <p className="mt-0.5 text-[10px] text-gray-400">Use this same POS item in the public store or restaurant menu.</p>
+                  </div>
+                  <label className="flex cursor-pointer items-center gap-2 text-xs font-bold">
+                    <span>{showOnline ? 'Shown online' : 'Hidden online'}</span>
+                    <input type="checkbox" checked={showOnline} onChange={event => setShowOnline(event.target.checked)} className="h-5 w-5 accent-emerald-500" />
+                  </label>
+                </div>
+                {showOnline && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="sm:col-span-2"><span className="mb-1 block text-xs font-semibold">Online description</span><textarea rows={3} value={onlineDescription} onChange={event => setOnlineDescription(event.target.value)} placeholder="Customer-facing product or menu description" className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white" /></label>
+                    <label><span className="mb-1 block text-xs font-semibold">Online price ({settings.currency})</span><input type="number" min="0" step="0.01" value={onlinePrice} onChange={event => setOnlinePrice(event.target.value)} placeholder={`Uses POS price ${settings.currency}${sellingPrice || '0'}`} className="w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs font-mono text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-white" /><span className="mt-1 block text-[10px] text-gray-400">Leave empty to use the POS selling price.</span></label>
+                    <div><span className="mb-1 block text-xs font-semibold">Online image</span><div className="flex items-center gap-3"><ProductImage value={onlineImage || imageUrl} name={`${name || 'Product'} online`} /><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-[10px] font-bold dark:border-gray-800"><ImagePlus className="h-4 w-4" />{onlineImage ? 'Replace' : 'Choose'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={isImageProcessing} onChange={event => void handleOnlineImageUpload(event.target.files?.[0])} className="hidden" /></label>{onlineImage && <button type="button" onClick={() => setOnlineImage('')} className="text-[10px] font-bold text-red-500">Use POS image</button>}</div></div>
+                  </div>
+                )}
+              </section>
 
               <div className="flex items-center gap-3 justify-end pt-4 border-t border-gray-100 dark:border-gray-900">
                 <button

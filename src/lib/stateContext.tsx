@@ -7,7 +7,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Product, Customer, Supplier, Sale, Purchase, 
   InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan,
-  Staff, StaffPermissions, AppUser
+  Staff, StaffPermissions, AppUser, OnlineStoreConfig
 } from '../types';
 import { 
   INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_SUPPLIERS, 
@@ -41,7 +41,11 @@ const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
   canManageProducts: true,
   canManageCustomers: true,
   canViewDashboard: false,
-  canViewFinancials: false
+  canViewFinancials: false,
+  canManageOnlineStore: false,
+  canViewOnlineOrders: false,
+  canManageOnlineOrders: false,
+  canManageTableQr: false
 };
 
 const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
@@ -123,6 +127,7 @@ interface AppContextType {
 
   // Settings
   updateSettings: (settings: StoreSettings) => void;
+  updateOnlineStore: (configuration: OnlineStoreConfig) => void;
   deleteAllMockupData: () => Promise<void>;
 
   // Backup & Synclists
@@ -727,7 +732,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         permissions: {
           ...DEFAULT_STAFF_PERMISSIONS,
           canViewDashboard: true,
-          canViewFinancials: true
+          canViewFinancials: true,
+          canManageOnlineStore: true,
+          canViewOnlineOrders: true,
+          canManageOnlineOrders: true,
+          canManageTableQr: true
         }
       };
       saveLocalAndState('active_user', reviewSession, setCurrentUser);
@@ -1523,6 +1532,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDoc(doc(db, 'users', scope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/store_settings`));
   };
 
+  const updateOnlineStore = (configuration: OnlineStoreConfig) => {
+    const ownerScope = getUserScope(currentUser);
+    const sharedSettings = {...settings, onlineStore: configuration};
+    saveLocalAndState('settings', sharedSettings, setSettings);
+    setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings, {merge: true})
+      .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${ownerScope}/store_settings`));
+  };
+
   const deleteAllMockupData = async () => {
     const scope = getWorkspaceScope();
 
@@ -1819,6 +1836,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         hasPermission,
 
         updateSettings,
+        updateOnlineStore,
         deleteAllMockupData,
 
         syncWithCloud,

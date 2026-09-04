@@ -107,15 +107,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
       <header className="fixed inset-x-0 top-0 z-[100] border-b border-white/[0.06] bg-[#09090A]/95 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <a href="#top" className="flex items-center gap-3" aria-label="QPOS home">
-            <span className="flex h-10 w-10 items-center justify-center">
+          <div className="flex items-center gap-3">
+            <a href="#top" className="flex h-10 w-10 items-center justify-center" aria-label="QPOS home">
               <img src="/icons/qpos-logo.svg" alt="" className="h-full w-full object-contain" />
-            </span>
+            </a>
             <span className="hidden min-[360px]:block">
-              <span className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</span>
+              <a href="#top" className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</a>
               <a href="https://neospec.co.in" className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400 transition hover:text-emerald-300">A product of Neospec</a>
             </span>
-          </a>
+          </div>
 
           <nav className="hidden items-center gap-8 text-xs font-semibold text-white/60 md:flex">
             <a href="#business-modes" className="transition hover:text-white">Business modes</a>
