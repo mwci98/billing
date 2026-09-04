@@ -63,18 +63,39 @@ const developmentPreviewStore: PublicStorePayload = {
 const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null => {
   const settingsKey = Object.keys(localStorage).find(key => {
     if (!/^pos_.+_settings$/.test(key)) return false;
-    try { return JSON.parse(localStorage.getItem(key) || '{}').onlineStore?.slug === slug; } catch { return false; }
+    try {
+      const candidate = JSON.parse(localStorage.getItem(key) || '{}');
+      return candidate.onlineStore?.slug === slug || candidate.storeBranches?.some((branch: any) => branch.configuration?.onlineStore?.slug === slug);
+    } catch { return false; }
   });
   if (!settingsKey) return null;
   const settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
-  const store = settings.onlineStore;
+  const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
+  const originBranch = branches.find((branch: any) => branch.configuration?.onlineStore?.slug === slug);
+  const store = originBranch?.configuration?.onlineStore || settings.onlineStore;
   if (!store?.enabled) return null;
   const ownerScope = settingsKey.slice(4, -9);
-  const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
-  const participatingBranches = branches.filter((branch: any) => (store.participatingLocationIds || []).includes(branch.id));
-  const isRestaurant = [settings.businessType, ...participatingBranches.map((branch: any) => branch.configuration?.businessType)]
-    .some(value => String(value || '').toLowerCase().includes('restaurant'));
-  const locations = (store.participatingLocationIds || []).map((id: string) => {
+  const businessMode = (value: unknown) => {
+    const normalized = String(value || '').toLowerCase();
+    if (/restaurant|cafe|food/.test(normalized)) return 'Restaurant';
+    if (normalized.includes('service')) return 'Service';
+    if (/manufactur|production/.test(normalized)) return 'Manufacturing';
+    if (/hybrid|both/.test(normalized)) return 'Hybrid';
+    return 'Retail';
+  };
+  const primaryId = settings.tenantId || ownerScope;
+  const locationMode = (id: string) => {
+    const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
+    const branch = branches.find((item: any) => item.id === id);
+    return businessMode(primary ? settings.businessType : branch?.configuration?.businessType);
+  };
+  const configuredIds = store.participatingLocationIds || [];
+  const legacyHasRestaurantOutlet = branches.some((branch: any) => configuredIds.includes(branch.id) && locationMode(branch.id) === 'Restaurant');
+  const catalogMode = store.catalogMode || (legacyHasRestaurantOutlet ? 'Restaurant' : locationMode(store.originLocationId || primaryId));
+  const participatingIds = configuredIds.filter((id: string) => locationMode(id) === catalogMode);
+  if (!participatingIds.length && store.originLocationId) participatingIds.push(store.originLocationId);
+  const isRestaurant = catalogMode === 'Restaurant';
+  const locations = participatingIds.map((id: string) => {
     const branch = branches.find((item: any) => item.id === id);
     const primary = id === 'primary-store' || id === settings.tenantId || id === ownerScope;
     const key = primary ? 'main' : String(branch?.branchCode || id).toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -91,7 +112,10 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
         ? scopedProductKeys[0]
         : exactKey;
     const cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-    cached.filter((product: any) => isRestaurant ? product.showOnline !== false : product.showOnline === true).forEach((product: any) => {
+    cached.filter((product: any) => {
+      if (isRestaurant && product.itemType !== 'Service') return false;
+      return isRestaurant ? product.showOnline !== false : product.showOnline === true;
+    }).forEach((product: any) => {
       const existing = products.get(product.id) || {id: product.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
       existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
       products.set(product.id, existing);

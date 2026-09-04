@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import {useAppState} from '../lib/stateContext';
 import {OnlineStoreConfig} from '../types';
 import {compressProductImage} from '../lib/productImage';
+import {getBusinessMode} from '../lib/businessMode';
 
 const normalizeSlug = (value: string) => value
   .toLowerCase()
@@ -14,11 +15,17 @@ const normalizeSlug = (value: string) => value
   .slice(0, 60);
 
 export const OnlineStoreSettings: React.FC = () => {
-  const {settings, saasStores, updateOnlineStore, triggerToast} = useAppState();
-  const fallbackLocation = saasStores[0]?.id ? [saasStores[0].id] : [];
+  const {settings, activeStore, saasStores, updateOnlineStore, triggerToast} = useAppState();
+  const catalogMode = getBusinessMode(activeStore.configuration?.businessType || settings.businessType);
+  const compatibleLocations = saasStores.filter(location =>
+    location.id === activeStore.id || getBusinessMode(location.configuration?.businessType) === catalogMode
+  );
+  const fallbackLocation = activeStore.id ? [activeStore.id] : [];
   const initial = settings.onlineStore;
   const [config, setConfig] = useState<OnlineStoreConfig>(() => initial || ({
     enabled: false,
+    originLocationId: activeStore.id,
+    catalogMode,
     publicName: settings.storeName,
     description: '',
     contactNumber: settings.phone,
@@ -66,7 +73,10 @@ export const OnlineStoreSettings: React.FC = () => {
     if (config.participatingLocationIds.length === 0) return triggerToast('Select at least one participating QPOS location.', 'warning');
     if (!config.pickupEnabled && !config.deliveryEnabled) return triggerToast('Enable pickup or local delivery.', 'warning');
     if (config.paymentMethods.length === 0) return triggerToast('Select at least one payment method.', 'warning');
-    const saved = {...config, slug, publicName: config.publicName.trim(), description: config.description.trim()};
+    const compatibleLocationIds = new Set(compatibleLocations.map(location => location.id));
+    const participatingLocationIds = config.participatingLocationIds.filter(id => compatibleLocationIds.has(id));
+    if (!participatingLocationIds.length) participatingLocationIds.push(activeStore.id);
+    const saved = {...config, originLocationId: activeStore.id, catalogMode, participatingLocationIds, slug, publicName: config.publicName.trim(), description: config.description.trim()};
     setConfig(saved);
     if (await updateOnlineStore(saved)) triggerToast('Online Store settings saved and published.', 'success');
   };
@@ -138,7 +148,8 @@ export const OnlineStoreSettings: React.FC = () => {
 
       <section className="border-t border-gray-200 pt-5 dark:border-gray-800">
         <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-emerald-500" /><h3 className="text-sm font-black">Participating locations</h3></div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{saasStores.map(location => <label key={location.id} className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 px-3 py-3 text-xs dark:border-gray-800"><span><strong className="block">{location.name}</strong><span className="text-[10px] text-gray-400">{location.city}</span></span><input type="checkbox" checked={config.participatingLocationIds.includes(location.id)} onChange={() => toggleLocation(location.id)} className="h-4 w-4 accent-emerald-500" /></label>)}</div>
+        <p className="mt-1 text-[10px] text-gray-500">Only {catalogMode.toLowerCase()} locations can share this storefront.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{compatibleLocations.map(location => <label key={location.id} className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 px-3 py-3 text-xs dark:border-gray-800"><span><strong className="block">{location.name}</strong><span className="text-[10px] text-gray-400">{location.city}</span></span><input type="checkbox" checked={config.participatingLocationIds.includes(location.id)} onChange={() => toggleLocation(location.id)} className="h-4 w-4 accent-emerald-500" /></label>)}</div>
       </section>
 
       <section className="grid gap-5 border-t border-gray-200 pt-5 dark:border-gray-800 lg:grid-cols-2">

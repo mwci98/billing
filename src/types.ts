@@ -261,6 +261,8 @@ export interface StoreSettings {
 
 export interface OnlineStoreConfig {
   enabled: boolean;
+  originLocationId?: string;
+  catalogMode?: 'Retail' | 'Manufacturing' | 'Hybrid' | 'Service' | 'Restaurant';
   publicName: string;
   logo?: string;
   description: string;

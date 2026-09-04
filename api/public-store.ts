@@ -29,17 +29,32 @@ export default async function handler(request: any, response: any) {
     const ownerScope = String(registry.ownerScope);
     const settingsSnapshot = await db.doc(`users/${ownerScope}/store_settings/active`).get();
     const settings = settingsSnapshot.data() || {};
-    const store = settings.onlineStore || {};
+    const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
+    const primaryId = String(settings.tenantId || ownerScope);
+    const registryLocationId = String(registry.locationId || '');
+    const originBranch = branches.find((branch: any) => String(branch.id) === registryLocationId);
+    const store = originBranch?.configuration?.onlineStore || settings.onlineStore || {};
     if (!settingsSnapshot.exists || !store.enabled || store.slug !== slug) {
       return response.status(404).json({error: 'This online store is unavailable'});
     }
-
-    const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
-    const primaryId = String(settings.tenantId || ownerScope);
-    const participatingIds = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds.map(String) : [];
-    const participatingBranches = branches.filter((branch: any) => participatingIds.includes(String(branch.id)));
-    const isRestaurant = [settings.businessType, ...participatingBranches.map((branch: any) => branch.configuration?.businessType)]
-      .some(value => String(value || '').toLowerCase().includes('restaurant'));
+    const businessMode = (value: unknown) => {
+      const normalized = String(value || '').toLowerCase();
+      if (/restaurant|cafe|food/.test(normalized)) return 'Restaurant';
+      if (normalized.includes('service')) return 'Service';
+      if (/manufactur|production/.test(normalized)) return 'Manufacturing';
+      if (/hybrid|both/.test(normalized)) return 'Hybrid';
+      return 'Retail';
+    };
+    const locationMode = (id: string) => {
+      const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
+      const branch = branches.find((item: any) => String(item.id) === id);
+      return businessMode(primary ? settings.businessType : branch?.configuration?.businessType);
+    };
+    const catalogMode = String(store.catalogMode || locationMode(store.originLocationId || registryLocationId || primaryId));
+    const configuredIds = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds.map(String) : [];
+    const participatingIds = configuredIds.filter((id: string) => locationMode(id) === catalogMode);
+    if (!participatingIds.length && (store.originLocationId || registryLocationId)) participatingIds.push(String(store.originLocationId || registryLocationId));
+    const isRestaurant = catalogMode === 'Restaurant';
     const locationDefinitions = participatingIds.map((id: string) => {
       const branch = branches.find((item: any) => String(item.id) === id);
       const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
@@ -58,6 +73,7 @@ export default async function handler(request: any, response: any) {
       const location = locationDefinitions[index];
       snapshot.docs.forEach(document => {
         const product = document.data();
+        if (isRestaurant && product.itemType !== 'Service') return;
         if (isRestaurant ? product.showOnline === false : product.showOnline !== true) return;
         const existing = publicProducts.get(document.id) || {
           id: document.id,

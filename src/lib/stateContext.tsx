@@ -1534,20 +1534,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateOnlineStore = async (configuration: OnlineStoreConfig): Promise<boolean> => {
     const ownerScope = getUserScope(currentUser);
-    const previousSlug = settings.onlineStore?.slug;
+    const primaryStoreId = settings.tenantId || ownerScope;
+    const isPrimaryLocation = !activeStore?.id || activeStore.id === 'primary-store' || activeStore.id === primaryStoreId || activeStore.id === ownerScope;
+    const currentLocationConfig = isPrimaryLocation ? settings.onlineStore : activeStore.configuration?.onlineStore;
+    const previousSlug = currentLocationConfig?.slug;
     const registryRef = doc(db, 'public_stores', configuration.slug);
-    const sharedSettings = {...settings, onlineStore: configuration};
+    let nextActiveStore = activeStore;
+    let sharedSettings: StoreSettings;
+    if (isPrimaryLocation) {
+      sharedSettings = {...settings, onlineStore: configuration};
+    } else {
+      nextActiveStore = {...activeStore, configuration: {...activeStore.configuration, onlineStore: configuration}};
+      const storeBranches = saasStores.map(store => store.id === activeStore.id ? nextActiveStore : store);
+      if (settings.onlineStore?.slug === configuration.slug) {
+        const {onlineStore: _migratedOwnerStore, ...ownerSettings} = settings;
+        sharedSettings = {...ownerSettings, storeBranches};
+      } else {
+        sharedSettings = {...settings, storeBranches};
+      }
+    }
     try {
       await runTransaction(db, async transaction => {
         const registrySnapshot = await transaction.get(registryRef);
-        if (registrySnapshot.exists() && registrySnapshot.data().ownerScope !== ownerScope) {
+        const registry = registrySnapshot.data();
+        if (registrySnapshot.exists() && (
+          registry?.ownerScope !== ownerScope ||
+          (registry?.locationId && registry.locationId !== configuration.originLocationId)
+        )) {
           throw new Error('SLUG_TAKEN');
         }
-        transaction.set(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings, {merge: true});
-        transaction.set(registryRef, {ownerScope, slug: configuration.slug, enabled: configuration.enabled, updatedAt: new Date().toISOString()});
+        transaction.set(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings);
+        transaction.set(registryRef, {ownerScope, locationId: configuration.originLocationId || activeStore.id, slug: configuration.slug, enabled: configuration.enabled, updatedAt: new Date().toISOString()});
         if (previousSlug && previousSlug !== configuration.slug) transaction.delete(doc(db, 'public_stores', previousSlug));
       });
       saveLocalAndState('settings', sharedSettings, setSettings);
+      if (!isPrimaryLocation) {
+        setActiveStore(nextActiveStore);
+        setSaaSStores(sharedSettings.storeBranches || []);
+      }
       return true;
     } catch (error) {
       if (error instanceof Error && error.message === 'SLUG_TAKEN') {
