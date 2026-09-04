@@ -59,7 +59,7 @@ export const OnlineStoreSettings: React.FC = () => {
       : [...config.paymentMethods, method]
   );
 
-  const save = (event: React.FormEvent) => {
+  const save = async (event: React.FormEvent) => {
     event.preventDefault();
     const slug = normalizeSlug(config.slug);
     if (!config.publicName.trim() || slug.length < 3) return triggerToast('Enter a store name and a public slug of at least 3 characters.', 'warning');
@@ -68,8 +68,7 @@ export const OnlineStoreSettings: React.FC = () => {
     if (config.paymentMethods.length === 0) return triggerToast('Select at least one payment method.', 'warning');
     const saved = {...config, slug, publicName: config.publicName.trim(), description: config.description.trim()};
     setConfig(saved);
-    updateOnlineStore(saved);
-    triggerToast('Online Store settings saved.', 'success');
+    if (await updateOnlineStore(saved)) triggerToast('Online Store settings saved and published.', 'success');
   };
 
   const copyUrl = async () => {
@@ -133,7 +132,7 @@ export const OnlineStoreSettings: React.FC = () => {
             <button type="button" onClick={() => void copyUrl()} className="online-action"><Copy className="h-4 w-4" />Copy</button>
             <button type="button" onClick={() => void shareUrl()} className="online-action"><Share2 className="h-4 w-4" />Share</button>
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-[10px] text-amber-600"><ExternalLink className="h-3.5 w-3.5" />Storefront becomes available in Phase 2.</p>
+          <a href={publicUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-emerald-600"><ExternalLink className="h-3.5 w-3.5" />Open public storefront</a>
         </aside>
       </section>
 

@@ -15,7 +15,7 @@ import {
 } from './demoData';
 import { db, auth, authPersistenceReady, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
 import { getSerializedUnits, productUsesImeiTracking } from './serializedInventory';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
@@ -127,7 +127,7 @@ interface AppContextType {
 
   // Settings
   updateSettings: (settings: StoreSettings) => void;
-  updateOnlineStore: (configuration: OnlineStoreConfig) => void;
+  updateOnlineStore: (configuration: OnlineStoreConfig) => Promise<boolean>;
   deleteAllMockupData: () => Promise<void>;
 
   // Backup & Synclists
@@ -1532,12 +1532,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDoc(doc(db, 'users', scope, 'store_settings', 'active'), sharedSettings).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${scope}/store_settings`));
   };
 
-  const updateOnlineStore = (configuration: OnlineStoreConfig) => {
+  const updateOnlineStore = async (configuration: OnlineStoreConfig): Promise<boolean> => {
     const ownerScope = getUserScope(currentUser);
+    const previousSlug = settings.onlineStore?.slug;
+    const registryRef = doc(db, 'public_stores', configuration.slug);
     const sharedSettings = {...settings, onlineStore: configuration};
-    saveLocalAndState('settings', sharedSettings, setSettings);
-    setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings, {merge: true})
-      .catch(error => handleFirestoreError(error, OperationType.UPDATE, `users/${ownerScope}/store_settings`));
+    try {
+      await runTransaction(db, async transaction => {
+        const registrySnapshot = await transaction.get(registryRef);
+        if (registrySnapshot.exists() && registrySnapshot.data().ownerScope !== ownerScope) {
+          throw new Error('SLUG_TAKEN');
+        }
+        transaction.set(doc(db, 'users', ownerScope, 'store_settings', 'active'), sharedSettings, {merge: true});
+        transaction.set(registryRef, {ownerScope, slug: configuration.slug, enabled: configuration.enabled, updatedAt: new Date().toISOString()});
+        if (previousSlug && previousSlug !== configuration.slug) transaction.delete(doc(db, 'public_stores', previousSlug));
+      });
+      saveLocalAndState('settings', sharedSettings, setSettings);
+      return true;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'SLUG_TAKEN') {
+        triggerToast('That public store address is already in use.', 'error');
+        return false;
+      }
+      handleFirestoreError(error, OperationType.UPDATE, `users/${ownerScope}/store_settings`);
+      triggerToast('Online Store settings could not be published.', 'error');
+      return false;
+    }
   };
 
   const deleteAllMockupData = async () => {

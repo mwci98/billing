@@ -33,6 +33,7 @@ import {getBusinessMode} from './lib/businessMode';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { SplashScreen } from './components/SplashScreen';
 import { OnlineStoreSettings } from './components/OnlineStoreSettings';
+import { PublicStorefront } from './components/PublicStorefront';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -530,6 +531,9 @@ const SecurityBarrier: React.FC = () => (
 );
 
 export default function App() {
+  const publicStoreMatch = window.location.pathname.match(/^\/store\/([a-z0-9-]+)\/?$/i);
+  if (publicStoreMatch) return <PublicStorefront slug={publicStoreMatch[1].toLowerCase()} />;
+
   return (
     <AppProvider>
       <AppContent />
