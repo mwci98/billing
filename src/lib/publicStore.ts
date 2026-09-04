@@ -27,7 +27,7 @@ export interface PublicStorePayload {
     maximumDeliveryDistanceKm?: number;
     paymentMethods: Array<'COD' | 'PAY_AT_STORE' | 'ONLINE'>;
   };
-  locations: Array<{key: string; name: string; city: string}>;
+  locations: Array<{key: string; name: string; city: string; developmentScope?: string}>;
   products: PublicStoreProduct[];
 }
 
@@ -97,7 +97,7 @@ const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStoreP
       existing.availability[locations[index].key] = restaurant || product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
       products.set(productDocument.id, existing);
     }));
-    return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, name, city}) => ({key, name, city})), products: Array.from(products.values())};
+    return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
   } catch (error) {
     console.warn('Local public store preview could not read Firestore:', error);
     return null;
@@ -176,5 +176,54 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
       products.set(product.id, existing);
     });
   });
-  return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, name, city}: any) => ({key, name, city})), products: Array.from(products.values())};
+  return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}: any) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
+};
+
+export const createDevelopmentOnlineOrder = async (input: {
+  slug: string;
+  payload: PublicStorePayload;
+  locationKey: string;
+  idempotencyKey: string;
+  fulfilment: 'PICKUP' | 'DELIVERY';
+  paymentMethod: 'COD' | 'PAY_AT_STORE';
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  items: Array<{productId: string; variantId?: string; quantity: number}>;
+}) => {
+  if (!import.meta.env.DEV) throw new Error('Development order fallback is unavailable');
+  const location = input.payload.locations.find(item => item.key === input.locationKey);
+  if (!location?.developmentScope) throw new Error('Reload the store and try again');
+  const [{db}, {doc, runTransaction}] = await Promise.all([import('./firebase'), import('firebase/firestore')]);
+  const orderId = `ord-dev-${input.idempotencyKey.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)}`;
+  const orderRef = doc(db, 'users', location.developmentScope, 'online_orders', orderId);
+  return runTransaction(db, async transaction => {
+    const existing = await transaction.get(orderRef);
+    if (existing.exists()) return existing.data() as {orderNumber: string; status: string};
+    const productRefs = input.items.map(item => doc(db, 'users', location.developmentScope!, 'products', item.productId));
+    const snapshots = await Promise.all(productRefs.map(reference => transaction.get(reference)));
+    let subtotal = 0;
+    let taxAmount = 0;
+    const items = input.items.map((requested, index) => {
+      const snapshot = snapshots[index];
+      if (!snapshot.exists()) throw new Error('A product is no longer available');
+      const product = snapshot.data() as any;
+      const variant = requested.variantId ? (product.menuVariants || []).find((item: any) => item.id === requested.variantId) : undefined;
+      const unitPrice = Number(variant?.price ?? product.onlinePrice ?? product.sellingPrice ?? 0);
+      const taxRate = Number(product.taxRate || 0);
+      const inclusiveTotal = unitPrice * requested.quantity;
+      const taxableTotal = inclusiveTotal / (1 + taxRate / 100);
+      const lineTax = inclusiveTotal - taxableTotal;
+      const available = product.itemType === 'Service' ? 9999 : Number(product.stock || 0) - Number(product.reservedStock || 0);
+      if (available < requested.quantity) throw new Error('Stock changed. Review the cart and location');
+      subtotal += taxableTotal;
+      taxAmount += lineTax;
+      return {productId: snapshot.id, name: product.name, sku: product.sku || '', quantity: requested.quantity, unitPrice, taxRate, taxAmount: lineTax, total: taxableTotal, ...(variant ? {variantId: variant.id, variantName: variant.name} : {})};
+    });
+    const now = new Date().toISOString();
+    const deliveryCharge = input.fulfilment === 'DELIVERY' ? input.payload.store.deliveryCharge : 0;
+    const order = {id: orderId, orderNumber: `ON-${new Date().getFullYear()}-${String(Date.now()).slice(-7)}`, source: 'ONLINE_STORE', storeSlug: input.slug, workspaceScope: location.developmentScope, locationKey: location.key, locationName: location.name, customerName: input.customerName.trim(), customerPhone: input.customerPhone, ...(input.customerAddress ? {customerAddress: input.customerAddress.trim()} : {}), fulfilment: input.fulfilment, paymentMethod: input.paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: subtotal + taxAmount + deliveryCharge, idempotencyKey: input.idempotencyKey, trackingToken: crypto.randomUUID().replace(/-/g, ''), reservationActive: false, createdAt: now, updatedAt: now, auditTrail: [{event: 'ORDER_CREATED', at: now, actor: 'CUSTOMER'}]};
+    transaction.set(orderRef, order);
+    return order;
+  });
 };

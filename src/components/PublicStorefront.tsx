@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {ChevronRight, Minus, PackageSearch, Plus, Search, ShoppingBag, Store, X} from 'lucide-react';
-import {loadPublicStore, PublicStorePayload, PublicStoreProduct} from '../lib/publicStore';
+import {createDevelopmentOnlineOrder, loadPublicStore, PublicStorePayload, PublicStoreProduct} from '../lib/publicStore';
 import {VerifiedOnlineCheckout} from './VerifiedOnlineCheckout';
 
 interface CartLine {
@@ -92,6 +92,13 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
     sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
     const phoneDigits = mobile.replace(/\D/g, '');
     const normalizedPhone = mobile.trim().startsWith('+') ? `+${phoneDigits}` : phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
+    if (import.meta.env.DEV) {
+      const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
+      setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
+      setCart([]);
+      sessionStorage.removeItem(idempotencyStorageKey);
+      return;
+    }
     const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'The order could not be submitted');
