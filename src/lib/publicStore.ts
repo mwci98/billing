@@ -44,8 +44,63 @@ export const loadPublicStore = async (slug: string): Promise<PublicStorePayload>
       const preview = loadLocalPublicStorePreview(slug);
       if (preview) return preview;
       if (slug === 'preview-store') return developmentPreviewStore;
+      const firestorePreview = await loadDevelopmentFirestoreStore(slug);
+      if (firestorePreview) return firestorePreview;
     }
     throw error;
+  }
+};
+
+const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStorePayload | null> => {
+  try {
+    const [{db}, {collection, doc, getDoc, getDocs}] = await Promise.all([
+      import('./firebase'),
+      import('firebase/firestore'),
+    ]);
+    const registrySnapshot = await getDoc(doc(db, 'public_stores', slug));
+    const registry = registrySnapshot.data();
+    if (!registrySnapshot.exists() || !registry?.enabled || !registry?.ownerScope) return null;
+    const ownerScope = String(registry.ownerScope);
+    const settingsSnapshot = await getDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'));
+    if (!settingsSnapshot.exists()) return null;
+    const settings = settingsSnapshot.data() as any;
+    const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
+    const originBranch = branches.find((branch: any) => branch.id === registry.locationId);
+    const store = originBranch?.configuration?.onlineStore || settings.onlineStore;
+    if (!store?.enabled || store.slug !== slug) return null;
+    const primaryId = settings.tenantId || ownerScope;
+    const mode = (value: unknown) => /restaurant|cafe|food/i.test(String(value || '')) ? 'Restaurant' : /service/i.test(String(value || '')) ? 'Service' : /manufactur|production/i.test(String(value || '')) ? 'Manufacturing' : /hybrid|both/i.test(String(value || '')) ? 'Hybrid' : 'Retail';
+    const locationMode = (id: string) => {
+      const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
+      const branch = branches.find((item: any) => item.id === id);
+      return mode(primary ? settings.businessType : branch?.configuration?.businessType);
+    };
+    const catalogMode = store.catalogMode || locationMode(store.originLocationId || registry.locationId || primaryId);
+    const configuredIds: string[] = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds : [];
+    const participatingIds = configuredIds.filter(id => locationMode(id) === catalogMode);
+    if (!participatingIds.length) participatingIds.push(store.originLocationId || registry.locationId || primaryId);
+    const locations = participatingIds.map(id => {
+      const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
+      const branch = branches.find((item: any) => item.id === id);
+      const key = primary ? 'main' : String(branch?.branchCode || id).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const scope = primary ? ownerScope : `${ownerScope}__store__${String(id).toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      return {key, scope, name: primary ? settings.storeName : branch?.name || 'Store location', city: primary ? settings.address || '' : branch?.city || ''};
+    });
+    const snapshots = await Promise.all(locations.map(location => getDocs(collection(db, 'users', location.scope, 'products'))));
+    const products = new Map<string, PublicStoreProduct>();
+    snapshots.forEach((snapshot, index) => snapshot.docs.forEach(productDocument => {
+      const product = productDocument.data() as any;
+      const restaurant = catalogMode === 'Restaurant';
+      if (restaurant && product.itemType !== 'Service') return;
+      if (restaurant ? product.showOnline === false : product.showOnline !== true) return;
+      const existing = products.get(productDocument.id) || {id: productDocument.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
+      existing.availability[locations[index].key] = restaurant || product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
+      products.set(productDocument.id, existing);
+    }));
+    return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, name, city}) => ({key, name, city})), products: Array.from(products.values())};
+  } catch (error) {
+    console.warn('Local public store preview could not read Firestore:', error);
+    return null;
   }
 };
 
