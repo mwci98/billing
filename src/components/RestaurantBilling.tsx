@@ -8,6 +8,7 @@ type OrderType = NonNullable<Sale['orderType']>;
 type MenuVariant = NonNullable<Product['menuVariants']>[number];
 type CartLine = {product: Product; quantity: number; variant?: MenuVariant};
 const isMenuImage = (value?: string) => Boolean(value && (value.startsWith('data:image/') || value.startsWith('https://') || value.startsWith('http://')));
+const availableStock = (product: Product) => Math.max(0, product.stock - (product.reservedStock || 0));
 
 export const RestaurantBilling: React.FC = () => {
   const {products, sales, addSale, editSale, currentUser, settings, triggerToast} = useAppState();
@@ -26,7 +27,7 @@ export const RestaurantBilling: React.FC = () => {
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))], [products]);
   const menuProducts = products.filter(product =>
-    (product.itemType === 'Service' || product.stock > 0) &&
+    (product.itemType === 'Service' || availableStock(product) > 0) &&
     (category === 'All' || product.category === category) &&
     `${product.name} ${product.category}`.toLowerCase().includes(search.trim().toLowerCase())
   );
@@ -73,7 +74,7 @@ export const RestaurantBilling: React.FC = () => {
       const requestedQuantity = cart
         .filter(item => item.product.id === line.product.id)
         .reduce((sum, item) => sum + item.quantity, 0);
-      return requestedQuantity > line.product.stock + reservedQuantity;
+      return requestedQuantity > availableStock(line.product) + reservedQuantity;
     });
     if (unavailable) return triggerToast(`${unavailable.product.name} does not have enough stock.`, 'error');
     return true;

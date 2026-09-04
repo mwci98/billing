@@ -94,7 +94,7 @@ const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStoreP
       if (restaurant && product.itemType !== 'Service') return;
       if (restaurant ? product.showOnline === false : product.showOnline !== true) return;
       const existing = products.get(productDocument.id) || {id: productDocument.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
-      existing.availability[locations[index].key] = restaurant || product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
+      existing.availability[locations[index].key] = restaurant || product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
       products.set(productDocument.id, existing);
     }));
     return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, name, city}) => ({key, name, city})), products: Array.from(products.values())};
@@ -172,7 +172,7 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
       return isRestaurant ? product.showOnline !== false : product.showOnline === true;
     }).forEach((product: any) => {
       const existing = products.get(product.id) || {id: product.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
-      existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
+      existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
       products.set(product.id, existing);
     });
   });

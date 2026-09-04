@@ -1,5 +1,6 @@
 import {cert, getApps, initializeApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
+import {getAuth} from 'firebase-admin/auth';
 
 // QPOS is provisioned with a named Firestore database rather than "(default)".
 const QPOS_FIRESTORE_DATABASE_ID = 'ai-studio-6936ecb8-f4bb-4b22-88cd-421a5053b2cd';
@@ -16,6 +17,10 @@ function getAdminApp() {
 
 export function getAdminDb() {
   return getFirestore(getAdminApp(), process.env.FIREBASE_DATABASE_ID || QPOS_FIRESTORE_DATABASE_ID);
+}
+
+export function getAdminAuth() {
+  return getAuth(getAdminApp());
 }
 
 export async function updateTenantSubscription(

@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store
+  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store, ShoppingBasket
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -34,6 +34,7 @@ import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { SplashScreen } from './components/SplashScreen';
 import { OnlineStoreSettings } from './components/OnlineStoreSettings';
 import { PublicStorefront } from './components/PublicStorefront';
+import { OnlineOrders } from './components/OnlineOrders';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -136,6 +137,7 @@ const AppContent: React.FC = () => {
     ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'online-store', name: 'Online Store', icon: Store, permission: 'canManageOnlineStore' },
+    { id: 'online-orders', name: 'Online Orders', icon: ShoppingBasket, permission: 'canViewOnlineOrders' },
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: isRestaurantBusiness ? 'Guests & Customers' : isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
@@ -167,6 +169,9 @@ const AppContent: React.FC = () => {
       case 'online-store':
         if (!canAccessTab('online-store')) return <SecurityBarrier />;
         return <OnlineStoreSettings />;
+      case 'online-orders':
+        if (!canAccessTab('online-orders')) return <SecurityBarrier />;
+        return <OnlineOrders />;
       case 'open-orders':
         if (!isRestaurantBusiness || !canAccessTab('open-orders')) return <SecurityBarrier />;
         return <RestaurantOpenOrders />;
@@ -400,19 +405,19 @@ const AppContent: React.FC = () => {
                 {isNotifDropdownOpen && (
                   <div className="absolute top-11 right-0 z-50 w-72 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-4 font-sans text-gray-800 dark:text-white">
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-900 pb-2 mb-2">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">Stock Notifications ({notifications.length})</span>
-                      <button onClick={() => setIsNotifDropdownOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xs">✕</button>
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">Notifications ({notifications.length})</span>
+                      <button onClick={() => setIsNotifDropdownOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xs" aria-label="Close notifications"><X className="h-4 w-4" /></button>
                     </div>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <p className="text-xs text-gray-400 py-6 text-center font-medium">All stock levels healthy</p>
+                        <p className="text-xs text-gray-400 py-6 text-center font-medium">Nothing needs your attention</p>
                       ) : (
                         notifications.slice(0, 5).map(n => (
                           <div key={n.id} className="flex justify-between items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
-                            <div>
-                              <p className="font-bold text-gray-900 dark:text-gray-100">⚠️ Low Inventory</p>
+                            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { if (n.type === 'online_order' && canAccessTab('online-orders')) setActiveTab('online-orders'); markNotificationRead(n.id); setIsNotifDropdownOpen(false); }}>
+                              <p className="font-bold text-gray-900 dark:text-gray-100">{n.title}</p>
                               <p className="text-gray-500 dark:text-gray-400 text-[10px] mt-0.5 leading-snug">{n.message}</p>
-                            </div>
+                            </button>
                             {!n.read && (
                               <button 
                                 onClick={() => markNotificationRead(n.id)}

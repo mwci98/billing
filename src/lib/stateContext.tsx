@@ -7,7 +7,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Product, Customer, Supplier, Sale, Purchase, 
   InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan,
-  Staff, StaffPermissions, AppUser, OnlineStoreConfig
+  Staff, StaffPermissions, AppUser, OnlineStoreConfig, OnlineOrder
 } from '../types';
 import { 
   INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_SUPPLIERS, 
@@ -99,6 +99,7 @@ interface AppContextType {
   sales: Sale[];
   purchases: Purchase[];
   transactions: InventoryTransaction[];
+  onlineOrders: OnlineOrder[];
   settings: StoreSettings;
   notifications: POSNotification[];
   staff: Staff[];
@@ -173,6 +174,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sales, setSales] = useState<Sale[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+  const [onlineOrders, setOnlineOrders] = useState<OnlineOrder[]>([]);
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
   const [notifications, setNotifications] = useState<POSNotification[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -269,7 +271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const initialiseEmptyStoreCache = (storeId: string) => {
     const scope = getStoreWorkspaceScope(storeId);
-    ['products', 'customers', 'suppliers', 'sales', 'purchases', 'transactions', 'staff'].forEach(key => {
+    ['products', 'customers', 'suppliers', 'sales', 'purchases', 'transactions', 'online_orders', 'staff'].forEach(key => {
       localStorage.setItem(`pos_${scope}_${key}`, JSON.stringify([]));
     });
   };
@@ -295,6 +297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localSales = localStorage.getItem(scopeKey('sales'));
     const localPurchases = localStorage.getItem(scopeKey('purchases'));
     const localTransactions = localStorage.getItem(scopeKey('transactions'));
+    const localOnlineOrders = localStorage.getItem(scopeKey('online_orders'));
     const localSettings = localStorage.getItem(ownerScopeKey('settings'));
     const localStaff = localStorage.getItem(scopeKey('staff'));
     const isPlayReviewWorkspace = currentUser?.email?.toLowerCase() === PLAY_REVIEW_EMAIL;
@@ -317,6 +320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSales(hydrateCollection('sales', localSales, INITIAL_SALES));
     setPurchases(hydrateCollection('purchases', localPurchases, INITIAL_PURCHASES));
     setTransactions(hydrateCollection('transactions', localTransactions, INITIAL_TRANSACTIONS));
+    setOnlineOrders(hydrateCollection('online_orders', localOnlineOrders, []));
     if (shouldSeedPlayReview) localStorage.setItem(reviewSeedKey, PLAY_REVIEW_SEED_VERSION);
 
     if (localSettings) {
@@ -460,6 +464,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/inventory_transactions`)
     );
 
+    const unsubOnlineOrders = onSnapshot(
+      collection(db, 'users', scope, 'online_orders'),
+      (snapshot) => {
+        const list = snapshot.docs
+          .map(orderDoc => orderDoc.data() as OnlineOrder)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setOnlineOrders(list);
+        localStorage.setItem(scopeKey('online_orders'), JSON.stringify(list));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/online_orders`)
+    );
+
     const unsubSettings = onSnapshot(
       collection(db, 'users', ownerScope, 'store_settings'),
       (snapshot) => {
@@ -500,6 +516,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSuppliers();
       unsubPurchases();
       unsubTransactions();
+      unsubOnlineOrders();
       unsubSettings();
       unsubStaff();
     };
@@ -563,8 +580,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 2. Automated Smart Notification Engine based on Live Catalog
   useEffect(() => {
-    if (products.length === 0) return;
-
     const list: POSNotification[] = [];
     const today = new Date();
     const tenDaysFromNow = new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000);
@@ -638,8 +653,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
+    onlineOrders.filter(order => order.status === 'PENDING_CONFIRMATION').forEach(order => {
+      list.push({
+        id: `notif-order-${order.id}`,
+        type: 'online_order',
+        title: 'New online order',
+        message: `${order.orderNumber} from ${order.customerName} is waiting for confirmation.`,
+        date: order.createdAt,
+        read: false,
+        referenceId: order.id
+      });
+    });
+
     setNotifications(list);
-  }, [products, customers, settings.currency]);
+  }, [products, customers, onlineOrders, settings.currency]);
 
   // Handle Dark mode transition
   const toggleDarkMode = (mode: boolean) => {
@@ -1855,6 +1882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sales,
         purchases,
         transactions,
+        onlineOrders,
         settings: effectiveSettings,
         notifications,
         staff,

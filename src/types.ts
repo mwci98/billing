@@ -61,6 +61,7 @@ export interface Product {
   sellingPrice: number;
   taxRate: number; // e.g. 18 for 18% GST
   stock: number;
+  reservedStock?: number;
   lowStockAlert: number;
   expiryDate?: string; // YYYY-MM-DD
   imageUrl?: string;
@@ -144,6 +145,52 @@ export interface Sale {
   tableNumber?: string;
   guestCount?: number;
   kitchenNotes?: string;
+  source?: 'POS' | 'ONLINE_STORE' | 'TABLE_QR';
+  onlineOrderId?: string;
+}
+
+export type OnlineOrderStatus = 'PENDING_CONFIRMATION' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+
+export interface OnlineOrderItem {
+  productId: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  variantId?: string;
+  variantName?: string;
+}
+
+export interface OnlineOrder {
+  id: string;
+  orderNumber: string;
+  source: 'ONLINE_STORE';
+  storeSlug: string;
+  workspaceScope: string;
+  locationKey: string;
+  locationName: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  fulfilment: 'PICKUP' | 'DELIVERY';
+  paymentMethod: 'COD' | 'PAY_AT_STORE' | 'ONLINE';
+  paymentStatus: 'UNPAID' | 'PAID';
+  status: OnlineOrderStatus;
+  items: OnlineOrderItem[];
+  subtotal: number;
+  taxAmount: number;
+  deliveryCharge: number;
+  total: number;
+  idempotencyKey: string;
+  trackingToken: string;
+  reservationActive: boolean;
+  saleId?: string;
+  createdAt: string;
+  updatedAt: string;
+  auditTrail: Array<{event: string; at: string; actor: string}>;
 }
 
 export interface PurchaseItem {
@@ -338,7 +385,7 @@ export interface SaaSPlan {
 
 export interface POSNotification {
   id: string;
-  type: 'low_stock' | 'out_of_stock' | 'expiry_alert' | 'due_payment';
+  type: 'low_stock' | 'out_of_stock' | 'expiry_alert' | 'due_payment' | 'online_order';
   title: string;
   message: string;
   date: string;

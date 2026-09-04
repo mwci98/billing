@@ -90,7 +90,7 @@ export default async function handler(request: any, response: any) {
             : [],
           availability: {},
         };
-        existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
+        existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
         publicProducts.set(document.id, existing);
       });
     });
