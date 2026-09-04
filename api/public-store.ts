@@ -30,7 +30,6 @@ export default async function handler(request: any, response: any) {
     const settingsSnapshot = await db.doc(`users/${ownerScope}/store_settings/active`).get();
     const settings = settingsSnapshot.data() || {};
     const store = settings.onlineStore || {};
-    const isRestaurant = String(settings.businessType || '').toLowerCase().includes('restaurant');
     if (!settingsSnapshot.exists || !store.enabled || store.slug !== slug) {
       return response.status(404).json({error: 'This online store is unavailable'});
     }
@@ -38,6 +37,9 @@ export default async function handler(request: any, response: any) {
     const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
     const primaryId = String(settings.tenantId || ownerScope);
     const participatingIds = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds.map(String) : [];
+    const participatingBranches = branches.filter((branch: any) => participatingIds.includes(String(branch.id)));
+    const isRestaurant = [settings.businessType, ...participatingBranches.map((branch: any) => branch.configuration?.businessType)]
+      .some(value => String(value || '').toLowerCase().includes('restaurant'));
     const locationDefinitions = participatingIds.map((id: string) => {
       const branch = branches.find((item: any) => String(item.id) === id);
       const primary = id === 'primary-store' || id === primaryId || id === ownerScope;

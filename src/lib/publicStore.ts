@@ -62,16 +62,18 @@ const developmentPreviewStore: PublicStorePayload = {
 // local cache to make the public route testable during development.
 const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null => {
   const settingsKey = Object.keys(localStorage).find(key => {
-    if (!key.startsWith('pos_') || !key.endsWith('_settings')) return false;
+    if (!/^pos_.+_settings$/.test(key)) return false;
     try { return JSON.parse(localStorage.getItem(key) || '{}').onlineStore?.slug === slug; } catch { return false; }
   });
   if (!settingsKey) return null;
   const settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
   const store = settings.onlineStore;
-  const isRestaurant = String(settings.businessType || '').toLowerCase().includes('restaurant');
   if (!store?.enabled) return null;
   const ownerScope = settingsKey.slice(4, -9);
   const branches = Array.isArray(settings.storeBranches) ? settings.storeBranches : [];
+  const participatingBranches = branches.filter((branch: any) => (store.participatingLocationIds || []).includes(branch.id));
+  const isRestaurant = [settings.businessType, ...participatingBranches.map((branch: any) => branch.configuration?.businessType)]
+    .some(value => String(value || '').toLowerCase().includes('restaurant'));
   const locations = (store.participatingLocationIds || []).map((id: string) => {
     const branch = branches.find((item: any) => item.id === id);
     const primary = id === 'primary-store' || id === settings.tenantId || id === ownerScope;
@@ -80,8 +82,15 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
     return {key, scope, name: primary ? settings.storeName : branch?.name || 'Store location', city: primary ? settings.address || '' : branch?.city || ''};
   });
   const products = new Map<string, PublicStoreProduct>();
+  const scopedProductKeys = Object.keys(localStorage).filter(key => key.startsWith(`pos_${ownerScope}`) && key.endsWith('_products'));
   locations.forEach((location: any) => {
-    const cached = JSON.parse(localStorage.getItem(`pos_${location.scope}_products`) || '[]');
+    const exactKey = `pos_${location.scope}_products`;
+    const cacheKey = localStorage.getItem(exactKey) !== null
+      ? exactKey
+      : locations.length === 1 && scopedProductKeys.length === 1
+        ? scopedProductKeys[0]
+        : exactKey;
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
     cached.filter((product: any) => isRestaurant ? product.showOnline !== false : product.showOnline === true).forEach((product: any) => {
       const existing = products.get(product.id) || {id: product.id, name: product.name, sku: product.sku || '', category: product.category || 'General', brand: product.brand || '', unit: product.unit || 'unit', image: product.onlineImage || product.imageUrl || '', description: product.onlineDescription || '', price: Number.isFinite(Number(product.onlinePrice)) ? Number(product.onlinePrice) : Number(product.sellingPrice || 0), variants: product.menuVariants || [], availability: {}};
       existing.availability[location.key] = product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0));
