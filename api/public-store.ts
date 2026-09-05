@@ -73,6 +73,7 @@ export default async function handler(request: any, response: any) {
       const location = locationDefinitions[index];
       snapshot.docs.forEach(document => {
         const product = document.data();
+        if (isRestaurant && product.itemType !== 'Service') return;
         if (isRestaurant ? product.showOnline === false : product.showOnline !== true) return;
         const existing = publicProducts.get(document.id) || {
           id: document.id,
