@@ -138,8 +138,8 @@ const AppContent: React.FC = () => {
     ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
     ...(isRestaurantBusiness ? [{ id: 'table-qr', name: 'Table QR', icon: Store, permission: 'canManageTableQr' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
-    { id: 'online-store', name: 'Online Store', icon: Store, permission: 'canManageOnlineStore' },
-    { id: 'online-orders', name: 'Online Orders', icon: ShoppingBasket, permission: 'canViewOnlineOrders' },
+    ...(isRestaurantBusiness ? [{ id: 'online-store', name: 'Online Store', icon: Store, permission: 'canManageOnlineStore' as keyof StaffPermissions }] : []),
+    ...(isRestaurantBusiness ? [{ id: 'online-orders', name: 'Online Orders', icon: ShoppingBasket, permission: 'canViewOnlineOrders' as keyof StaffPermissions }] : []),
     { id: 'inventory', name: 'Restock / Purchase', icon: Package, permission: 'canPurchase' },
     { id: 'customers', name: isRestaurantBusiness ? 'Guests & Customers' : isServiceBusiness ? 'Clients' : 'Customers Loyalty', icon: Users, permission: 'canManageCustomers' },
     { id: 'suppliers', name: 'Supplier', icon: Truck, permission: 'canManageCustomers' },
@@ -169,10 +169,10 @@ const AppContent: React.FC = () => {
         if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
       case 'online-store':
-        if (!canAccessTab('online-store')) return <SecurityBarrier />;
+        if (!isRestaurantBusiness || !canAccessTab('online-store')) return <SecurityBarrier />;
         return <OnlineStoreSettings />;
       case 'online-orders':
-        if (!canAccessTab('online-orders')) return <SecurityBarrier />;
+        if (!isRestaurantBusiness || !canAccessTab('online-orders')) return <SecurityBarrier />;
         return <OnlineOrders />;
       case 'table-qr':
         if (!isRestaurantBusiness || !canAccessTab('table-qr')) return <SecurityBarrier />;
