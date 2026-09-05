@@ -98,6 +98,7 @@ export default async function handler(request: any, response: any) {
     response.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
     return response.status(200).json({
       store: {
+        mode: isRestaurant ? 'Restaurant' : 'Retail',
         name: String(store.publicName || settings.storeName || 'Online Store'),
         logo: String(store.logo || ''),
         description: String(store.description || ''),

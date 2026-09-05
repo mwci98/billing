@@ -14,6 +14,7 @@ export interface PublicStoreProduct {
 
 export interface PublicStorePayload {
   store: {
+    mode: 'Retail' | 'Restaurant';
     name: string;
     logo: string;
     description: string;
@@ -97,7 +98,7 @@ const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStoreP
       existing.availability[locations[index].key] = restaurant || product.itemType === 'Service' ? 9999 : Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
       products.set(productDocument.id, existing);
     }));
-    return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
+    return {store: {mode: catalogMode === 'Restaurant' ? 'Restaurant' : 'Retail', name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
   } catch (error) {
     console.warn('Local public store preview could not read Firestore:', error);
     return null;
@@ -105,7 +106,7 @@ const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStoreP
 };
 
 const developmentPreviewStore: PublicStorePayload = {
-  store: {name: 'QPOS Preview Store', logo: '', description: 'Mobile storefront preview', contactNumber: '', whatsappNumber: '', currency: '₹', pickupEnabled: true, deliveryEnabled: true, deliveryCharge: 60, minimumOrder: 500, paymentMethods: ['COD', 'PAY_AT_STORE']},
+  store: {mode: 'Retail', name: 'QPOS Preview Store', logo: '', description: 'Mobile storefront preview', contactNumber: '', whatsappNumber: '', currency: '₹', pickupEnabled: true, deliveryEnabled: true, deliveryCharge: 60, minimumOrder: 500, paymentMethods: ['COD', 'PAY_AT_STORE']},
   locations: [{key: 'main', name: 'Kohima Store', city: 'Kohima'}, {key: 'dmr', name: 'Dimapur Store', city: 'Dimapur'}],
   products: [
     {id: 'preview-phone', name: 'Vivo Y75 5G 8GB / 128GB', sku: 'VY75', category: 'Smartphones', brand: 'Vivo', unit: 'piece', image: '📱', description: '5G smartphone with all-day battery.', price: 23999, variants: [{id: 'silver', name: 'Silver', price: 23999}, {id: 'black', name: 'Black', price: 24499}], availability: {main: 3, dmr: 0}},
@@ -176,7 +177,7 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
       products.set(product.id, existing);
     });
   });
-  return {store: {name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}: any) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
+  return {store: {mode: isRestaurant ? 'Restaurant' : 'Retail', name: store.publicName || settings.storeName, logo: store.logo || '', description: store.description || '', contactNumber: store.contactNumber || '', whatsappNumber: store.whatsappNumber || '', currency: settings.currency || '₹', pickupEnabled: Boolean(store.pickupEnabled), deliveryEnabled: Boolean(store.deliveryEnabled), deliveryCharge: Number(store.deliveryCharge || 0), minimumOrder: Number(store.minimumOrder || 0), maximumDeliveryDistanceKm: store.maximumDeliveryDistanceKm, paymentMethods: store.paymentMethods || []}, locations: locations.map(({key, scope, name, city}: any) => ({key, name, city, developmentScope: scope})), products: Array.from(products.values())};
 };
 
 export const createDevelopmentOnlineOrder = async (input: {
@@ -189,6 +190,7 @@ export const createDevelopmentOnlineOrder = async (input: {
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
+  customerNote?: string;
   items: Array<{productId: string; variantId?: string; quantity: number}>;
 }) => {
   if (!import.meta.env.DEV) throw new Error('Development order fallback is unavailable');
@@ -222,7 +224,7 @@ export const createDevelopmentOnlineOrder = async (input: {
     });
     const now = new Date().toISOString();
     const deliveryCharge = input.fulfilment === 'DELIVERY' ? input.payload.store.deliveryCharge : 0;
-    const order = {id: orderId, orderNumber: `ON-${new Date().getFullYear()}-${String(Date.now()).slice(-7)}`, source: 'ONLINE_STORE', storeSlug: input.slug, workspaceScope: location.developmentScope, locationKey: location.key, locationName: location.name, customerName: input.customerName.trim(), customerPhone: input.customerPhone, ...(input.customerAddress ? {customerAddress: input.customerAddress.trim()} : {}), fulfilment: input.fulfilment, paymentMethod: input.paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: subtotal + taxAmount + deliveryCharge, idempotencyKey: input.idempotencyKey, trackingToken: crypto.randomUUID().replace(/-/g, ''), reservationActive: false, createdAt: now, updatedAt: now, auditTrail: [{event: 'ORDER_CREATED', at: now, actor: 'CUSTOMER'}]};
+    const order = {id: orderId, orderNumber: `ON-${new Date().getFullYear()}-${String(Date.now()).slice(-7)}`, source: 'ONLINE_STORE', businessMode: input.payload.store.mode, storeSlug: input.slug, workspaceScope: location.developmentScope, locationKey: location.key, locationName: location.name, customerName: input.customerName.trim(), customerPhone: input.customerPhone, ...(input.customerAddress ? {customerAddress: input.customerAddress.trim()} : {}), ...(input.customerNote ? {customerNote: input.customerNote.trim().slice(0, 300)} : {}), fulfilment: input.fulfilment, paymentMethod: input.paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: subtotal + taxAmount + deliveryCharge, idempotencyKey: input.idempotencyKey, trackingToken: crypto.randomUUID().replace(/-/g, ''), reservationActive: false, createdAt: now, updatedAt: now, auditTrail: [{event: 'ORDER_CREATED', at: now, actor: 'CUSTOMER'}]};
     transaction.set(orderRef, order);
     return order;
   });

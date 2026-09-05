@@ -32,6 +32,7 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
   const [customerName, setCustomerName] = useState('');
   const [mobile, setMobile] = useState('');
   const [address, setAddress] = useState('');
+  const [customerNote, setCustomerNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'PAY_AT_STORE' | 'ONLINE'>('PAY_AT_STORE');
   const [submittedOrder, setSubmittedOrder] = useState<{orderNumber: string; status: string} | undefined>();
 
@@ -61,6 +62,7 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cart.reduce((sum, line) => sum + (line.variant?.price ?? line.product.price) * line.quantity, 0);
   const total = subtotal + (fulfilment === 'DELIVERY' ? payload?.store.deliveryCharge || 0 : 0);
+  const isRestaurant = payload?.store.mode === 'Restaurant';
   const locationChecks = useMemo(() => (payload?.locations || []).map(location => {
     const unavailable = cart.filter(line => (line.product.availability[location.key] || 0) < line.quantity);
     return {...location, unavailable};
@@ -93,13 +95,13 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
     const phoneDigits = mobile.replace(/\D/g, '');
     const normalizedPhone = mobile.trim().startsWith('+') ? `+${phoneDigits}` : phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
     if (import.meta.env.DEV) {
-      const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
+      const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
       setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
       setCart([]);
       sessionStorage.removeItem(idempotencyStorageKey);
       return;
     }
-    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
+    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'The order could not be submitted');
     setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
@@ -115,20 +117,21 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-white">{payload.store.logo ? imageValue(payload.store.logo, payload.store.name, 'h-full w-full') : <Store className="h-5 w-5 text-emerald-600" />}</div>
-          <div className="min-w-0 flex-1"><h1 className="truncate text-base font-black sm:text-lg">{payload.store.name}</h1><p className="truncate text-[11px] text-gray-500">{payload.store.description || 'Order directly from this QPOS store'}</p></div>
+          <div className="min-w-0 flex-1"><h1 className="truncate text-base font-black sm:text-lg">{payload.store.name}</h1><p className="truncate text-[11px] text-gray-500">{payload.store.description || (isRestaurant ? 'Order from our menu' : 'Order directly from this QPOS store')}</p></div>
           <button type="button" onClick={() => setCartOpen(true)} className="relative flex h-11 w-11 items-center justify-center rounded-md bg-gray-950 text-white" aria-label="Open cart"><ShoppingBag className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-black">{cartCount}</span>}</button>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        <div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search products" className="h-12 w-full rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-emerald-500" /></div>
+        {isRestaurant && <div className="mb-4"><p className="text-[10px] font-black uppercase text-emerald-600">Restaurant menu</p><h2 className="mt-1 text-2xl font-black">What would you like?</h2></div>}
+        <div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder={isRestaurant ? 'Search dishes and drinks' : 'Search products'} className="h-12 w-full rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-emerald-500" /></div>
         <div className="touch-scroll mt-3 flex gap-2 overflow-x-auto pb-2">{categories.map(item => <button key={item} type="button" onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${category === item ? 'bg-gray-950 text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{item}</button>)}</div>
 
-        {visibleProducts.length ? <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">{visibleProducts.map(product => {
+        {visibleProducts.length ? <div className={`mt-5 grid gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 ${isRestaurant ? 'grid-cols-1' : 'grid-cols-2'}`}>{visibleProducts.map(product => {
           const available = Math.max(0, ...Object.values(product.availability).map(Number));
-          return <article key={product.id} className="min-w-0 overflow-hidden rounded-md border border-gray-200 bg-white">
-            <button type="button" onClick={() => setSelectedProduct(product)} className="block w-full text-left"><div className="flex aspect-square items-center justify-center overflow-hidden bg-gray-50">{imageValue(product.image, product.name, 'h-full w-full')}</div><div className="p-3"><p className="line-clamp-2 min-h-10 text-sm font-black leading-5">{product.name}</p><p className="mt-1 truncate text-[10px] font-semibold uppercase text-gray-400">{product.brand || product.category}</p><div className="mt-3 flex items-end justify-between gap-2"><span className="font-mono text-sm font-black text-emerald-700">{payload.store.currency}{product.price.toFixed(2)}</span><ChevronRight className="h-4 w-4 text-gray-400" /></div></div></button>
-            <div className="px-3 pb-3"><button type="button" disabled={available < 1} onClick={() => product.variants.length ? setSelectedProduct(product) : addToCart(product)} className="h-10 w-full rounded-md bg-emerald-500 text-xs font-black text-white disabled:bg-gray-200 disabled:text-gray-500">{available < 1 ? 'Unavailable' : product.variants.length ? 'Choose option' : 'Add to cart'}</button></div>
+          return <article key={product.id} className={`min-w-0 overflow-hidden rounded-md border border-gray-200 bg-white ${isRestaurant ? 'flex sm:block' : ''}`}>
+            <button type="button" onClick={() => setSelectedProduct(product)} className={`text-left ${isRestaurant ? 'flex min-w-0 flex-1 sm:block' : 'block w-full'}`}><div className={`flex items-center justify-center overflow-hidden bg-gray-50 ${isRestaurant ? 'h-28 w-28 shrink-0 sm:h-auto sm:w-full sm:aspect-square' : 'aspect-square'}`}>{imageValue(product.image, product.name, 'h-full w-full')}</div><div className="min-w-0 flex-1 p-3"><p className="line-clamp-2 min-h-10 text-sm font-black leading-5">{product.name}</p><p className="mt-1 truncate text-[10px] font-semibold uppercase text-gray-400">{product.brand || product.category}</p><div className="mt-3 flex items-end justify-between gap-2"><span className="font-mono text-sm font-black text-emerald-700">{payload.store.currency}{product.price.toFixed(2)}</span><ChevronRight className="h-4 w-4 text-gray-400" /></div></div></button>
+            <div className={`${isRestaurant ? 'flex w-16 shrink-0 items-center p-2 sm:block sm:w-auto sm:px-3 sm:pb-3 sm:pt-0' : 'px-3 pb-3'}`}><button type="button" aria-label={`${product.variants.length ? 'Choose option for' : 'Add'} ${product.name}`} disabled={available < 1} onClick={() => product.variants.length ? setSelectedProduct(product) : addToCart(product)} className={`rounded-md bg-emerald-500 text-xs font-black text-white disabled:bg-gray-200 disabled:text-gray-500 ${isRestaurant ? 'h-11 w-11 text-lg sm:h-10 sm:w-full sm:text-xs' : 'h-10 w-full'}`}>{available < 1 ? '–' : isRestaurant ? <><span className="sm:hidden">+</span><span className="hidden sm:inline">{product.variants.length ? 'Choose option' : 'Add to order'}</span></> : product.variants.length ? 'Choose option' : 'Add to cart'}</button></div>
           </article>;
         })}</div> : <div className="py-24 text-center"><PackageSearch className="mx-auto h-9 w-9 text-gray-300" /><p className="mt-3 font-bold">No matching products</p></div>}
       </main>
@@ -137,7 +140,7 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
 
       {selectedProduct && <ProductSheet product={selectedProduct} currency={payload.store.currency} onClose={() => setSelectedProduct(null)} onAdd={addToCart} />}
       {cartOpen && <CartSheet cart={cart} currency={payload.store.currency} subtotal={subtotal} onClose={() => setCartOpen(false)} onChange={changeQuantity} onCheckout={beginCheckout} />}
-      {checkoutOpen && <VerifiedOnlineCheckout slug={slug} payload={payload} cart={cart} subtotal={subtotal} total={total} locationChecks={locationChecks} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} fulfilment={fulfilment} setFulfilment={setFulfilment} customerName={customerName} setCustomerName={setCustomerName} mobile={mobile} setMobile={setMobile} address={address} setAddress={setAddress} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} submittedOrder={submittedOrder} onClose={() => {setCheckoutOpen(false); setSubmittedOrder(undefined);}} onSubmitted={submitOrder} />}
+      {checkoutOpen && <VerifiedOnlineCheckout slug={slug} payload={payload} cart={cart} subtotal={subtotal} total={total} locationChecks={locationChecks} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} fulfilment={fulfilment} setFulfilment={setFulfilment} customerName={customerName} setCustomerName={setCustomerName} mobile={mobile} setMobile={setMobile} address={address} setAddress={setAddress} customerNote={customerNote} setCustomerNote={setCustomerNote} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} submittedOrder={submittedOrder} onClose={() => {setCheckoutOpen(false); setSubmittedOrder(undefined);}} onSubmitted={submitOrder} />}
     </div>
   );
 };

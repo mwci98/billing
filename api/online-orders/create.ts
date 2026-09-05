@@ -23,7 +23,7 @@ export default async function handler(request: any, response: any) {
     if (!['COD', 'PAY_AT_STORE'].includes(paymentMethod)) {
       return response.status(409).json({error: 'Online payment must be verified before this order can be submitted'});
     }
-    const {db, store, locationDefinitions} = await resolveStore(slug);
+    const {db, store, settings, locationDefinitions} = await resolveStore(slug);
     const location = locationDefinitions.find(item => item.key === locationKey);
     if (!location) return response.status(400).json({error: 'Choose a participating store location'});
     if (fulfilment === 'PICKUP' && !store.pickupEnabled) return response.status(400).json({error: 'Store pickup is unavailable'});
@@ -89,7 +89,9 @@ export default async function handler(request: any, response: any) {
       const merchandiseTotal = subtotal + taxAmount;
       if (fulfilment === 'DELIVERY' && merchandiseTotal < Number(store.minimumOrder || 0)) throw new Error('MINIMUM_ORDER');
       const trackingToken = token();
-      const order = {id: orderId, orderNumber: `ON-${now.getFullYear()}-${String(now.getTime()).slice(-7)}`, source: 'ONLINE_STORE', storeSlug: slug, workspaceScope: location.scope, locationKey, locationName: location.name, customerName: cleanText(request.body?.customerName, 100), customerPhone: verifiedPhone, ...(fulfilment === 'DELIVERY' ? {customerAddress: cleanText(request.body?.customerAddress, 500)} : {}), fulfilment, paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: merchandiseTotal + deliveryCharge, idempotencyKey, trackingToken, reservationActive: false, createdAt, updatedAt: createdAt, auditTrail: [{event: 'ORDER_CREATED', at: createdAt, actor: 'CUSTOMER'}]};
+      const businessMode = String(store.catalogMode || '').toLowerCase() === 'restaurant' || /restaurant|cafe|food/i.test(String(settings.businessType || '')) ? 'Restaurant' : 'Retail';
+      const customerNote = cleanText(request.body?.customerNote, 300);
+      const order = {id: orderId, orderNumber: `ON-${now.getFullYear()}-${String(now.getTime()).slice(-7)}`, source: 'ONLINE_STORE', businessMode, storeSlug: slug, workspaceScope: location.scope, locationKey, locationName: location.name, customerName: cleanText(request.body?.customerName, 100), customerPhone: verifiedPhone, ...(fulfilment === 'DELIVERY' ? {customerAddress: cleanText(request.body?.customerAddress, 500)} : {}), ...(customerNote ? {customerNote} : {}), fulfilment, paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: merchandiseTotal + deliveryCharge, idempotencyKey, trackingToken, reservationActive: false, createdAt, updatedAt: createdAt, auditTrail: [{event: 'ORDER_CREATED', at: createdAt, actor: 'CUSTOMER'}]};
       if (!order.customerName || (fulfilment === 'DELIVERY' && !order.customerAddress)) throw new Error('CUSTOMER_DETAILS');
       transaction.create(orderRef, order);
       transaction.set(idempotencyRef, {orderId, createdAt, expiresAt: Date.now() + 24 * 60 * 60 * 1000});

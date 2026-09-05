@@ -168,6 +168,7 @@ export interface OnlineOrder {
   id: string;
   orderNumber: string;
   source: 'ONLINE_STORE';
+  businessMode?: 'Retail' | 'Restaurant';
   storeSlug: string;
   workspaceScope: string;
   locationKey: string;
@@ -175,6 +176,7 @@ export interface OnlineOrder {
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
+  customerNote?: string;
   fulfilment: 'PICKUP' | 'DELIVERY';
   paymentMethod: 'COD' | 'PAY_AT_STORE' | 'ONLINE';
   paymentStatus: 'UNPAID' | 'PAID';
