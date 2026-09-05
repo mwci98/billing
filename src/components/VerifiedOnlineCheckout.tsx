@@ -30,7 +30,7 @@ interface Props {
   setPaymentMethod: (value: 'COD' | 'PAY_AT_STORE' | 'ONLINE') => void;
   onClose: () => void;
   onSubmitted: (idToken?: string) => Promise<void>;
-  submittedOrder?: {orderNumber: string; status: string};
+  submittedOrder?: {orderNumber: string; status: string; trackingToken?: string};
 }
 
 export const VerifiedOnlineCheckout: React.FC<Props> = props => {
@@ -43,6 +43,23 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
   const belowMinimum = props.fulfilment === 'DELIVERY' && props.subtotal < props.payload.store.minimumOrder;
   const isRestaurant = props.payload.store.mode === 'Restaurant';
   const availablePayments = useMemo(() => props.payload.store.paymentMethods.filter(method => method !== 'ONLINE'), [props.payload.store.paymentMethods]);
+  const [liveStatus, setLiveStatus] = useState(props.submittedOrder?.status || 'PENDING_CONFIRMATION');
+
+  useEffect(() => {
+    setLiveStatus(props.submittedOrder?.status || 'PENDING_CONFIRMATION');
+    if (!props.submittedOrder?.trackingToken) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const response = await fetch(`/api/online-orders/status?token=${encodeURIComponent(props.submittedOrder!.trackingToken!)}`);
+        const result = await response.json();
+        if (active && response.ok && result.status) setLiveStatus(result.status);
+      } catch { /* API routes are unavailable in local Vite preview. */ }
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [props.submittedOrder]);
 
   useEffect(() => {
     if (availablePayments.length && !availablePayments.includes(props.paymentMethod)) props.setPaymentMethod(availablePayments[0]);
@@ -69,7 +86,7 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
   };
 
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 sm:items-center sm:p-6" onMouseDown={event => event.target === event.currentTarget && props.onClose()}><section className="max-h-[92dvh] w-full overflow-y-auto rounded-t-md bg-white shadow-2xl sm:max-w-lg sm:rounded-md">
-    {props.submittedOrder ? <div className="p-8 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check className="h-7 w-7" /></div><h2 className="mt-5 text-xl font-black">Order received</h2><p className="mt-2 text-sm text-gray-500">Order <strong>{props.submittedOrder.orderNumber}</strong> is waiting for store confirmation.</p><button type="button" onClick={props.onClose} className="mt-6 h-12 w-full rounded-md bg-gray-950 text-sm font-black text-white">Continue shopping</button></div> : <form onSubmit={requestOtp}>
+    {props.submittedOrder ? <div className="p-8 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check className="h-7 w-7" /></div><h2 className="mt-5 text-xl font-black">Order status</h2><p className="mt-2 text-sm text-gray-500">Order <strong>{props.submittedOrder.orderNumber}</strong></p><OrderStatus status={liveStatus} /><p className="mt-3 text-xs text-gray-500">This page updates automatically.</p><button type="button" onClick={props.onClose} className="mt-6 h-12 w-full rounded-md bg-gray-950 text-sm font-black text-white">Continue shopping</button></div> : <form onSubmit={requestOtp}>
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white p-4"><button type="button" onClick={props.onClose} className="flex h-10 w-10 items-center justify-center" aria-label="Back"><ArrowLeft className="h-5 w-5" /></button><h2 className="flex-1 text-lg font-black">Checkout</h2><button type="button" onClick={props.onClose} className="flex h-10 w-10 items-center justify-center" aria-label="Close"><X className="h-5 w-5" /></button></div>
       <div className="space-y-6 p-4">
         <Section title="1. Fulfilment"><div className="grid grid-cols-2 gap-2">{props.payload.store.pickupEnabled && <Choice active={props.fulfilment === 'PICKUP'} onClick={() => props.setFulfilment('PICKUP')} icon={<ShoppingBag className="h-4 w-4" />} label={isRestaurant ? (props.tableMode ? 'At this table' : 'Takeaway') : 'Store pickup'} />}{props.payload.store.deliveryEnabled && !props.tableMode && <Choice active={props.fulfilment === 'DELIVERY'} onClick={() => props.setFulfilment('DELIVERY')} icon={<Truck className="h-4 w-4" />} label="Local delivery" />}</div></Section>
@@ -91,3 +108,4 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
 const Section = ({title, children}: {title: string; children: React.ReactNode}) => <div><p className="mb-2 text-xs font-black uppercase text-gray-500">{title}</p>{children}</div>;
 const Choice = ({active, onClick, icon, label}: {active: boolean; onClick: () => void; icon: React.ReactNode; label: string}) => <button type="button" onClick={onClick} className={`flex min-h-12 items-center justify-center gap-2 rounded-md border text-xs font-black ${active ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-gray-200'}`}>{icon}{label}</button>;
 const Row = ({label, value}: {label: string; value: string}) => <div className="mb-2 flex justify-between"><span>{label}</span><span className="font-mono">{value}</span></div>;
+const OrderStatus = ({status}: {status: string}) => { const steps = ['PENDING_CONFIRMATION', 'ACCEPTED', 'PREPARING', 'READY']; const index = steps.indexOf(status); const label: Record<string, string> = {PENDING_CONFIRMATION: 'Waiting for acceptance', ACCEPTED: 'Accepted by the store', PREPARING: 'Being prepared', READY: 'Ready for pickup', COMPLETED: 'Completed', REJECTED: 'Rejected', CANCELLED: 'Cancelled'}; return <div className="mt-6 rounded-md border border-gray-200 p-4 text-left"><p className="text-sm font-black">{label[status] || status}</p><div className="mt-3 grid grid-cols-4 gap-1">{steps.map((step, i) => <div key={step} className={`h-2 rounded-full ${status === 'REJECTED' || status === 'CANCELLED' ? 'bg-red-400' : i <= index ? 'bg-emerald-500' : 'bg-gray-200'}`} />)}</div></div> };

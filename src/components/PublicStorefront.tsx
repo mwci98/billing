@@ -34,7 +34,7 @@ export const PublicStorefront: React.FC<{slug: string; tableToken?: string}> = (
   const [address, setAddress] = useState('');
   const [customerNote, setCustomerNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'PAY_AT_STORE' | 'ONLINE'>('PAY_AT_STORE');
-  const [submittedOrder, setSubmittedOrder] = useState<{orderNumber: string; status: string} | undefined>();
+  const [submittedOrder, setSubmittedOrder] = useState<{orderNumber: string; status: string; trackingToken?: string} | undefined>();
 
   useEffect(() => {
     document.getElementById('qpos-startup-splash')?.remove();
@@ -97,7 +97,7 @@ export const PublicStorefront: React.FC<{slug: string; tableToken?: string}> = (
     const normalizedPhone = mobile.trim().startsWith('+') ? `+${phoneDigits}` : phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
     if (import.meta.env.DEV) {
       const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, tableToken, payloadTableName: payload.table?.name, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
-      setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
+      setSubmittedOrder({orderNumber: result.orderNumber, status: result.status, trackingToken: result.trackingToken});
       setCart([]);
       sessionStorage.removeItem(idempotencyStorageKey);
       return;
@@ -105,7 +105,7 @@ export const PublicStorefront: React.FC<{slug: string; tableToken?: string}> = (
     const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, tableToken, tableName: payload.table?.name, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'The order could not be submitted');
-    setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
+    setSubmittedOrder({orderNumber: result.orderNumber, status: result.status, trackingToken: result.trackingToken});
     setCart([]);
     sessionStorage.removeItem(idempotencyStorageKey);
   };

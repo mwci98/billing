@@ -221,7 +221,7 @@ export const createDevelopmentOnlineOrder = async (input: {
   const orderRef = doc(db, 'users', location.developmentScope, 'online_orders', orderId);
   return runTransaction(db, async transaction => {
     const existing = await transaction.get(orderRef);
-    if (existing.exists()) return existing.data() as {orderNumber: string; status: string};
+    if (existing.exists()) return existing.data() as {orderNumber: string; status: string; trackingToken?: string};
     const productRefs = input.items.map(item => doc(db, 'users', location.developmentScope!, 'products', item.productId));
     const snapshots = await Promise.all(productRefs.map(reference => transaction.get(reference)));
     let subtotal = 0;
