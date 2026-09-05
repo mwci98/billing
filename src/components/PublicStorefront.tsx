@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {ChevronRight, Minus, PackageSearch, Plus, Search, ShoppingBag, Store, X} from 'lucide-react';
-import {createDevelopmentOnlineOrder, loadPublicStore, PublicStorePayload, PublicStoreProduct} from '../lib/publicStore';
+import {createDevelopmentOnlineOrder, loadPublicStore, loadTableStore, PublicStorePayload, PublicStoreProduct} from '../lib/publicStore';
 import {VerifiedOnlineCheckout} from './VerifiedOnlineCheckout';
 
 interface CartLine {
@@ -16,7 +16,7 @@ const imageValue = (value: string, name: string, className: string) => {
 
 const lineKey = (line: Pick<CartLine, 'product' | 'variant'>) => `${line.product.id}:${line.variant?.id || 'default'}`;
 
-export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
+export const PublicStorefront: React.FC<{slug: string; tableToken?: string}> = ({slug, tableToken}) => {
   const [payload, setPayload] = useState<PublicStorePayload | null>(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -42,15 +42,16 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
 
   useEffect(() => {
     let active = true;
-    loadPublicStore(slug).then(data => {
+    (tableToken ? loadTableStore(tableToken) : loadPublicStore(slug)).then(data => {
       if (!active) return;
       setPayload(data);
       setFulfilment(data.store.pickupEnabled ? 'PICKUP' : 'DELIVERY');
+      if (data.table) setSelectedLocation(data.table.locationKey);
       setPaymentMethod(data.store.paymentMethods[0] || 'PAY_AT_STORE');
       document.title = `${data.store.name} | QPOS`;
     }).catch(reason => active && setError(reason instanceof Error ? reason.message : 'Store unavailable'));
     return () => { active = false; };
-  }, [slug]);
+  }, [slug, tableToken]);
 
   useEffect(() => localStorage.setItem(`qpos-store-cart:${slug}`, JSON.stringify(cart)), [cart, slug]);
 
@@ -95,13 +96,13 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
     const phoneDigits = mobile.replace(/\D/g, '');
     const normalizedPhone = mobile.trim().startsWith('+') ? `+${phoneDigits}` : phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
     if (import.meta.env.DEV) {
-      const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
+      const result = await createDevelopmentOnlineOrder({slug, payload, locationKey: selectedLocation, tableToken, payloadTableName: payload.table?.name, idempotencyKey, fulfilment, paymentMethod: paymentMethod as 'COD' | 'PAY_AT_STORE', customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))});
       setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
       setCart([]);
       sessionStorage.removeItem(idempotencyStorageKey);
       return;
     }
-    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
+    const response = await fetch('/api/online-orders/create', {method: 'POST', headers: {'Content-Type': 'application/json', ...(idToken ? {Authorization: `Bearer ${idToken}`} : {})}, body: JSON.stringify({slug, locationKey: selectedLocation, tableToken, tableName: payload.table?.name, idempotencyKey, fulfilment, paymentMethod, customerName, customerPhone: normalizedPhone, customerAddress: address, customerNote, items: cart.map(line => ({productId: line.product.id, variantId: line.variant?.id, quantity: line.quantity}))})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'The order could not be submitted');
     setSubmittedOrder({orderNumber: result.orderNumber, status: result.status});
@@ -123,7 +124,7 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        {isRestaurant && <div className="mb-4"><p className="text-[10px] font-black uppercase text-emerald-600">Restaurant menu</p><h2 className="mt-1 text-2xl font-black">What would you like?</h2></div>}
+        {isRestaurant && <div className="mb-4"><p className="text-[10px] font-black uppercase text-emerald-600">{payload.table ? `${payload.table.name} · Restaurant menu` : 'Restaurant menu'}</p><h2 className="mt-1 text-2xl font-black">{payload.table ? 'Order for your table' : 'What would you like?'}</h2></div>}
         <div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder={isRestaurant ? 'Search dishes and drinks' : 'Search products'} className="h-12 w-full rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-emerald-500" /></div>
         <div className="touch-scroll mt-3 flex gap-2 overflow-x-auto pb-2">{categories.map(item => <button key={item} type="button" onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${category === item ? 'bg-gray-950 text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{item}</button>)}</div>
 
@@ -140,7 +141,7 @@ export const PublicStorefront: React.FC<{slug: string}> = ({slug}) => {
 
       {selectedProduct && <ProductSheet product={selectedProduct} currency={payload.store.currency} onClose={() => setSelectedProduct(null)} onAdd={addToCart} />}
       {cartOpen && <CartSheet cart={cart} currency={payload.store.currency} subtotal={subtotal} onClose={() => setCartOpen(false)} onChange={changeQuantity} onCheckout={beginCheckout} />}
-      {checkoutOpen && <VerifiedOnlineCheckout slug={slug} payload={payload} cart={cart} subtotal={subtotal} total={total} locationChecks={locationChecks} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} fulfilment={fulfilment} setFulfilment={setFulfilment} customerName={customerName} setCustomerName={setCustomerName} mobile={mobile} setMobile={setMobile} address={address} setAddress={setAddress} customerNote={customerNote} setCustomerNote={setCustomerNote} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} submittedOrder={submittedOrder} onClose={() => {setCheckoutOpen(false); setSubmittedOrder(undefined);}} onSubmitted={submitOrder} />}
+      {checkoutOpen && <VerifiedOnlineCheckout slug={slug} payload={payload} cart={cart} subtotal={subtotal} total={total} locationChecks={locationChecks} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} fulfilment={fulfilment} setFulfilment={setFulfilment} customerName={customerName} setCustomerName={setCustomerName} mobile={mobile} setMobile={setMobile} address={address} setAddress={setAddress} customerNote={customerNote} setCustomerNote={setCustomerNote} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} submittedOrder={submittedOrder} tableMode={Boolean(payload.table)} onClose={() => {setCheckoutOpen(false); setSubmittedOrder(undefined);}} onSubmitted={submitOrder} />}
     </div>
   );
 };

@@ -167,8 +167,11 @@ export interface OnlineOrderItem {
 export interface OnlineOrder {
   id: string;
   orderNumber: string;
-  source: 'ONLINE_STORE';
+  source: 'ONLINE_STORE' | 'TABLE_QR';
   businessMode?: 'Retail' | 'Restaurant';
+  tableToken?: string;
+  tableName?: string;
+  diningSessionId?: string;
   storeSlug: string;
   workspaceScope: string;
   locationKey: string;
@@ -193,6 +196,19 @@ export interface OnlineOrder {
   createdAt: string;
   updatedAt: string;
   auditTrail: Array<{event: string; at: string; actor: string}>;
+}
+
+export interface TableQrTable {
+  id: string;
+  name: string;
+  token: string;
+  locationId: string;
+  locationKey: string;
+  locationName: string;
+  slug: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PurchaseItem {

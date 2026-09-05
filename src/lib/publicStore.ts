@@ -30,7 +30,25 @@ export interface PublicStorePayload {
   };
   locations: Array<{key: string; name: string; city: string; developmentScope?: string}>;
   products: PublicStoreProduct[];
+  table?: {token: string; name: string; locationKey: string};
 }
+
+export const loadTableStore = async (token: string) => {
+  let mapping: any;
+  try {
+    const response = await fetch(`/api/table-store?token=${encodeURIComponent(token)}`);
+    mapping = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(mapping.error || 'This table QR is unavailable');
+  } catch (error) {
+    if (!import.meta.env.DEV) throw error;
+    const [{db}, {doc, getDoc}] = await Promise.all([import('./firebase'), import('firebase/firestore')]);
+    const snapshot = await getDoc(doc(db, 'public_tables', token));
+    mapping = snapshot.data();
+    if (!snapshot.exists() || !mapping?.active) throw new Error('This table QR is unavailable');
+  }
+  const payload = await loadPublicStore(mapping.slug);
+  return {...payload, table: {token, name: String(mapping.tableName || 'Table'), locationKey: String(mapping.locationKey || '')}};
+};
 
 export const loadPublicStore = async (slug: string): Promise<PublicStorePayload> => {
   try {
@@ -187,6 +205,8 @@ export const createDevelopmentOnlineOrder = async (input: {
   idempotencyKey: string;
   fulfilment: 'PICKUP' | 'DELIVERY';
   paymentMethod: 'COD' | 'PAY_AT_STORE';
+  tableToken?: string;
+  payloadTableName?: string;
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
@@ -224,7 +244,7 @@ export const createDevelopmentOnlineOrder = async (input: {
     });
     const now = new Date().toISOString();
     const deliveryCharge = input.fulfilment === 'DELIVERY' ? input.payload.store.deliveryCharge : 0;
-    const order = {id: orderId, orderNumber: `ON-${new Date().getFullYear()}-${String(Date.now()).slice(-7)}`, source: 'ONLINE_STORE', businessMode: input.payload.store.mode, storeSlug: input.slug, workspaceScope: location.developmentScope, locationKey: location.key, locationName: location.name, customerName: input.customerName.trim(), customerPhone: input.customerPhone, ...(input.customerAddress ? {customerAddress: input.customerAddress.trim()} : {}), ...(input.customerNote ? {customerNote: input.customerNote.trim().slice(0, 300)} : {}), fulfilment: input.fulfilment, paymentMethod: input.paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: subtotal + taxAmount + deliveryCharge, idempotencyKey: input.idempotencyKey, trackingToken: crypto.randomUUID().replace(/-/g, ''), reservationActive: false, createdAt: now, updatedAt: now, auditTrail: [{event: 'ORDER_CREATED', at: now, actor: 'CUSTOMER'}]};
+    const order = {id: orderId, orderNumber: `ON-${new Date().getFullYear()}-${String(Date.now()).slice(-7)}`, source: input.tableToken ? 'TABLE_QR' : 'ONLINE_STORE', businessMode: input.payload.store.mode, ...(input.tableToken ? {tableToken: input.tableToken, tableName: input.payloadTableName} : {}), storeSlug: input.slug, workspaceScope: location.developmentScope, locationKey: location.key, locationName: location.name, customerName: input.customerName.trim(), customerPhone: input.customerPhone, ...(input.customerAddress ? {customerAddress: input.customerAddress.trim()} : {}), ...(input.customerNote ? {customerNote: input.customerNote.trim().slice(0, 300)} : {}), fulfilment: input.fulfilment, paymentMethod: input.paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: subtotal + taxAmount + deliveryCharge, idempotencyKey: input.idempotencyKey, trackingToken: crypto.randomUUID().replace(/-/g, ''), reservationActive: false, createdAt: now, updatedAt: now, auditTrail: [{event: 'ORDER_CREATED', at: now, actor: 'CUSTOMER'}]};
     transaction.set(orderRef, order);
     return order;
   });

@@ -35,6 +35,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { OnlineStoreSettings } from './components/OnlineStoreSettings';
 import { PublicStorefront } from './components/PublicStorefront';
 import { OnlineOrders } from './components/OnlineOrders';
+import { TableQrManagement } from './components/TableQrManagement';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -135,6 +136,7 @@ const AppContent: React.FC = () => {
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
     { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
     ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
+    ...(isRestaurantBusiness ? [{ id: 'table-qr', name: 'Table QR', icon: Store, permission: 'canManageTableQr' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
     { id: 'online-store', name: 'Online Store', icon: Store, permission: 'canManageOnlineStore' },
     { id: 'online-orders', name: 'Online Orders', icon: ShoppingBasket, permission: 'canViewOnlineOrders' },
@@ -172,6 +174,9 @@ const AppContent: React.FC = () => {
       case 'online-orders':
         if (!canAccessTab('online-orders')) return <SecurityBarrier />;
         return <OnlineOrders />;
+      case 'table-qr':
+        if (!isRestaurantBusiness || !canAccessTab('table-qr')) return <SecurityBarrier />;
+        return <TableQrManagement />;
       case 'open-orders':
         if (!isRestaurantBusiness || !canAccessTab('open-orders')) return <SecurityBarrier />;
         return <RestaurantOpenOrders />;
@@ -536,6 +541,8 @@ const SecurityBarrier: React.FC = () => (
 );
 
 export default function App() {
+  const tableStoreMatch = window.location.pathname.match(/^\/r\/([a-z0-9-]+)\/table\/([a-zA-Z0-9]+)\/?$/i);
+  if (tableStoreMatch) return <PublicStorefront slug={tableStoreMatch[1].toLowerCase()} tableToken={tableStoreMatch[2]} />;
   const publicStoreMatch = window.location.pathname.match(/^\/store\/([a-z0-9-]+)\/?$/i);
   if (publicStoreMatch) return <PublicStorefront slug={publicStoreMatch[1].toLowerCase()} />;
 

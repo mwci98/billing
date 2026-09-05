@@ -16,6 +16,7 @@ export default async function handler(request: any, response: any) {
     const idempotencyKey = cleanText(request.body?.idempotencyKey, 100);
     const fulfilment = request.body?.fulfilment === 'DELIVERY' ? 'DELIVERY' : 'PICKUP';
     const paymentMethod = request.body?.paymentMethod;
+    const tableToken = cleanText(request.body?.tableToken, 80);
     const requestedItems = Array.isArray(request.body?.items) ? request.body.items : [];
     if (!/^[a-z0-9-]{3,60}$/.test(slug) || !locationKey || idempotencyKey.length < 16 || !requestedItems.length || requestedItems.length > 30) {
       return response.status(400).json({error: 'Order details are incomplete'});
@@ -29,6 +30,12 @@ export default async function handler(request: any, response: any) {
     if (fulfilment === 'PICKUP' && !store.pickupEnabled) return response.status(400).json({error: 'Store pickup is unavailable'});
     if (fulfilment === 'DELIVERY' && !store.deliveryEnabled) return response.status(400).json({error: 'Delivery is unavailable'});
     if (!store.paymentMethods?.includes(paymentMethod)) return response.status(400).json({error: 'That payment method is unavailable'});
+    let tableMapping: any = null;
+    if (tableToken) {
+      const tableSnapshot = await db.doc(`public_tables/${tableToken}`).get();
+      tableMapping = tableSnapshot.data();
+      if (!tableSnapshot.exists || !tableMapping?.active || tableMapping.slug !== slug || tableMapping.locationKey !== locationKey) return response.status(400).json({error: 'This table QR is no longer active'});
+    }
 
     const normalizedItems = requestedItems.map((item: any) => ({
       productId: cleanText(item.productId, 120),
@@ -47,10 +54,12 @@ export default async function handler(request: any, response: any) {
     const createdAt = now.toISOString();
     const orderId = `ord-${now.getTime().toString(36)}-${token().slice(0, 6)}`;
     const orderRef = db.doc(`users/${location.scope}/online_orders/${orderId}`);
+    const sessionRef = tableToken ? db.doc(`users/${location.scope}/dining_sessions/${tableToken}`) : null;
     const result = await db.runTransaction(async transaction => {
-      const [idempotencySnapshot, rateSnapshot, ...productSnapshots] = await Promise.all([
+      const [idempotencySnapshot, rateSnapshot, sessionSnapshot, ...productSnapshots] = await Promise.all([
         transaction.get(idempotencyRef),
         transaction.get(rateRef),
+        ...(sessionRef ? [transaction.get(sessionRef)] : [Promise.resolve(null)]),
         ...productRefs.map(ref => transaction.get(ref)),
       ]);
       if (idempotencySnapshot.exists) {
@@ -91,9 +100,12 @@ export default async function handler(request: any, response: any) {
       const trackingToken = token();
       const businessMode = String(store.catalogMode || '').toLowerCase() === 'restaurant' || /restaurant|cafe|food/i.test(String(settings.businessType || '')) ? 'Restaurant' : 'Retail';
       const customerNote = cleanText(request.body?.customerNote, 300);
-      const order = {id: orderId, orderNumber: `ON-${now.getFullYear()}-${String(now.getTime()).slice(-7)}`, source: 'ONLINE_STORE', businessMode, storeSlug: slug, workspaceScope: location.scope, locationKey, locationName: location.name, customerName: cleanText(request.body?.customerName, 100), customerPhone: verifiedPhone, ...(fulfilment === 'DELIVERY' ? {customerAddress: cleanText(request.body?.customerAddress, 500)} : {}), ...(customerNote ? {customerNote} : {}), fulfilment, paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: merchandiseTotal + deliveryCharge, idempotencyKey, trackingToken, reservationActive: false, createdAt, updatedAt: createdAt, auditTrail: [{event: 'ORDER_CREATED', at: createdAt, actor: 'CUSTOMER'}]};
+      const activeSession = tableToken && (sessionSnapshot as any)?.exists && (sessionSnapshot as any).data()?.status === 'ACTIVE';
+      const diningSessionId = tableToken ? String(activeSession ? (sessionSnapshot as any).data()?.id : `session-${Date.now().toString(36)}`) : undefined;
+      const order = {id: orderId, orderNumber: `ON-${now.getFullYear()}-${String(now.getTime()).slice(-7)}`, source: tableToken ? 'TABLE_QR' : 'ONLINE_STORE', businessMode, ...(tableToken ? {tableToken, tableName: String(tableMapping.tableName || request.body?.tableName || 'Table'), diningSessionId} : {}), storeSlug: slug, workspaceScope: location.scope, locationKey, locationName: location.name, customerName: cleanText(request.body?.customerName, 100), customerPhone: verifiedPhone, ...(fulfilment === 'DELIVERY' ? {customerAddress: cleanText(request.body?.customerAddress, 500)} : {}), ...(customerNote ? {customerNote} : {}), fulfilment, paymentMethod, paymentStatus: 'UNPAID', status: 'PENDING_CONFIRMATION', items, subtotal, taxAmount, deliveryCharge, total: merchandiseTotal + deliveryCharge, idempotencyKey, trackingToken, reservationActive: false, createdAt, updatedAt: createdAt, auditTrail: [{event: 'ORDER_CREATED', at: createdAt, actor: 'CUSTOMER'}]};
       if (!order.customerName || (fulfilment === 'DELIVERY' && !order.customerAddress)) throw new Error('CUSTOMER_DETAILS');
       transaction.create(orderRef, order);
+      if (sessionRef && !activeSession) transaction.set(sessionRef, {id: diningSessionId, tableToken, tableName: order.tableName, locationKey, status: 'ACTIVE', createdAt, updatedAt: createdAt, ...((sessionSnapshot as any)?.exists ? {reopenedAt: createdAt} : {})});
       transaction.set(idempotencyRef, {orderId, createdAt, expiresAt: Date.now() + 24 * 60 * 60 * 1000});
       transaction.set(rateRef, {attempts: attempts + 1, windowStartedAt: inWindow ? windowStartedAt : Date.now(), updatedAt: FieldValue.serverTimestamp()});
       transaction.set(db.doc(`public_order_receipts/${trackingToken}`), {workspaceScope: location.scope, orderId, expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000});
