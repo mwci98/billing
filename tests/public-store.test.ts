@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import handler from '../api/public-store';
+import {adminStoreAdapter} from '../src/server/adapters/store';
+const response = () => ({statusCode: 0, body: undefined as any, headers: {} as Record<string, string>, status(code: number) { this.statusCode = code; return this; }, json(value: any) { this.body = value; return this; }, setHeader(name: string, value: string) { this.headers[name] = value; }});
+test('public store returns the configured catalog', async () => { const docs = [{id: 'p1', data: () => ({id: 'p1', name: 'Momo', itemType: 'Service', showOnline: true, sellingPrice: 200})}]; const fakeDb: any = {doc: (path: string) => ({get: async () => path.startsWith('public_stores/') ? {exists: true, data: () => ({enabled: true, ownerScope: 'owner', locationId: 'primary-store'})} : {exists: true, data: () => ({storeName: 'Test', businessType: 'Restaurant', onlineStore: {enabled: true, slug: 'wow', catalogMode: 'Restaurant', participatingLocationIds: ['primary-store']}})}}), collection: () => ({get: async () => ({docs})})}; adminStoreAdapter.setDbForTests(() => fakeDb); const res = response(); await handler({method: 'GET', query: {slug: 'wow'}}, res); adminStoreAdapter.reset(); assert.equal(res.statusCode, 200); assert.equal(res.body.products[0].name, 'Momo'); });

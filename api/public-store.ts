@@ -1,4 +1,4 @@
-import {getAdminDb} from './_firebase-admin.js';
+import {adminStoreAdapter} from '../src/server/adapters/store.js';
 
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$/;
 
@@ -19,7 +19,7 @@ export default async function handler(request: any, response: any) {
   if (!slugPattern.test(slug)) return response.status(400).json({error: 'Invalid store address'});
 
   try {
-    const db = getAdminDb();
+    const db = adminStoreAdapter.getDb();
     const registrySnapshot = await db.doc(`public_stores/${slug}`).get();
     const registry = registrySnapshot.data();
     if (!registrySnapshot.exists || !registry?.enabled || !registry?.ownerScope) {
