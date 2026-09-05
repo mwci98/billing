@@ -96,7 +96,7 @@ const loadDevelopmentFirestoreStore = async (slug: string): Promise<PublicStoreP
     };
     const catalogMode = store.catalogMode || locationMode(store.originLocationId || registry.locationId || primaryId);
     const configuredIds: string[] = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds : [];
-    const participatingIds = configuredIds.filter(id => locationMode(id) === catalogMode);
+    const participatingIds = catalogMode === 'Restaurant' ? configuredIds : configuredIds.filter(id => locationMode(id) === catalogMode);
     if (!participatingIds.length) participatingIds.push(store.originLocationId || registry.locationId || primaryId);
     const locations = participatingIds.map(id => {
       const primary = id === 'primary-store' || id === primaryId || id === ownerScope;
@@ -165,7 +165,7 @@ const loadLocalPublicStorePreview = (slug: string): PublicStorePayload | null =>
   const configuredIds = store.participatingLocationIds || [];
   const legacyHasRestaurantOutlet = branches.some((branch: any) => configuredIds.includes(branch.id) && locationMode(branch.id) === 'Restaurant');
   const catalogMode = store.catalogMode || (legacyHasRestaurantOutlet ? 'Restaurant' : locationMode(store.originLocationId || primaryId));
-  const participatingIds = configuredIds.filter((id: string) => locationMode(id) === catalogMode);
+  const participatingIds = catalogMode === 'Restaurant' ? configuredIds : configuredIds.filter((id: string) => locationMode(id) === catalogMode);
   if (!participatingIds.length && store.originLocationId) participatingIds.push(store.originLocationId);
   const isRestaurant = catalogMode === 'Restaurant';
   const locations = participatingIds.map((id: string) => {

@@ -52,7 +52,7 @@ export default async function handler(request: any, response: any) {
     };
     const catalogMode = String(store.catalogMode || locationMode(store.originLocationId || registryLocationId || primaryId));
     const configuredIds = Array.isArray(store.participatingLocationIds) ? store.participatingLocationIds.map(String) : [];
-    const participatingIds = configuredIds.filter((id: string) => locationMode(id) === catalogMode);
+    const participatingIds = catalogMode === 'Restaurant' ? configuredIds : configuredIds.filter((id: string) => locationMode(id) === catalogMode);
     if (!participatingIds.length && (store.originLocationId || registryLocationId)) participatingIds.push(String(store.originLocationId || registryLocationId));
     const isRestaurant = catalogMode === 'Restaurant';
     const locationDefinitions = participatingIds.map((id: string) => {
