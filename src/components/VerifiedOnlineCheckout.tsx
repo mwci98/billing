@@ -47,7 +47,7 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
 
   useEffect(() => {
     setLiveStatus(props.submittedOrder?.status || 'PENDING_CONFIRMATION');
-    if (!props.submittedOrder?.trackingToken) return;
+    if (!isRestaurant || !props.submittedOrder?.trackingToken) return;
     let active = true;
     const refresh = async () => {
       try {
@@ -59,7 +59,7 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
     void refresh();
     const timer = window.setInterval(refresh, 5000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [props.submittedOrder]);
+  }, [props.submittedOrder, isRestaurant]);
 
   useEffect(() => {
     if (availablePayments.length && !availablePayments.includes(props.paymentMethod)) props.setPaymentMethod(availablePayments[0]);
@@ -86,7 +86,7 @@ export const VerifiedOnlineCheckout: React.FC<Props> = props => {
   };
 
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 sm:items-center sm:p-6" onMouseDown={event => event.target === event.currentTarget && props.onClose()}><section className="max-h-[92dvh] w-full overflow-y-auto rounded-t-md bg-white shadow-2xl sm:max-w-lg sm:rounded-md">
-    {props.submittedOrder ? <div className="p-8 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check className="h-7 w-7" /></div><h2 className="mt-5 text-xl font-black">Order status</h2><p className="mt-2 text-sm text-gray-500">Order <strong>{props.submittedOrder.orderNumber}</strong></p><OrderStatus status={liveStatus} /><p className="mt-3 text-xs text-gray-500">This page updates automatically.</p><button type="button" onClick={props.onClose} className="mt-6 h-12 w-full rounded-md bg-gray-950 text-sm font-black text-white">Continue shopping</button></div> : <form onSubmit={requestOtp}>
+    {props.submittedOrder ? <div className="p-8 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check className="h-7 w-7" /></div><h2 className="mt-5 text-xl font-black">{isRestaurant ? 'Order status' : 'Order received'}</h2><p className="mt-2 text-sm text-gray-500">Order <strong>{props.submittedOrder.orderNumber}</strong>{isRestaurant ? '' : ' has been received successfully.'}</p>{isRestaurant ? <><OrderStatus status={liveStatus} /><p className="mt-3 text-xs text-gray-500">This page updates automatically.</p></> : null}<button type="button" onClick={props.onClose} className="mt-6 h-12 w-full rounded-md bg-gray-950 text-sm font-black text-white">Continue shopping</button></div> : <form onSubmit={requestOtp}>
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white p-4"><button type="button" onClick={props.onClose} className="flex h-10 w-10 items-center justify-center" aria-label="Back"><ArrowLeft className="h-5 w-5" /></button><h2 className="flex-1 text-lg font-black">Checkout</h2><button type="button" onClick={props.onClose} className="flex h-10 w-10 items-center justify-center" aria-label="Close"><X className="h-5 w-5" /></button></div>
       <div className="space-y-6 p-4">
         <Section title="1. Fulfilment"><div className="grid grid-cols-2 gap-2">{props.payload.store.pickupEnabled && <Choice active={props.fulfilment === 'PICKUP'} onClick={() => props.setFulfilment('PICKUP')} icon={<ShoppingBag className="h-4 w-4" />} label={isRestaurant ? (props.tableMode ? 'At this table' : 'Takeaway') : 'Store pickup'} />}{props.payload.store.deliveryEnabled && !props.tableMode && <Choice active={props.fulfilment === 'DELIVERY'} onClick={() => props.setFulfilment('DELIVERY')} icon={<Truck className="h-4 w-4" />} label="Local delivery" />}</div></Section>
