@@ -1,5 +1,5 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
-import {updateTenantSubscription} from '../_firebase-admin.js';
+import {subscriptionAdapter} from '../../src/server/adapters/subscription.js';
 
 export const config = {
   api: {bodyParser: false},
@@ -101,7 +101,7 @@ export default async function handler(request: any, response: any) {
   };
   const subscriptionStatus = statusByEvent[event.event];
   if (subscriptionStatus) {
-    await updateTenantSubscription(tenantId, {
+    await subscriptionAdapter.update(tenantId, {
       planTier: 'Basic',
       subscriptionStatus,
       razorpaySubscriptionId: subscription.id,

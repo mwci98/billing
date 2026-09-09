@@ -1,5 +1,5 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
-import {updateTenantSubscription} from '../_firebase-admin.js';
+import {subscriptionAdapter} from '../../src/server/adapters/subscription.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {
@@ -32,7 +32,7 @@ export default async function handler(request: any, response: any) {
   }
 
   const activatedAt = new Date().toISOString();
-  await updateTenantSubscription(tenantId, {
+  await subscriptionAdapter.update(tenantId, {
     planTier: 'Basic',
     subscriptionStatus: 'active',
     razorpaySubscriptionId,
