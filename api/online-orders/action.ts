@@ -1,5 +1,5 @@
 import {hashValue, ownerScopeFromToken, verifyBearer} from '../_online-store.js';
-import {getAdminDb} from '../_firebase-admin.js';
+import {adminStoreAdapter} from '../../src/server/adapters/store.js';
 
 const transitions: Record<string, Record<string, string>> = {
   ACCEPT: {PENDING_CONFIRMATION: 'ACCEPTED'},
@@ -21,7 +21,7 @@ export default async function handler(request: any, response: any) {
       return response.status(400).json({error: 'Invalid order action'});
     }
     const ownerScope = workspaceScope.split('__store__')[0];
-    const db = getAdminDb();
+    const db = adminStoreAdapter.getDb();
     const ownerSettings = (await db.doc(`users/${ownerScope}/store_settings/active`).get()).data() || {};
     const tokenOwnerScope = ownerScopeFromToken(decoded);
     if (tokenOwnerScope !== ownerScope && String(ownerSettings.email || '').toLowerCase() !== String(decoded.email || '').toLowerCase()) {

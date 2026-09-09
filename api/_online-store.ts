@@ -1,5 +1,10 @@
 import {createHash, randomBytes} from 'node:crypto';
-import {getAdminAuth, getAdminDb} from './_firebase-admin.js';
+import {getAdminAuth} from './_firebase-admin.js';
+import {adminStoreAdapter} from '../src/server/adapters/store.js';
+
+let authFactory = getAdminAuth;
+export const setAuthForTests = (factory: typeof getAdminAuth) => { authFactory = factory; };
+export const resetAuthForTests = () => { authFactory = getAdminAuth; };
 
 export const hashValue = (value: string) => createHash('sha256').update(value).digest('hex');
 export const token = () => randomBytes(24).toString('base64url');
@@ -7,7 +12,7 @@ export const token = () => randomBytes(24).toString('base64url');
 export const verifyBearer = async (request: any) => {
   const bearer = String(request.headers?.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!bearer) throw new Error('AUTH_REQUIRED');
-  return getAdminAuth().verifyIdToken(bearer);
+  return authFactory().verifyIdToken(bearer);
 };
 
 export const ownerScopeFromToken = (decoded: any) => {
@@ -17,7 +22,7 @@ export const ownerScopeFromToken = (decoded: any) => {
 };
 
 export const resolveStore = async (slug: string) => {
-  const db = getAdminDb();
+  const db = adminStoreAdapter.getDb();
   const registrySnapshot = await db.doc(`public_stores/${slug}`).get();
   const registry = registrySnapshot.data();
   if (!registrySnapshot.exists || !registry?.enabled || !registry.ownerScope) throw new Error('STORE_UNAVAILABLE');
