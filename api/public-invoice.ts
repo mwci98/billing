@@ -1,4 +1,4 @@
-import {getAdminDb} from './_firebase-admin.js';
+import {adminStoreAdapter} from '../src/server/adapters/store.js';
 
 type LinkPayload = {scope: string; saleId: string; expiresAt: number};
 
@@ -27,7 +27,7 @@ export default async function handler(request: any, response: any) {
       return response.status(410).send('This invoice link has expired.');
     }
 
-    const publicInvoice = await getAdminDb().doc(`users/${payload.scope}/public_invoices/${payload.saleId}`).get();
+    const publicInvoice = await adminStoreAdapter.getDb().doc(`users/${payload.scope}/public_invoices/${payload.saleId}`).get();
     const storedPdf = publicInvoice.exists ? publicInvoice.data() as any : null;
     if (Number(storedPdf?.chunkCount || 0) < 1 || Number(storedPdf?.expiresAt || 0) < Date.now()) {
       return response.status(404).send('The original invoice PDF is unavailable. Please request a new invoice link.');

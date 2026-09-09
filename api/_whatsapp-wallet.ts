@@ -1,4 +1,4 @@
-import {getAdminDb} from './_firebase-admin.js';
+import {adminStoreAdapter} from '../src/server/adapters/store.js';
 
 export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
 
@@ -15,7 +15,7 @@ export async function verifyWalletAccess(idToken: string, requestedScope: string
   const email = String(payload.users?.[0]?.email || '');
   if (!verification.ok || !email) return null;
 
-  const db = getAdminDb();
+  const db = adminStoreAdapter.getDb();
   const identityScope = emailScope(email);
   const directory = await db.doc(`staff_directory/${identityScope}`).get();
   const staff = directory.exists ? directory.data() as any : null;
