@@ -1,10 +1,10 @@
-import {getAdminDb} from '../_firebase-admin.js';
+import {adminStoreAdapter} from '../../src/server/adapters/store.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'GET') return response.status(405).json({error: 'Method not allowed'});
   const trackingToken = String(request.query?.token || '');
   if (!/^[a-zA-Z0-9_-]{20,80}$/.test(trackingToken)) return response.status(404).json({error: 'Order not found'});
-  const db = getAdminDb();
+  const db = adminStoreAdapter.getDb();
   const receiptSnapshot = await db.doc(`public_order_receipts/${trackingToken}`).get();
   const receipt = receiptSnapshot.data();
   if (!receiptSnapshot.exists || Number(receipt?.expiresAt || 0) < Date.now()) return response.status(404).json({error: 'Order not found'});

@@ -1,4 +1,4 @@
-import {getAdminDb} from '../_firebase-admin.js';
+import {adminStoreAdapter} from '../../src/server/adapters/store.js';
 
 const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 const PDF_CHUNK_SIZE = 700_000;
@@ -58,7 +58,7 @@ export default async function handler(request: any, response: any) {
       return response.status(413).json({error: 'Invoice PDF is invalid or too large.'});
     }
 
-    const db = getAdminDb();
+    const db = adminStoreAdapter.getDb();
     const identityScope = emailScope(email);
     const directory = await db.doc(`staff_directory/${identityScope}`).get();
     const staff = directory.exists ? directory.data() as any : null;
