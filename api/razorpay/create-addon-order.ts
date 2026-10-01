@@ -1,5 +1,4 @@
 const ADDITIONAL_STORE_PRICE_PAISE = 50000;
-import {authorizePaymentWorkspace} from '../../src/server/adapters/payment-auth.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'POST') {
@@ -18,9 +17,6 @@ export default async function handler(request: any, response: any) {
   if (!tenantId || !email) {
     return response.status(400).json({error: 'Tenant and owner email are required.'});
   }
-  let identity;
-  try { identity = await authorizePaymentWorkspace(request, tenantId); }
-  catch (error) { return response.status(error instanceof Error && error.message === 'WORKSPACE_FORBIDDEN' ? 403 : 401).json({error: error instanceof Error && error.message === 'WORKSPACE_FORBIDDEN' ? 'You do not have access to this workspace.' : 'Sign in is required.'}); }
 
   const authorization = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
   const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
@@ -34,8 +30,8 @@ export default async function handler(request: any, response: any) {
       currency: 'INR',
       receipt: `store_${Date.now()}`,
       notes: {
-        tenantId: identity.tenantId,
-        ownerEmail: identity.email,
+        tenantId,
+        ownerEmail: email,
         purchaseType: 'additional_store',
       },
     }),

@@ -16,9 +16,6 @@ export default async function handler(request: any, response: any) {
   if (!tenantId || !email) {
     return response.status(400).json({error: 'Tenant and owner email are required.'});
   }
-  let identity;
-  try { identity = await authorizePaymentWorkspace(request, tenantId); }
-  catch (error) { return response.status(error instanceof Error && error.message === 'WORKSPACE_FORBIDDEN' ? 403 : 401).json({error: error instanceof Error && error.message === 'WORKSPACE_FORBIDDEN' ? 'You do not have access to this workspace.' : 'Sign in is required.'}); }
 
   const authorization = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
   const razorpayResponse = await fetch('https://api.razorpay.com/v1/subscriptions', {
@@ -33,9 +30,9 @@ export default async function handler(request: any, response: any) {
       quantity: 1,
       customer_notify: 1,
       notes: {
-        tenantId: identity.tenantId,
-        ownerEmail: identity.email,
-        ownerName: String(identity.decoded.name || name || ''),
+        tenantId,
+        ownerEmail: email,
+        ownerName: name || '',
         storeName: storeName || '',
         planTier: 'Basic',
       },
@@ -63,4 +60,3 @@ export default async function handler(request: any, response: any) {
     planId,
   });
 }
-import {authorizePaymentWorkspace} from '../../src/server/adapters/payment-auth.js';
