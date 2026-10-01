@@ -1,9 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({path: process.env.DOTENV_CONFIG_PATH || path.join(root, '.env.production')});
 const app = express();
 const handlers: Record<string, () => Promise<any>> = {
   '/api/public-store': () => import('./api/public-store.js'),
