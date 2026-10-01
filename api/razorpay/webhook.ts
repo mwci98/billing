@@ -1,7 +1,5 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
 import {subscriptionAdapter} from '../../src/server/adapters/subscription.js';
-import {adminStoreAdapter} from '../../src/server/adapters/store.js';
-import {claimWebhookEvent, completeWebhookEvent, failWebhookEvent} from '../../src/server/adapters/webhook-idempotency.js';
 
 export const config = {
   api: {bodyParser: false},
@@ -88,23 +86,10 @@ export default async function handler(request: any, response: any) {
     return response.status(401).json({error: 'Invalid webhook signature.'});
   }
 
-  let event: any;
-  try {
-    event = JSON.parse(rawBody.toString('utf8'));
-  } catch {
-    return response.status(400).json({error: 'Invalid webhook payload.'});
-  }
-  const subscriptionId = String(event.payload?.subscription?.entity?.id || '');
-  const paymentId = String(event.payload?.payment?.entity?.id || '');
-  const eventId = String(event.id || `${event.event || 'unknown'}:${subscriptionId}:${paymentId}`);
-  const eventType = String(event.event || '');
-  const db = adminStoreAdapter.getDb() as any;
-  if (typeof db.runTransaction !== 'function') return response.status(503).json({error: 'Webhook storage is not configured.'});
-  const claim = await claimWebhookEvent(eventId, eventType);
-  if (claim.duplicate) return response.status(200).json({received: true, idempotent: true});
+  const event = JSON.parse(rawBody.toString('utf8'));
   const subscription = event.payload?.subscription?.entity;
   const tenantId = subscription?.notes?.tenantId;
-  if (!tenantId) { await completeWebhookEvent(claim.ref, eventId, eventType); return response.status(200).json({received: true}); }
+  if (!tenantId) return response.status(200).json({received: true});
 
   const statusByEvent: Record<string, string> = {
     'subscription.activated': 'active',
@@ -115,9 +100,8 @@ export default async function handler(request: any, response: any) {
     'subscription.completed': 'expired',
   };
   const subscriptionStatus = statusByEvent[event.event];
-  try {
-    if (subscriptionStatus) {
-      await subscriptionAdapter.update(tenantId, {
+  if (subscriptionStatus) {
+    await subscriptionAdapter.update(tenantId, {
       planTier: 'Basic',
       subscriptionStatus,
       razorpaySubscriptionId: subscription.id,
@@ -125,15 +109,10 @@ export default async function handler(request: any, response: any) {
         ? new Date(subscription.current_end * 1000).toISOString()
         : null,
       subscriptionUpdatedAt: new Date().toISOString(),
-      });
-    }
-
-    await createAndEmailCrmSubscriptionInvoice(event, subscription);
-    await completeWebhookEvent(claim.ref, eventId, eventType);
-  } catch (error) {
-    await failWebhookEvent(claim.ref, error);
-    return response.status(502).json({error: 'Webhook processing failed.'});
+    });
   }
+
+  await createAndEmailCrmSubscriptionInvoice(event, subscription);
 
   return response.status(200).json({received: true});
 }
