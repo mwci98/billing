@@ -1,4 +1,5 @@
-import {getWallet, verifyWalletAccess, walletDoc, WHATSAPP_INVOICE_PRICE_PAISE} from '../_whatsapp-wallet.js';
+import {verifyWalletAccess, WHATSAPP_INVOICE_PRICE_PAISE} from '../_whatsapp-wallet.js';
+import {reserveDebit, completeDebit, releaseDebit, markHandoffUnknown} from '../../src/server/adapters/whatsapp-debit.js';
 
 async function createSignature(body: string, secret: string) {
   const key = await crypto.subtle.importKey(
@@ -39,10 +40,11 @@ export default async function handler(request: any, response: any) {
   try {
     const access = await verifyWalletAccess(token, String(payload.workspaceScope), firebaseApiKey);
     if (!access) return response.status(401).json({error: 'Your sign-in session has expired. Please sign in again.'});
-    const wallet = await getWallet(access.db, access.workspaceScope);
-    if (wallet.balancePaise < WHATSAPP_INVOICE_PRICE_PAISE) {
-      return response.status(402).json({error: 'WhatsApp wallet balance is too low. Add credit in Store Config to send this invoice.'});
-    }
+    let reservation: any;
+    try { reservation = await reserveDebit(access.db, access.workspaceScope, String(payload.invoiceNumber)); }
+    catch (error) { if (error instanceof Error && error.message === 'WALLET_INSUFFICIENT') return response.status(402).json({error: 'WhatsApp wallet balance is too low. Add credit in Store Config to send this invoice.'}); throw error; }
+    if (reservation.state === 'completed') return response.status(200).json({success: true, messageId: reservation.messageId, remainingBalance: reservation.remainingBalance});
+    if (!reservation.fresh && (reservation.state === 'reserved' || reservation.state === 'handoff_unknown')) return response.status(202).json({success: true, pending: true, operationId: reservation.id});
     const crmResponse = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -54,29 +56,13 @@ export default async function handler(request: any, response: any) {
     });
     const result = await crmResponse.json().catch(() => ({}));
     if (!crmResponse.ok) {
+      await releaseDebit(access.db, access.workspaceScope, reservation.id);
       return response.status(crmResponse.status).json({error: result.error || 'CRM could not deliver the WhatsApp invoice.'});
     }
-    const ledgerId = `${String(payload.invoiceNumber).replace(/[^a-zA-Z0-9_-]/g, '_')}-${Date.now()}`;
-    let remainingBalance = wallet.balancePaise;
-    await access.db.runTransaction(async transaction => {
-      const reference = walletDoc(access.db, access.workspaceScope);
-      const snapshot = await transaction.get(reference);
-      const current = snapshot.exists ? snapshot.data() as any : {};
-      const balancePaise = Number(current.balancePaise || 0);
-      if (balancePaise < WHATSAPP_INVOICE_PRICE_PAISE) throw new Error('Wallet balance is too low.');
-      remainingBalance = balancePaise - WHATSAPP_INVOICE_PRICE_PAISE;
-      transaction.set(reference, {
-        balancePaise: remainingBalance,
-        totalSpentPaise: Number(current.totalSpentPaise || 0) + WHATSAPP_INVOICE_PRICE_PAISE,
-        updatedAt: new Date().toISOString(),
-      }, {merge: true});
-      transaction.set(access.db.doc(`users/${access.workspaceScope}/whatsapp_wallet/active/ledger/${ledgerId}`), {
-        type: 'invoice_delivery', amountPaise: -WHATSAPP_INVOICE_PRICE_PAISE, invoiceNumber: payload.invoiceNumber,
-        messageId: result.messageId || '', createdAt: new Date().toISOString(),
-      });
-    });
-    return response.status(200).json({success: true, messageId: result.messageId, remainingBalance});
+    await completeDebit(access.db, access.workspaceScope, reservation.id, result.messageId || '');
+    return response.status(200).json({success: true, messageId: result.messageId, remainingBalance: reservation.remainingBalance});
   } catch (error) {
+    if (error instanceof Error && !String(error.message).includes('WALLET')) { try { const access = await verifyWalletAccess(token, String(payload.workspaceScope), firebaseApiKey); if (access) await markHandoffUnknown(access.db, access.workspaceScope, (await reserveDebit(access.db, access.workspaceScope, String(payload.invoiceNumber))).id); } catch {} }
     console.error('QPOS WhatsApp invoice handoff failed:', error);
     return response.status(502).json({error: 'Could not reach the CRM WhatsApp service.'});
   }
