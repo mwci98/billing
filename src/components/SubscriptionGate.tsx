@@ -3,6 +3,7 @@ import {CheckCircle2, CreditCard, Loader2, LockKeyhole, LogOut, ShieldCheck} fro
 import {useAppState} from '../lib/stateContext';
 import {UserRole} from '../types';
 import {isInternalTestingAccount, isInternalWorkspace} from '../lib/internalEntitlements';
+import {auth} from '../lib/firebase';
 
 declare global {
   interface Window {
@@ -66,7 +67,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
 
       const createResponse = await fetch('/api/razorpay/create-subscription', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', ...(auth.currentUser ? {Authorization: `Bearer ${await auth.currentUser.getIdToken()}`} : {})},
         body: JSON.stringify({
           tenantId: currentUser.tenantId || settings.tenantId,
           email: currentUser.email,
@@ -95,7 +96,7 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
         handler: async (payment: any) => {
           const verificationResponse = await fetch('/api/razorpay/verify', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', ...(auth.currentUser ? {Authorization: `Bearer ${await auth.currentUser.getIdToken()}`} : {})},
             body: JSON.stringify({
               tenantId: currentUser.tenantId || settings.tenantId,
               razorpayPaymentId: payment.razorpay_payment_id,

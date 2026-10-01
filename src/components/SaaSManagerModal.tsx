@@ -6,6 +6,7 @@ import {
 import { useAppState } from '../lib/stateContext';
 import {UserRole} from '../types';
 import {isInternalTestingAccount} from '../lib/internalEntitlements';
+import {auth} from '../lib/firebase';
 
 async function loadRazorpayCheckout() {
   if (window.Razorpay) return true;
@@ -88,7 +89,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
 
       const orderResponse = await fetch('/api/razorpay/create-addon-order', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', ...(auth.currentUser ? {Authorization: `Bearer ${await auth.currentUser.getIdToken()}`} : {})},
         body: JSON.stringify({
           tenantId: currentUser.tenantId || settings.tenantId,
           email: currentUser.email,
@@ -110,7 +111,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
         handler: async (payment: any) => {
           const verificationResponse = await fetch('/api/razorpay/verify-addon-payment', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', ...(auth.currentUser ? {Authorization: `Bearer ${await auth.currentUser.getIdToken()}`} : {})},
             body: JSON.stringify({
               razorpayOrderId: payment.razorpay_order_id,
               razorpayPaymentId: payment.razorpay_payment_id,

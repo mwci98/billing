@@ -1,4 +1,5 @@
 import {adminStoreAdapter} from '../src/server/adapters/store.js';
+import type {Firestore} from 'firebase-admin/firestore';
 
 export const WHATSAPP_INVOICE_PRICE_PAISE = 200;
 
@@ -26,10 +27,10 @@ export async function verifyWalletAccess(idToken: string, requestedScope: string
   return {db, email, ownerScope, workspaceScope: requestedScope};
 }
 
-export const walletDoc = (db: ReturnType<typeof getAdminDb>, workspaceScope: string) =>
+export const walletDoc = (db: Firestore, workspaceScope: string) =>
   db.doc(`users/${workspaceScope}/whatsapp_wallet/active`);
 
-export async function getWallet(db: ReturnType<typeof getAdminDb>, workspaceScope: string) {
+export async function getWallet(db: Firestore, workspaceScope: string) {
   const snapshot = await walletDoc(db, workspaceScope).get();
   const value = snapshot.exists ? snapshot.data() as any : {};
   return {
