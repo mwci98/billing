@@ -24,7 +24,7 @@ export default async function handler(request: any, response: any) {
     if (!['COD', 'PAY_AT_STORE'].includes(paymentMethod)) {
       return response.status(409).json({error: 'Online payment must be verified before this order can be submitted'});
     }
-    const {db, store, settings, locationDefinitions} = await resolveStore(slug);
+    const {db, ownerScope, store, settings, locationDefinitions} = await resolveStore(slug);
     const location = locationDefinitions.find(item => item.key === locationKey);
     if (!location) return response.status(400).json({error: 'Choose a participating store location'});
     if (fulfilment === 'PICKUP' && !store.pickupEnabled) return response.status(400).json({error: 'Store pickup is unavailable'});
@@ -34,7 +34,7 @@ export default async function handler(request: any, response: any) {
     if (tableToken) {
       const tableSnapshot = await db.doc(`public_tables/${tableToken}`).get();
       tableMapping = tableSnapshot.data();
-      if (!tableSnapshot.exists || !tableMapping?.active || tableMapping.slug !== slug || tableMapping.locationKey !== locationKey || (tableMapping.ownerScope && tableMapping.ownerScope !== location.scope)) return response.status(400).json({error: 'This table QR is no longer active'});
+      if (!tableSnapshot.exists || tableMapping?.active !== true || tableMapping.slug !== slug || tableMapping.locationKey !== locationKey || tableMapping.ownerScope !== ownerScope || tableMapping.workspaceScope !== location.scope) return response.status(400).json({error: 'This table QR is no longer active'});
     }
 
     const normalizedItems = requestedItems.map((item: any) => ({
