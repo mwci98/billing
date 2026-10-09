@@ -11,7 +11,7 @@ const isMenuImage = (value?: string) => Boolean(value && (value.startsWith('data
 const availableStock = (product: Product) => Math.max(0, product.stock - (product.reservedStock || 0));
 
 export const RestaurantBilling: React.FC = () => {
-  const {products, sales, addSale, editSale, currentUser, settings, triggerToast} = useAppState();
+  const {products, sales, addSale, editSale, settleSale, currentUser, settings, triggerToast, consumeRestaurantOrderRequest} = useAppState();
   const [orderType, setOrderType] = useState<OrderType>('Dine In');
   const [tableNumber, setTableNumber] = useState('1');
   const [guestCount, setGuestCount] = useState(1);
@@ -39,6 +39,19 @@ export const RestaurantBilling: React.FC = () => {
   const itemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const restaurantOrders = sales.filter(sale => Boolean(sale.orderType));
   const openOrders = restaurantOrders.filter(sale => sale.status === 'Pending');
+
+  useEffect(() => {
+    if (!products.length || !sales.length) return;
+    const request = consumeRestaurantOrderRequest();
+    if (!request) return;
+    const requestedOrder = sales.find(sale => sale.id === request.saleId);
+    if (!requestedOrder || requestedOrder.status !== 'Pending') {
+      triggerToast('That order is no longer pending.', 'warning');
+      return;
+    }
+    if (request.type === 'edit') editOpenOrder(requestedOrder);
+    else settleSavedOrder(requestedOrder, request.method);
+  }, [products, sales]);
 
   function addItem(product: Product) {
     if (product.menuVariants?.length) {
@@ -119,14 +132,15 @@ export const RestaurantBilling: React.FC = () => {
   }
 
   function editOpenOrder(order: Sale) {
-    const restoredCart = order.items.flatMap(item => {
+    const restoredCart = order.items.map(item => {
       const product = products.find(candidate => candidate.id === item.productId);
-      if (!product) return [];
+      if (!product) return null;
       const variant = item.menuVariantId ? product.menuVariants?.find(candidate => candidate.id === item.menuVariantId) : product.menuVariants?.find(candidate => candidate.name === item.menuVariantName);
-      return [{product, quantity: item.quantity, variant}];
+      if ((item.menuVariantId || item.menuVariantName) && !variant) return null;
+      return {product, quantity: item.quantity, variant};
     });
-    if (!restoredCart.length) return triggerToast('The menu items for this order are no longer available.', 'error');
-    setCart(restoredCart);
+    if (restoredCart.some(item => !item) || !restoredCart.length) return triggerToast('One or more menu items or variants for this order are no longer available.', 'error');
+    setCart(restoredCart as CartLine[]);
     setOrderType(order.orderType || 'Dine In');
     setTableNumber(order.tableNumber || '1');
     setGuestCount(order.guestCount || 1);
@@ -139,19 +153,16 @@ export const RestaurantBilling: React.FC = () => {
   function settleOrder() {
     if (!editingOrder) return triggerToast('Save the order first, then reopen it to settle payment.', 'warning');
     if (!validateOrder()) return;
-    const paymentDetails = paymentMethod === 'Cash' ? {cashAmount: grossTotal} : {upiAmount: grossTotal};
-    const completed: Sale = {...editingOrder, ...orderData('Completed'), paymentDetails, status: 'Completed'};
-    editSale(editingOrder.id, completed);
+    const completed = settleSale(editingOrder.id, paymentMethod);
+    if (!completed) return triggerToast('This order has already been settled.', 'warning');
     setCompletedOrder(completed);
     triggerToast(`${orderType} order settled successfully.`, 'success');
     clearEditor();
   }
 
   function settleSavedOrder(order: Sale, method: 'Cash' | 'UPI') {
-    if (order.status !== 'Pending') return triggerToast('This order has already been settled.', 'warning');
-    const paymentDetails = method === 'Cash' ? {cashAmount: order.total} : {upiAmount: order.total};
-    const completed: Sale = {...order, paymentMethod: method, paymentDetails, status: 'Completed'};
-    editSale(order.id, completed);
+    const completed = settleSale(order.id, method);
+    if (!completed) return triggerToast('This order has already been settled.', 'warning');
     if (editingOrder?.id === order.id) clearEditor();
     setCompletedOrder(completed);
     triggerToast(`${order.customerName} settled by ${method}.`, 'success');

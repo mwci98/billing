@@ -110,6 +110,7 @@ interface AppContextType {
   deleteProduct: (id: string) => void;
   addSale: (sale: Omit<Sale, 'id' | 'date'>) => Sale;
   editSale: (id: string, sale: Partial<Sale>) => void;
+  settleSale: (id: string, method: 'Cash' | 'UPI') => Sale | null;
   deleteSale: (id: string) => void;
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => void;
   adjustStock: (productId: string, quantity: number, type: 'Stock In' | 'Stock Out' | 'Adjustment', description: string) => void;
@@ -145,6 +146,10 @@ interface AppContextType {
   // Current view or tabs helper
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  restaurantOrderRequest: {type: 'edit'; saleId: string} | {type: 'settle'; saleId: string; method: 'Cash' | 'UPI'} | null;
+  requestRestaurantOrderEdit: (saleId: string) => void;
+  requestRestaurantOrderSettlement: (saleId: string, method: 'Cash' | 'UPI') => void;
+  consumeRestaurantOrderRequest: () => AppContextType['restaurantOrderRequest'];
 
   // Darkmode switch helper
   isDarkMode: boolean;
@@ -156,6 +161,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Active Navigation
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [restaurantOrderRequest, setRestaurantOrderRequest] = useState<AppContextType['restaurantOrderRequest']>(null);
+  const requestRestaurantOrderEdit = (saleId: string) => setRestaurantOrderRequest({type: 'edit', saleId});
+  const requestRestaurantOrderSettlement = (saleId: string, method: 'Cash' | 'UPI') => setRestaurantOrderRequest({type: 'settle', saleId, method});
+  const consumeRestaurantOrderRequest = () => {
+    const request = restaurantOrderRequest;
+    setRestaurantOrderRequest(null);
+    return request;
+  };
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   // SaaS Workspace & Store Branch State
@@ -1207,6 +1220,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveLocalAndState('customers', updatedCustomers, setCustomers);
     }
   };
+  const settleSale = (id: string, method: 'Cash' | 'UPI') => {
+    const current = sales.find(sale => sale.id === id);
+    if (!current || current.status !== 'Pending') return null;
+    const completed = {...current, status: 'Completed' as const, paymentMethod: method, paymentDetails: method === 'Cash' ? {cashAmount: current.total} : {upiAmount: current.total}};
+    editSale(id, completed);
+    return completed;
+  };
 
   const deleteSale = (id: string) => {
     const scope = getWorkspaceScope();
@@ -1892,6 +1912,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteProduct,
         addSale,
         editSale,
+        settleSale,
         deleteSale,
         addPurchase,
         adjustStock,
@@ -1922,6 +1943,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         activeTab,
         setActiveTab,
+        restaurantOrderRequest,
+        requestRestaurantOrderEdit,
+        requestRestaurantOrderSettlement,
+        consumeRestaurantOrderRequest,
         isDarkMode,
         setIsDarkMode: toggleDarkMode,
       }}

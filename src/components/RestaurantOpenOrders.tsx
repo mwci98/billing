@@ -1,5 +1,5 @@
-import { Armchair, ClipboardList, EllipsisVertical, Search, ShoppingBag, Truck } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Armchair, ClipboardList, EllipsisVertical, Search, ShoppingBag, Truck, Pencil, ReceiptText } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Sale } from '../types';
 import { useAppState } from '../lib/stateContext';
@@ -15,10 +15,11 @@ function orderIcon(order: Sale) {
 }
 
 export const RestaurantOpenOrders: React.FC = () => {
-  const { sales, settings } = useAppState();
+  const { sales, settings, requestRestaurantOrderEdit, requestRestaurantOrderSettlement, setActiveTab, triggerToast } = useAppState();
   const [search, setSearch] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderFilter, setOrderFilter] = useState<'All' | 'Dine In' | 'Takeaway' | 'Delivery'>('All');
+  const [settlingOrder, setSettlingOrder] = useState<Sale | null>(null);
 
   const openOrders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -71,11 +72,15 @@ export const RestaurantOpenOrders: React.FC = () => {
                     <p className="mt-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{order.guestCount ? `Guests: ${order.guestCount}` : order.customerName || 'Guest order'}</p>
                   </div>
                   <div className="shrink-0 text-right"><p className="font-mono text-sm font-black text-emerald-500">{settings.currency}{order.total.toFixed(2)}</p><span className="mt-2 inline-flex rounded-lg bg-amber-500/10 px-2 py-1 text-[9px] font-black text-amber-600 dark:text-amber-400">In progress</span></div>
-                  <button type="button" onClick={() => setExpandedOrderId(isExpanded ? null : order.id)} aria-label={`Show details for ${order.id}`} className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-emerald-500 dark:hover:bg-white/5"><EllipsisVertical className="h-5 w-5" /></button>
+                  <button type="button" onClick={() => setExpandedOrderId(isExpanded ? null : order.id)} aria-label={`${isExpanded ? 'Hide' : 'Show'} details for ${order.id}`} aria-expanded={isExpanded} aria-controls={`order-actions-${order.id}`} className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-white/5"><EllipsisVertical className="h-5 w-5" /></button>
                 </div>
-                {isExpanded ? <div className="border-t border-gray-100 bg-gray-50 p-3.5 text-xs dark:border-white/5 dark:bg-white/[0.025]">
+                {isExpanded ? <div id={`order-actions-${order.id}`} role="region" aria-label={`Actions and details for order ${order.id}`} className="border-t border-gray-100 bg-gray-50 p-3.5 text-xs dark:border-white/5 dark:bg-white/[0.025]">
                   <div className="space-y-2">{order.items.map((item, index) => <div key={`${item.productId}-${index}`} className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="block font-bold">{item.name}</span><span className="text-[10px] text-gray-400">Qty {item.quantity}</span></span><span className="shrink-0 font-mono font-bold">{settings.currency}{(item.total + item.taxAmount).toFixed(2)}</span></div>)}</div>
                   {order.kitchenNotes ? <p className="mt-3 border-t border-dashed border-gray-300 pt-3 text-[11px] leading-5 text-gray-500 dark:border-white/10"><span className="font-black text-gray-400">Kitchen note: </span>{order.kitchenNotes}</p> : null}
+                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-gray-200 pt-3 dark:border-white/10">
+                    <button type="button" onClick={() => { requestRestaurantOrderEdit(order.id); setActiveTab('pos'); }} className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 px-3 py-2.5 text-xs font-black text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"><Pencil className="h-3.5 w-3.5" />Edit order</button>
+                    <button type="button" onClick={() => setSettlingOrder(order)} className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-black text-[#07110D] hover:bg-emerald-400"><ReceiptText className="h-3.5 w-3.5" />Generate final bill</button>
+                  </div>
                 </div> : null}
               </article>
             );
@@ -88,7 +93,18 @@ export const RestaurantOpenOrders: React.FC = () => {
           <p className="mt-2 max-w-sm text-sm leading-6 text-gray-500">New restaurant tickets will appear here after they are saved as open orders.</p>
         </div>
       )}
+      {settlingOrder ? <SettlementSheet order={settlingOrder} currency={settings.currency} onClose={() => setSettlingOrder(null)} onConfirm={(method) => {
+        if (settlingOrder.status !== 'Pending') { triggerToast('This order has already been settled.', 'warning'); setSettlingOrder(null); return; }
+        requestRestaurantOrderSettlement(settlingOrder.id, method); setSettlingOrder(null); setActiveTab('pos');
+      }} /> : null}
       <div className="grid grid-cols-3 divide-x divide-gray-200 rounded-2xl border border-gray-200 bg-white py-3 text-center dark:divide-white/10 dark:border-white/10 dark:bg-[#141416]"><div><p className="text-[9px] font-bold text-gray-400">Total open orders</p><p className="text-sm font-black">{visibleOrders.length}</p></div><div><p className="text-[9px] font-bold text-gray-400">Total items</p><p className="text-sm font-black">{totalItems}</p></div><div><p className="text-[9px] font-bold text-gray-400">Total amount</p><p className="font-mono text-sm font-black text-emerald-500">{settings.currency}{totalOpenValue.toFixed(2)}</p></div></div>
     </div>
   );
 };
+
+function SettlementSheet({order, currency, onClose, onConfirm}: {order: Sale; currency: string; onClose: () => void; onConfirm: (method: 'Cash' | 'UPI') => void}) {
+  const [method, setMethod] = useState<'Cash' | 'UPI'>('Cash');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { dialogRef.current?.focus(); const handler = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler); }, [onClose]);
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center"><div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="settle-title" className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl dark:bg-[#141416]"><h2 id="settle-title" className="text-lg font-black">Generate final bill</h2><p className="mt-1 text-sm text-gray-500">Choose payment and confirm settlement for order #{order.id}.</p><p className="mt-4 flex items-center justify-between rounded-2xl bg-emerald-500/10 px-4 py-3 font-mono text-xl font-black text-emerald-600"><span className="text-xs font-sans uppercase tracking-widest">Total</span>{currency}{order.total.toFixed(2)}</p><div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment method">{(['Cash', 'UPI'] as const).map(option => <button key={option} type="button" role="radio" aria-checked={method === option} onClick={() => setMethod(option)} className={`rounded-xl border px-3 py-3 text-sm font-black ${method === option ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600' : 'border-gray-200 text-gray-500 dark:border-white/10'}`}>{option}</button>)}</div><div className="mt-5 grid grid-cols-2 gap-2"><button type="button" onClick={onClose} className="rounded-xl border border-gray-200 py-3 text-sm font-black text-gray-500 dark:border-white/10">Cancel</button><button type="button" onClick={() => onConfirm(method)} className="rounded-xl bg-emerald-500 py-3 text-sm font-black text-[#07110D]">Confirm settlement</button></div></div></div>;
+}
