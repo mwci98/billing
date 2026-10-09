@@ -15,6 +15,19 @@ import { productUsesImeiTracking } from '../lib/serializedInventory';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
 import { getBusinessMode } from '../lib/businessMode';
 
+const sortSalesNewestFirst = (sales: Sale[]): Sale[] => sales
+  .map((sale, index) => ({sale, index, timestamp: new Date(sale.date).getTime()}))
+  .sort((a, b) => {
+    const aHasValidDate = !Number.isNaN(a.timestamp);
+    const bHasValidDate = !Number.isNaN(b.timestamp);
+
+    if (aHasValidDate && bHasValidDate) return b.timestamp - a.timestamp || a.index - b.index;
+    if (aHasValidDate) return -1;
+    if (bHasValidDate) return 1;
+    return a.index - b.index;
+  })
+  .map(({sale}) => sale);
+
 export const ReportsView: React.FC = () => {
   const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
   const isRestaurantBusiness = getBusinessMode(settings.businessType) === 'Restaurant';
@@ -47,7 +60,9 @@ export const ReportsView: React.FC = () => {
     start.setHours(0, 0, 0, 0);
     return start;
   })();
-  const periodSales = completedSales.filter((sale) => new Date(sale.date) >= reportPeriodStart);
+  const periodSales = sortSalesNewestFirst(
+    completedSales.filter((sale) => new Date(sale.date) >= reportPeriodStart)
+  );
   const periodSalesTotal = periodSales.reduce((sum, sale) => sum + sale.total, 0);
   const periodGstTotal = periodSales.reduce((sum, sale) => sum + sale.taxAmount, 0);
   const visibleSales = periodSales.filter((sale) => {
