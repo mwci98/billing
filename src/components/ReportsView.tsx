@@ -15,12 +15,29 @@ import { productUsesImeiTracking } from '../lib/serializedInventory';
 import { TallyInvoiceModal } from './TallyInvoiceModal';
 import { getBusinessMode } from '../lib/businessMode';
 
+const sortSalesNewestFirst = (sales: Sale[]): Sale[] => sales
+  .map((sale, index) => ({sale, index, timestamp: new Date(sale.date).getTime()}))
+  .sort((a, b) => {
+    const aHasValidDate = !Number.isNaN(a.timestamp);
+    const bHasValidDate = !Number.isNaN(b.timestamp);
+
+    if (aHasValidDate && bHasValidDate) return b.timestamp - a.timestamp || a.index - b.index;
+    if (aHasValidDate) return -1;
+    if (bHasValidDate) return 1;
+    return a.index - b.index;
+  })
+  .map(({sale}) => sale);
+
 export const ReportsView: React.FC = () => {
   const { sales, purchases, products, customers, settings, editSale, deleteSale, triggerToast } = useAppState();
   const isRestaurantBusiness = getBusinessMode(settings.businessType) === 'Restaurant';
 
   const [activeReportTab, setActiveReportTab] = useState<'sales' | 'tax' | 'profit'>('sales');
   const [reportPeriod, setReportPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [salesSearch, setSalesSearch] = useState('');
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [printingSale, setPrintingSale] = useState<Sale | null>(null);
@@ -39,15 +56,29 @@ export const ReportsView: React.FC = () => {
 
   // --- Aggregate values ---
   const completedSales = sales.filter(s => s.status === 'Completed');
-  const reportPeriodStart = (() => {
+  const { reportPeriodStart, reportPeriodEnd } = (() => {
+    if (reportPeriod === 'monthly') {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      return {
+        reportPeriodStart: new Date(year, month - 1, 1),
+        reportPeriodEnd: new Date(year, month, 1),
+      };
+    }
+
     const start = new Date();
     if (reportPeriod === 'weekly') start.setDate(start.getDate() - 6);
-    if (reportPeriod === 'monthly') start.setDate(1);
     if (reportPeriod === 'yearly') start.setMonth(0, 1);
     start.setHours(0, 0, 0, 0);
-    return start;
+    return { reportPeriodStart: start, reportPeriodEnd: null };
   })();
-  const periodSales = completedSales.filter((sale) => new Date(sale.date) >= reportPeriodStart);
+  const isInReportPeriod = (dateValue: string) => {
+    const date = new Date(dateValue);
+    return date >= reportPeriodStart && (!reportPeriodEnd || date < reportPeriodEnd);
+  };
+  const periodSales = sortSalesNewestFirst(
+    completedSales.filter((sale) => isInReportPeriod(sale.date))
+  );
+  const periodPurchases = purchases.filter((purchase) => isInReportPeriod(purchase.date));
   const periodSalesTotal = periodSales.reduce((sum, sale) => sum + sale.total, 0);
   const periodGstTotal = periodSales.reduce((sum, sale) => sum + sale.taxAmount, 0);
   const visibleSales = periodSales.filter((sale) => {
@@ -63,16 +94,15 @@ export const ReportsView: React.FC = () => {
       new Date(sale.date).toLocaleDateString()
     ].some(value => String(value || '').toLowerCase().includes(query));
   });
-  const salesCount = completedSales.length;
-  const grossSalesVolume = completedSales.reduce((acc, sale) => acc + sale.total, 0);
-  const totalGstCollected = completedSales.reduce((acc, sale) => acc + sale.taxAmount, 0);
+  const salesCount = periodSales.length;
+  const grossSalesVolume = periodSalesTotal;
+  const totalGstCollected = periodGstTotal;
   
   // Calculate restock parameters
-  const totalPurchasesVolume = purchases.reduce((acc, p) => acc + p.total, 0);
-  const totalIncomingStockCost = purchases.reduce((acc, p) => acc + p.subtotal, 0);
+  const totalPurchasesVolume = periodPurchases.reduce((acc, p) => acc + p.total, 0);
 
   // Profit/Loss calculations
-  const totalStockCostSold = completedSales.reduce((acc, sale) => {
+  const totalStockCostSold = periodSales.reduce((acc, sale) => {
     return acc + sale.items.reduce((sum, item) => {
       const matchP = products.find(p => p.id === item.productId);
       const purchasePart = matchP ? matchP.purchasePrice : item.price * 0.5;
@@ -81,6 +111,14 @@ export const ReportsView: React.FC = () => {
   }, 0);
 
   const netProfits = Math.max(0, grossSalesVolume - totalGstCollected - totalStockCostSold);
+  const selectedMonthLabel = new Date(reportPeriodStart).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const reportPeriodLabel = reportPeriod === 'monthly' ? selectedMonthLabel : reportPeriod;
+  const emptySalesMessage = reportPeriod === 'monthly' && !salesSearch.trim()
+    ? `No completed sales records for ${selectedMonthLabel}.`
+    : 'No sales records match your search.';
+  const emptyGstMessage = reportPeriod === 'monthly'
+    ? `No completed GST records for ${selectedMonthLabel}.`
+    : `No GST records for this ${reportPeriod} period.`;
 
   const monthStarts = Array.from({ length: 6 }, (_, index) => {
     const date = new Date();
@@ -247,7 +285,7 @@ export const ReportsView: React.FC = () => {
   const handleExportCSV = (type: 'sales' | 'inventory' | 'tax') => {
     let headers: string[] = [];
     let rows: string[][] = [];
-    let fileName = `qpos-${type}-${reportPeriod}-report.csv`;
+    let fileName = `qpos-${type}-${reportPeriod === 'monthly' ? selectedMonth : reportPeriod}-report.csv`;
 
     if (type === 'sales') {
       headers = ['InvoiceID', 'Customer', 'Subtotal', 'TaxAmount', 'Discount', 'TotalBill', 'PaymentMode', 'Date', 'Operator'];
@@ -318,7 +356,7 @@ export const ReportsView: React.FC = () => {
           <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{grossSalesVolume.toFixed(2)}
           </h3>
-          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Total compiled across {salesCount} invoices</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">{reportPeriodLabel} · {salesCount} completed invoices</p>
         </div>
 
         <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
@@ -329,7 +367,7 @@ export const ReportsView: React.FC = () => {
           <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{totalGstCollected.toFixed(2)}
           </h3>
-          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Total cumulative collected GST metrics</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">GST collected for {reportPeriodLabel}</p>
         </div>
 
         {!isRestaurantBusiness && <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
@@ -340,7 +378,7 @@ export const ReportsView: React.FC = () => {
           <h3 className="mt-3 whitespace-nowrap text-base font-black text-gray-900 dark:text-white sm:mt-4 sm:text-2xl">
             {settings.currency}{totalPurchasesVolume.toFixed(2)}
           </h3>
-          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Aggregate stocking payment registers</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Purchase payments for {reportPeriodLabel}</p>
         </div>}
 
         {!isRestaurantBusiness && <div className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-900 dark:bg-gray-950 sm:rounded-3xl sm:p-5">
@@ -351,7 +389,7 @@ export const ReportsView: React.FC = () => {
           <h3 className="mt-3 whitespace-nowrap text-base font-black text-emerald-500 dark:text-emerald-400 sm:mt-4 sm:text-2xl">
             {settings.currency}{netProfits.toFixed(2)}
           </h3>
-          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Real sales net profit margin</p>
+          <p className="mt-1 hidden text-[10px] text-gray-400 sm:block">Sales net profit for {reportPeriodLabel}</p>
         </div>}
       </div>
 
@@ -399,6 +437,21 @@ export const ReportsView: React.FC = () => {
                 </button>
               ))}
             </div>
+            {reportPeriod === 'monthly' && (
+              <label className="flex items-center gap-2 rounded-xl border border-gray-150 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">
+                <Calendar className="h-4 w-4 shrink-0 text-emerald-500" />
+                <span className="sr-only">Report month</span>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedMonth(event.target.value);
+                  }}
+                  className="min-w-0 bg-transparent text-xs font-semibold text-gray-700 outline-none dark:text-gray-300 [color-scheme:light] dark:[color-scheme:dark]"
+                  aria-label="Report month"
+                />
+              </label>
+            )}
             <button
               id="report-export-sales-csv"
               onClick={() => handleExportCSV(activeReportTab === 'tax' ? 'tax' : 'sales')}
@@ -424,7 +477,7 @@ export const ReportsView: React.FC = () => {
                 />
               </div>
               <div className="text-xs font-semibold text-gray-500 sm:text-right">
-                <span className="capitalize">{reportPeriod}</span>: <b className="text-gray-950 dark:text-white">{periodSales.length} invoices · {settings.currency}{periodSalesTotal.toFixed(2)}</b>
+                <span className="capitalize">{reportPeriodLabel}</span>: <b className="text-gray-950 dark:text-white">{periodSales.length} invoices · {settings.currency}{periodSalesTotal.toFixed(2)}</b>
               </div>
             </div>
             <div className="space-y-2 md:hidden">
@@ -498,7 +551,7 @@ export const ReportsView: React.FC = () => {
               ))}
               {visibleSales.length === 0 && (
                 <div className="py-14 text-center text-xs text-gray-400">
-                  No sales records match your search.
+                  {emptySalesMessage}
                 </div>
               )}
             </div>
@@ -565,7 +618,7 @@ export const ReportsView: React.FC = () => {
                   {visibleSales.length === 0 && (
                     <tr>
                       <td colSpan={8} className="py-14 text-center text-xs text-gray-400">
-                        No sales records match your search.
+                        {emptySalesMessage}
                       </td>
                     </tr>
                   )}
@@ -587,7 +640,7 @@ export const ReportsView: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-900/50">
-              <span className="font-semibold capitalize text-gray-500">{reportPeriod} GST summary</span>
+              <span className="font-semibold capitalize text-gray-500">{reportPeriodLabel} GST summary</span>
               <span className="font-mono font-bold text-red-500">{periodSales.length} invoices · {settings.currency}{periodGstTotal.toFixed(2)}</span>
             </div>
 
@@ -616,7 +669,7 @@ export const ReportsView: React.FC = () => {
                   </div>
                 </article>
               ))}
-              {periodSales.length === 0 && <div className="py-14 text-center text-xs text-gray-400">No GST records for this {reportPeriod} period.</div>}
+              {periodSales.length === 0 && <div className="py-14 text-center text-xs text-gray-400">{emptyGstMessage}</div>}
             </div>
 
             <div className="hidden min-h-[14rem] overflow-x-auto md:block">
@@ -640,7 +693,7 @@ export const ReportsView: React.FC = () => {
                       <td className="py-3 font-mono text-[10px] text-gray-400">{new Date(s.date).toLocaleString()}</td>
                     </tr>
                   ))}
-                  {periodSales.length === 0 && <tr><td colSpan={5} className="py-14 text-center text-xs text-gray-400">No GST records for this {reportPeriod} period.</td></tr>}
+                  {periodSales.length === 0 && <tr><td colSpan={5} className="py-14 text-center text-xs text-gray-400">{emptyGstMessage}</td></tr>}
                 </tbody>
               </table>
             </div>
