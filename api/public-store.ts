@@ -13,10 +13,20 @@ const workspaceScope = (ownerScope: string, locationId: string, primaryStoreId?:
   return `${ownerScope}__store__${locationId.toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 };
 
+const PUBLIC_STORE_CACHE_TTL_MS = 30_000;
+const publicStoreCache = new Map<string, {expiresAt: number; payload: any}>();
+
 export default async function handler(request: any, response: any) {
   if (request.method !== 'GET') return response.status(405).json({error: 'Method not allowed'});
   const slug = String(request.query?.slug || '').trim().toLowerCase();
   if (!slugPattern.test(slug)) return response.status(400).json({error: 'Invalid store address'});
+
+  const cached = publicStoreCache.get(slug);
+  if (cached && cached.expiresAt > Date.now()) {
+    response.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
+    return response.status(200).json(cached.payload);
+  }
+  if (cached) publicStoreCache.delete(slug);
 
   try {
     const db = adminStoreAdapter.getDb();
@@ -95,8 +105,7 @@ export default async function handler(request: any, response: any) {
       });
     });
 
-    response.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
-    return response.status(200).json({
+    const payload = {
       store: {
         mode: isRestaurant ? 'Restaurant' : 'Retail',
         name: String(store.publicName || settings.storeName || 'Online Store'),
@@ -114,7 +123,10 @@ export default async function handler(request: any, response: any) {
       },
       locations: locationDefinitions.map(({key, name, city}) => ({key, name, city})),
       products: Array.from(publicProducts.values()),
-    });
+    };
+    publicStoreCache.set(slug, {expiresAt: Date.now() + PUBLIC_STORE_CACHE_TTL_MS, payload});
+    response.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
+    return response.status(200).json(payload);
   } catch (error) {
     console.error('Public store lookup failed:', error);
     return response.status(500).json({error: 'The online store could not be loaded'});

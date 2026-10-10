@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Product, Customer, Supplier, Sale, Purchase, 
   InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan,
@@ -17,6 +17,7 @@ import { db, auth, authPersistenceReady, handleFirestoreError, OperationType } f
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
 import { getSerializedUnits, productUsesImeiTracking } from './serializedInventory';
+import {AuthResolution, createSubscriptionLifecycle, workspaceListenerKey} from './firestoreListenerLifecycle';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
   { id: 'primary-store', name: 'Primary Store', branchCode: 'MAIN', city: 'Primary location', status: 'Active' }
@@ -177,6 +178,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Authenticated State (Role-based)
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [authResolution, setAuthResolution] = useState<AuthResolution>('initializing');
+  const subscriptionLifecycle = useRef(createSubscriptionLifecycle());
 
   const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(true);
 
@@ -289,10 +292,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const listenerOwnerScope = authResolution === 'authenticated' && currentUser
+    ? getUserScope(currentUser)
+    : null;
+  const listenerWorkspaceScope = listenerOwnerScope
+    ? (currentUser?.workspaceScope || getStoreWorkspaceScope(activeStore.id))
+    : null;
+  const listenerKey = workspaceListenerKey({
+    authResolution,
+    userId: currentUser?.id,
+    ownerScope: listenerOwnerScope,
+    workspaceScope: listenerWorkspaceScope,
+  });
+
   // 1. User Tenant Data Scope Hydration & Live Firestore Snapshot Listeners
   useEffect(() => {
-    const ownerScope = getUserScope(currentUser);
-    const scope = getWorkspaceScope();
+    subscriptionLifecycle.current.update(listenerKey, () => {
+    const ownerScope = listenerOwnerScope!;
+    const scope = listenerWorkspaceScope!;
     const scopeKey = (key: string) => `pos_${scope}_${key}`;
     const ownerScopeKey = (key: string) => `pos_${ownerScope}_${key}`;
 
@@ -408,11 +425,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubProducts = onSnapshot(
       collection(db, 'users', scope, 'products'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Product[] = snapshot.docs.map(doc => doc.data() as Product);
-          setProducts(list);
-          localStorage.setItem(scopeKey('products'), JSON.stringify(list));
-        }
+        const list: Product[] = snapshot.docs.map(doc => doc.data() as Product);
+        setProducts(list);
+        localStorage.setItem(scopeKey('products'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/products`)
     );
@@ -420,11 +435,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubSales = onSnapshot(
       collection(db, 'users', scope, 'sales'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Sale[] = snapshot.docs.map(doc => doc.data() as Sale);
-          setSales(list);
-          localStorage.setItem(scopeKey('sales'), JSON.stringify(list));
-        }
+        const list: Sale[] = snapshot.docs.map(doc => doc.data() as Sale);
+        setSales(list);
+        localStorage.setItem(scopeKey('sales'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/sales`)
     );
@@ -432,11 +445,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubCustomers = onSnapshot(
       collection(db, 'users', scope, 'customers'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Customer[] = snapshot.docs.map(doc => doc.data() as Customer);
-          setCustomers(list);
-          localStorage.setItem(scopeKey('customers'), JSON.stringify(list));
-        }
+        const list: Customer[] = snapshot.docs.map(doc => doc.data() as Customer);
+        setCustomers(list);
+        localStorage.setItem(scopeKey('customers'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/customers`)
     );
@@ -444,11 +455,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubSuppliers = onSnapshot(
       collection(db, 'users', scope, 'suppliers'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Supplier[] = snapshot.docs.map(doc => doc.data() as Supplier);
-          setSuppliers(list);
-          localStorage.setItem(scopeKey('suppliers'), JSON.stringify(list));
-        }
+        const list: Supplier[] = snapshot.docs.map(doc => doc.data() as Supplier);
+        setSuppliers(list);
+        localStorage.setItem(scopeKey('suppliers'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/suppliers`)
     );
@@ -456,11 +465,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubPurchases = onSnapshot(
       collection(db, 'users', scope, 'purchases'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Purchase[] = snapshot.docs.map(purchaseDoc => purchaseDoc.data() as Purchase);
-          setPurchases(list);
-          localStorage.setItem(scopeKey('purchases'), JSON.stringify(list));
-        }
+        const list: Purchase[] = snapshot.docs.map(purchaseDoc => purchaseDoc.data() as Purchase);
+        setPurchases(list);
+        localStorage.setItem(scopeKey('purchases'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/purchases`)
     );
@@ -468,11 +475,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubTransactions = onSnapshot(
       collection(db, 'users', scope, 'inventory_transactions'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: InventoryTransaction[] = snapshot.docs.map(transactionDoc => transactionDoc.data() as InventoryTransaction);
-          setTransactions(list);
-          localStorage.setItem(scopeKey('transactions'), JSON.stringify(list));
-        }
+        const list: InventoryTransaction[] = snapshot.docs.map(transactionDoc => transactionDoc.data() as InventoryTransaction);
+        setTransactions(list);
+        localStorage.setItem(scopeKey('transactions'), JSON.stringify(list));
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/inventory_transactions`)
     );
@@ -490,12 +495,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     const unsubSettings = onSnapshot(
-      collection(db, 'users', ownerScope, 'store_settings'),
+      doc(db, 'users', ownerScope, 'store_settings', 'active'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const sDoc = snapshot.docs.find(d => d.id === 'active');
-          if (sDoc) {
-            const remote = sDoc.data() as StoreSettings;
+        if (snapshot.exists()) {
+            const remote = snapshot.data() as StoreSettings;
             const data = migrateLegacyQposBranding({
               ...remote,
               tenantId: remote.tenantId || ownerScope,
@@ -506,7 +509,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (!remote.tenantId || remote.onboardingCompleted === undefined || data.storeName !== remote.storeName) {
               setDoc(doc(db, 'users', ownerScope, 'store_settings', 'active'), data, {merge: true});
             }
-          }
         }
       },
       (error) => handleFirestoreError(error, OperationType.GET, `users/${ownerScope}/store_settings`)
@@ -533,7 +535,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSettings();
       unsubStaff();
     };
-  }, [currentUser, activeStore.id]);
+    });
+  }, [listenerKey]);
+
+  useEffect(() => () => subscriptionLifecycle.current.dispose(), []);
 
   // Firebase Auth state listener
   useEffect(() => {
@@ -554,7 +559,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
-        if (!firebaseUser) return;
+        if (!firebaseUser) {
+          setCurrentUser(null);
+          setAuthResolution('signed_out');
+          localStorage.removeItem('pos_active_user');
+          return;
+        }
         setIsFirebaseConnected(true);
         const firebaseEmail = firebaseUser.email?.toLowerCase() || 'operator@shop.com';
         let directoryStaff: Staff | undefined;
@@ -573,6 +583,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           permissions: directoryStaff?.permissions
         };
         setCurrentUser(session);
+        setAuthResolution('authenticated');
         localStorage.setItem('pos_active_user', JSON.stringify(session));
       });
     };
@@ -752,6 +763,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         permissions: staffAccount.permissions
       };
       saveLocalAndState('active_user', staffSession, setCurrentUser);
+      setAuthResolution('authenticated');
       setActiveTab(staffAccount.permissions.canBill ? 'pos' : staffAccount.permissions.canPurchase ? 'inventory' : 'products');
       triggerToast(`Authenticated as ${staffAccount.name}`, 'success');
       return true;
@@ -780,6 +792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
       saveLocalAndState('active_user', reviewSession, setCurrentUser);
+      setAuthResolution('authenticated');
       setActiveTab('pos');
       triggerToast('Authenticated in the QPOS demonstration workspace.', 'success');
       return true;
@@ -800,6 +813,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...(role === UserRole.STAFF ? {permissions: DEFAULT_STAFF_PERMISSIONS} : {})
     };
     saveLocalAndState('active_user', userSession, setCurrentUser);
+    setAuthResolution('authenticated');
     triggerToast(`Authenticated as ${cleanName} (${formattedEmail})`, "success");
     return true;
   };
@@ -892,6 +906,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn("Firebase signout error:", e);
     }
     setCurrentUser(null);
+    setAuthResolution('signed_out');
     localStorage.removeItem('pos_active_user');
     setActiveTab('dashboard');
   };

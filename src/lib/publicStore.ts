@@ -33,6 +33,10 @@ export interface PublicStorePayload {
   table?: {token: string; name: string; locationKey: string};
 }
 
+const PUBLIC_STORE_CACHE_TTL_MS = 30_000;
+const publicStoreCache = new Map<string, {expiresAt: number; payload: PublicStorePayload}>();
+const publicStoreRequests = new Map<string, Promise<PublicStorePayload>>();
+
 export const loadTableStore = async (token: string) => {
   let mapping: any;
   try {
@@ -51,6 +55,26 @@ export const loadTableStore = async (token: string) => {
 };
 
 export const loadPublicStore = async (slug: string): Promise<PublicStorePayload> => {
+  const cacheKey = slug.trim().toLowerCase();
+  const cached = publicStoreCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.payload;
+
+  const inFlight = publicStoreRequests.get(cacheKey);
+  if (inFlight) return inFlight;
+
+  const request = loadPublicStoreUncached(cacheKey)
+    .then(payload => {
+      publicStoreCache.set(cacheKey, {expiresAt: Date.now() + PUBLIC_STORE_CACHE_TTL_MS, payload});
+      return payload;
+    })
+    .finally(() => {
+      publicStoreRequests.delete(cacheKey);
+    });
+  publicStoreRequests.set(cacheKey, request);
+  return request;
+};
+
+const loadPublicStoreUncached = async (slug: string): Promise<PublicStorePayload> => {
   try {
     const response = await fetch(`/api/public-store?slug=${encodeURIComponent(slug)}`);
     const payload = await response.json().catch(() => ({}));
