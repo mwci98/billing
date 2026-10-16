@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store, ShoppingBasket
+  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store, ShoppingBasket, FileText
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -36,6 +36,7 @@ import { OnlineStoreSettings } from './components/OnlineStoreSettings';
 import { PublicStorefront } from './components/PublicStorefront';
 import { OnlineOrders } from './components/OnlineOrders';
 import { TableQrManagement } from './components/TableQrManagement';
+import { ProposalManagement } from './components/ProposalManagement';
 
 // Inner wrapper component to access state Context keys cleanly
 const AppContent: React.FC = () => {
@@ -78,7 +79,9 @@ const AppContent: React.FC = () => {
   // The authentication screen is intentionally always dark.
   useEffect(() => {
     document.documentElement.classList.toggle('dark', currentUser ? isDarkMode : true);
-    document.title = 'QPOS';
+    document.title = currentUser
+      ? 'QPOS · Business Workspace'
+      : 'QPOS Billing, POS & Inventory Management Software | Kohima, India';
   }, [currentUser, isDarkMode]);
 
   if (showSplash) {
@@ -135,6 +138,7 @@ const AppContent: React.FC = () => {
   }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
     { id: 'pos', name: isRestaurantBusiness ? 'Restaurant Orders' : isServiceBusiness ? 'Billing & Invoice' : 'POS Billing', icon: ShoppingCart, permission: 'canBill' },
+    ...(!isRestaurantBusiness ? [{ id: 'proposals', name: 'Proposals', icon: FileText, permission: 'canBill' as keyof StaffPermissions }] : []),
     ...(isRestaurantBusiness ? [{ id: 'open-orders', name: 'Open Orders', icon: ClipboardList, permission: 'canBill' as keyof StaffPermissions }] : []),
     ...(isRestaurantBusiness ? [{ id: 'table-qr', name: 'Table QR', icon: Store, permission: 'canManageTableQr' as keyof StaffPermissions }] : []),
     { id: 'products', name: isRestaurantBusiness ? 'Menu Items' : isServiceBusiness ? 'Services & Materials' : 'Catalog Items', icon: ListChecks, permission: 'canManageProducts' },
@@ -168,6 +172,9 @@ const AppContent: React.FC = () => {
       case 'products':
         if (!canAccessTab('products')) return <SecurityBarrier />;
         return <ProductManagement />;
+      case 'proposals':
+        if (isRestaurantBusiness || !canAccessTab('proposals')) return <SecurityBarrier />;
+        return <ProposalManagement />;
       case 'online-store':
         if (!isRestaurantBusiness || !canAccessTab('online-store')) return <SecurityBarrier />;
         return <OnlineStoreSettings />;

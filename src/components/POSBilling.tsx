@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, Barcode, Camera, Plus, Minus, Trash2, 
   ShoppingBag, CreditCard, Sparkles, UserPlus, 
-  Receipt, Landmark, ReceiptText, ChevronRight, ChevronLeft, X, Sliders, Percent
+  Receipt, Landmark, ReceiptText, ChevronRight, ChevronLeft, X, Sliders, Percent, FileText
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { Product, SaleItem, Customer } from '../types';
@@ -31,6 +31,8 @@ export const POSBilling: React.FC = () => {
     customers, 
     addCustomer, 
     addSale, 
+    addProposal,
+    setActiveTab,
     settings, 
     currentUser,
     triggerToast
@@ -291,6 +293,48 @@ export const POSBilling: React.FC = () => {
   const discount = parseFloat(discountInput) || 0;
   const netTotal = Math.max(0, grossTotal - discount);
 
+  const buildCartItems = (): SaleItem[] => cart.map((item) => {
+    const rawPrice = getItemPrice(item);
+    const rate = item.product.taxRate;
+    const totalCost = rawPrice * item.quantity;
+    const taxableUnitPrice = rawPrice / (1 + rate / 100);
+    const tax = totalCost - (taxableUnitPrice * item.quantity);
+    const serializedUnits = productUsesImeiTracking(item.product)
+      ? (item.selectedUnitIds || []).map(unitId => {
+          const unit = getSerializedUnits(item.product).find(candidate => candidate.id === unitId)!;
+          return {unitId: unit.id, imei1: unit.imei1, ...(unit.imei2 ? {imei2: unit.imei2} : {}), trackingType: getInventoryTrackingType(item.product) === 'serial' ? 'serial' as const : 'imei' as const};
+        })
+      : undefined;
+    return {productId: item.product.id, name: item.product.name, sku: item.product.sku, barcode: item.product.barcode, price: taxableUnitPrice, quantity: item.quantity, taxRate: rate, taxAmount: tax, total: taxableUnitPrice * item.quantity, ...(serializedUnits?.length ? {serializedUnits} : {})};
+  });
+
+  const customerFields = () => ({
+    ...(attachedCustomer?.id ? {customerId: attachedCustomer.id} : {}),
+    customerName: attachedCustomer?.name || 'Walk-in Customer',
+    ...(attachedCustomer?.companyName ? {customerCompanyName: attachedCustomer.companyName} : {}),
+    ...(attachedCustomer?.phone ? {customerPhone: attachedCustomer.phone} : {}),
+    ...(attachedCustomer?.email ? {customerEmail: attachedCustomer.email} : {}),
+    ...(attachedCustomer?.gstNumber ? {customerGstNumber: attachedCustomer.gstNumber} : {}),
+    ...(attachedCustomer?.state ? {customerState: attachedCustomer.state} : {}),
+    ...(attachedCustomer?.stateCode ? {customerStateCode: attachedCustomer.stateCode} : {}),
+    ...(attachedCustomer?.billingAddress ? {customerBillingAddress: attachedCustomer.billingAddress} : {}),
+    ...(attachedCustomer?.shippingAddress ? {customerShippingAddress: attachedCustomer.shippingAddress} : {})
+  });
+
+  const handleSaveProposal = async () => {
+    if (cart.length === 0) return triggerToast('Add at least one item before saving a proposal.', 'warning');
+    const validUntil = new Date();
+    validUntil.setDate(validUntil.getDate() + 30);
+    try {
+      await addProposal({...customerFields(), items: buildCartItems(), subtotal, taxAmount, discount, total: netTotal, validUntil: validUntil.toISOString(), authId: currentUser?.id || 'emp-01', employeeName: currentUser?.name || 'Checkout staff'});
+      clearCart();
+      triggerToast('Proposal saved. Inventory and customer balances were not changed.', 'success');
+      setActiveTab('proposals');
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Could not save proposal.', 'error');
+    }
+  };
+
   // 6. Fast Quick Customer creation inside screen
   const handleAddNewCustomer = () => {
     if (!newCustName.trim() || !newCustPhone.trim()) {
@@ -325,32 +369,7 @@ export const POSBilling: React.FC = () => {
       return;
     }
 
-    // Prepare sale structures
-    const saleItems: SaleItem[] = cart.map((item) => {
-      const rawPrice = getItemPrice(item);
-      const rate = item.product.taxRate;
-      const totalCost = rawPrice * item.quantity;
-      const taxableUnitPrice = rawPrice / (1 + rate / 100);
-      const tAmount = totalCost - (taxableUnitPrice * item.quantity);
-      const serializedUnits = productUsesImeiTracking(item.product)
-        ? (item.selectedUnitIds || []).map(unitId => {
-            const unit = getSerializedUnits(item.product).find(candidate => candidate.id === unitId)!;
-            return { unitId: unit.id, imei1: unit.imei1, ...(unit.imei2 ? { imei2: unit.imei2 } : {}), trackingType: getInventoryTrackingType(item.product) === 'serial' ? 'serial' as const : 'imei' as const };
-          })
-        : undefined;
-      return {
-        productId: item.product.id,
-        name: item.product.name,
-        sku: item.product.sku,
-        barcode: item.product.barcode,
-        price: taxableUnitPrice,
-        quantity: item.quantity,
-        taxRate: rate,
-        taxAmount: tAmount,
-        total: taxableUnitPrice * item.quantity,
-        ...(serializedUnits?.length ? { serializedUnits } : {})
-      };
-    });
+    const saleItems = buildCartItems();
 
     const calculatedPoints = Math.floor(netTotal * settings.loyaltyPointsPerDollar);
 
@@ -376,16 +395,7 @@ export const POSBilling: React.FC = () => {
     }
 
     const saleRecord = addSale({
-      ...(attachedCustomer?.id ? { customerId: attachedCustomer.id } : {}),
-      customerName: attachedCustomer?.name || 'Walk-in Customer',
-      ...(attachedCustomer?.companyName ? { customerCompanyName: attachedCustomer.companyName } : {}),
-      ...(attachedCustomer?.phone ? { customerPhone: attachedCustomer.phone } : {}),
-      ...(attachedCustomer?.email ? { customerEmail: attachedCustomer.email } : {}),
-      ...(attachedCustomer?.gstNumber ? { customerGstNumber: attachedCustomer.gstNumber } : {}),
-      ...(attachedCustomer?.state ? { customerState: attachedCustomer.state } : {}),
-      ...(attachedCustomer?.stateCode ? { customerStateCode: attachedCustomer.stateCode } : {}),
-      ...(attachedCustomer?.billingAddress ? { customerBillingAddress: attachedCustomer.billingAddress } : {}),
-      ...(attachedCustomer?.shippingAddress ? { customerShippingAddress: attachedCustomer.shippingAddress } : {}),
+      ...customerFields(),
       items: saleItems,
       subtotal,
       taxAmount,
@@ -1006,6 +1016,16 @@ export const POSBilling: React.FC = () => {
               </div>
             </div>
           )}
+
+          <button
+            id="pos-save-proposal-btn"
+            disabled={cart.length === 0}
+            onClick={handleSaveProposal}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed text-amber-800 p-3 text-sm font-extrabold cursor-pointer transition active:scale-97 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
+          >
+            <FileText className="h-5 w-5 stroke-[2.5px]" />
+            <span>Save Proposal · No Stock Deduction</span>
+          </button>
 
           {/* Submits bill */}
           <button

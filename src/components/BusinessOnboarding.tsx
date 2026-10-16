@@ -94,7 +94,7 @@ export const BusinessOnboarding: React.FC = () => {
             Complete these details once to prepare this isolated POS workspace.
           </p>
           <span className="mt-3 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            {hasInternalAccess ? 'Internal testing access · no trial expiry' : 'Your 5-day Basic trial starts now'}
+            {hasInternalAccess ? 'Internal testing access · no trial expiry' : 'Your 20-day Basic trial starts now'}
           </span>
         </div>
 

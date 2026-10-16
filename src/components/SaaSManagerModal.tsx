@@ -283,7 +283,7 @@ export const SaaSManagerModal: React.FC<SaaSManagerModalProps> = ({ isOpen, onCl
                 <p className="text-xs text-gray-500 dark:text-white/50">
                   {hasInternalAccess
                     ? 'Internal testing access has no trial expiry or subscription charge.'
-                    : 'Five-day free trial followed by ₹6,000 yearly recurring billing through Razorpay.'}
+                    : '20-day free trial followed by ₹6,000 yearly recurring billing through Razorpay.'}
                 </p>
               </div>
 

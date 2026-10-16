@@ -7,7 +7,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { 
   Product, Customer, Supplier, Sale, Purchase, 
   InventoryTransaction, StoreSettings, POSNotification, UserRole, SaaSStore, SaaSPlan,
-  Staff, StaffPermissions, AppUser, OnlineStoreConfig, OnlineOrder
+  Staff, StaffPermissions, AppUser, OnlineStoreConfig, OnlineOrder, Proposal, ProposalStatus
 } from '../types';
 import { 
   INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_SUPPLIERS, 
@@ -16,7 +16,7 @@ import {
 import { db, auth, authPersistenceReady, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, onSnapshot, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
-import { getSerializedUnits, productUsesImeiTracking } from './serializedInventory';
+import { getAvailableSerializedUnits, getSerializedUnits, productUsesImeiTracking } from './serializedInventory';
 import {AuthResolution, createSubscriptionLifecycle, workspaceListenerKey} from './firestoreListenerLifecycle';
 
 const DEFAULT_SAAS_STORES: SaaSStore[] = [
@@ -32,7 +32,7 @@ const DEFAULT_SAAS_PLANS: SaaSPlan[] = [
     multiBranch: true,
     cloudBackup: true,
     customBranding: true,
-    features: ['5-Day Free Trial', 'Multi-Branch Support', 'Firebase Real-Time DB', 'Inventory Audit Logs', 'Staff Permission Controls', 'Custom Tax & Loyalty Engine']
+    features: ['20-Day Free Trial', 'Multi-Branch Support', 'Firebase Real-Time DB', 'Inventory Audit Logs', 'Staff Permission Controls', 'Custom Tax & Loyalty Engine']
   }
 ];
 
@@ -49,7 +49,7 @@ const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
   canManageTableQr: false
 };
 
-const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
+const TRIAL_DURATION_MS = 20 * 24 * 60 * 60 * 1000;
 
 // This account is limited to an isolated workspace with safe sample data for Google Play review.
 const PLAY_REVIEW_EMAIL = 'play-review@qpos.neospec.co.in';
@@ -101,6 +101,7 @@ interface AppContextType {
   purchases: Purchase[];
   transactions: InventoryTransaction[];
   onlineOrders: OnlineOrder[];
+  proposals: Proposal[];
   settings: StoreSettings;
   notifications: POSNotification[];
   staff: Staff[];
@@ -113,6 +114,10 @@ interface AppContextType {
   editSale: (id: string, sale: Partial<Sale>) => void;
   settleSale: (id: string, method: 'Cash' | 'UPI') => Sale | null;
   deleteSale: (id: string) => void;
+  addProposal: (proposal: Omit<Proposal, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {status?: ProposalStatus}) => Promise<Proposal>;
+  updateProposal: (id: string, proposal: Partial<Proposal>) => Promise<void>;
+  deleteProposal: (id: string) => Promise<void>;
+  convertProposal: (id: string) => Promise<Sale>;
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => void;
   adjustStock: (productId: string, quantity: number, type: 'Stock In' | 'Stock Out' | 'Adjustment', description: string) => void;
   
@@ -191,6 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [onlineOrders, setOnlineOrders] = useState<OnlineOrder[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
   const [notifications, setNotifications] = useState<POSNotification[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -328,6 +334,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const localPurchases = localStorage.getItem(scopeKey('purchases'));
     const localTransactions = localStorage.getItem(scopeKey('transactions'));
     const localOnlineOrders = localStorage.getItem(scopeKey('online_orders'));
+    const localProposals = localStorage.getItem(scopeKey('proposals'));
     const localSettings = localStorage.getItem(ownerScopeKey('settings'));
     const localStaff = localStorage.getItem(scopeKey('staff'));
     const isPlayReviewWorkspace = currentUser?.email?.toLowerCase() === PLAY_REVIEW_EMAIL;
@@ -351,6 +358,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPurchases(hydrateCollection('purchases', localPurchases, INITIAL_PURCHASES));
     setTransactions(hydrateCollection('transactions', localTransactions, INITIAL_TRANSACTIONS));
     setOnlineOrders(hydrateCollection('online_orders', localOnlineOrders, []));
+    setProposals(hydrateCollection('proposals', localProposals, []));
     if (shouldSeedPlayReview) localStorage.setItem(reviewSeedKey, PLAY_REVIEW_SEED_VERSION);
 
     if (localSettings) {
@@ -494,6 +502,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/online_orders`)
     );
 
+    const unsubProposals = onSnapshot(
+      collection(db, 'users', scope, 'proposals'),
+      (snapshot) => {
+        const list = snapshot.docs
+          .map(proposalDoc => proposalDoc.data() as Proposal)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        setProposals(list);
+        localStorage.setItem(scopeKey('proposals'), JSON.stringify(list));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, `users/${scope}/proposals`)
+    );
+
     const unsubSettings = onSnapshot(
       doc(db, 'users', ownerScope, 'store_settings', 'active'),
       (snapshot) => {
@@ -532,6 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubPurchases();
       unsubTransactions();
       unsubOnlineOrders();
+      unsubProposals();
       unsubSettings();
       unsubStaff();
     };
@@ -1127,6 +1148,147 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     return newSale;
+  };
+
+  const addProposal: AppContextType['addProposal'] = async (proposal) => {
+    const scope = getWorkspaceScope();
+    const now = new Date().toISOString();
+    const id = `proposal-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const record = omitUndefinedFields<Proposal>({
+      ...proposal,
+      id,
+      status: proposal.status || 'Draft',
+      createdAt: now,
+      updatedAt: now
+    });
+    await setDoc(doc(db, 'users', scope, 'proposals', id), record);
+    setProposals(current => {
+      const next = [record, ...current];
+      localStorage.setItem(`pos_${scope}_proposals`, JSON.stringify(next));
+      return next;
+    });
+    return record;
+  };
+
+  const updateProposal: AppContextType['updateProposal'] = async (id, changes) => {
+    const scope = getWorkspaceScope();
+    const current = proposals.find(proposal => proposal.id === id);
+    if (!current) throw new Error('Proposal not found.');
+    if (current.status === 'Converted') throw new Error('Converted proposals are locked.');
+    const safeChanges = {...changes};
+    if (safeChanges.status === 'Converted') throw new Error('Use Convert to Invoice to complete this proposal.');
+    delete safeChanges.id;
+    delete safeChanges.createdAt;
+    delete safeChanges.convertedSaleId;
+    const updated = omitUndefinedFields({...current, ...safeChanges, updatedAt: new Date().toISOString()});
+    await setDoc(doc(db, 'users', scope, 'proposals', id), updated);
+    setProposals(list => {
+      const next = list.map(proposal => proposal.id === id ? updated : proposal);
+      localStorage.setItem(`pos_${scope}_proposals`, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const deleteProposal: AppContextType['deleteProposal'] = async (id) => {
+    const scope = getWorkspaceScope();
+    const current = proposals.find(proposal => proposal.id === id);
+    if (!current) return;
+    if (current.status === 'Converted') throw new Error('Converted proposals cannot be deleted.');
+    await deleteDoc(doc(db, 'users', scope, 'proposals', id));
+    setProposals(list => {
+      const next = list.filter(proposal => proposal.id !== id);
+      localStorage.setItem(`pos_${scope}_proposals`, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const convertProposal: AppContextType['convertProposal'] = async (id) => {
+    const scope = getWorkspaceScope();
+    const proposalRef = doc(db, 'users', scope, 'proposals', id);
+    const sale = await runTransaction(db, async transaction => {
+      const proposalSnapshot = await transaction.get(proposalRef);
+      if (!proposalSnapshot.exists()) throw new Error('Proposal not found.');
+      const proposal = proposalSnapshot.data() as Proposal;
+      if (proposal.status === 'Converted') {
+        if (!proposal.convertedSaleId) throw new Error('Converted proposal is missing its invoice link.');
+        const existingSale = await transaction.get(doc(db, 'users', scope, 'sales', proposal.convertedSaleId));
+        if (!existingSale.exists()) throw new Error('Converted invoice could not be found.');
+        return existingSale.data() as Sale;
+      }
+
+      const productSnapshots = await Promise.all(proposal.items.map(item =>
+        transaction.get(doc(db, 'users', scope, 'products', item.productId))
+      ));
+      const customerRef = proposal.customerId ? doc(db, 'users', scope, 'customers', proposal.customerId) : null;
+      const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
+      const now = new Date().toISOString();
+      const saleId = `sale-${Math.floor(100000 + Math.random() * 900000)}`;
+      productSnapshots.forEach((snapshot, index) => {
+        const item = proposal.items[index];
+        if (!snapshot.exists()) throw new Error(`Product "${item.name}" no longer exists.`);
+        const product = snapshot.data() as Product;
+        if (product.itemType === 'Service') return;
+        if (product.stock - (product.reservedStock || 0) < item.quantity) {
+          throw new Error(`Insufficient stock for "${item.name}".`);
+        }
+        const requestedUnits = new Set(item.serializedUnits?.map(unit => unit.unitId) || []);
+        let serializedUnits = product.serializedUnits;
+        if (productUsesImeiTracking(product)) {
+          if (requestedUnits.size !== item.quantity) throw new Error(`Select available serial numbers for "${item.name}" before conversion.`);
+          const availableIds = new Set(getAvailableSerializedUnits(product).map(unit => unit.id));
+          if ([...requestedUnits].some(unitId => !availableIds.has(unitId))) throw new Error(`A serial number for "${item.name}" is no longer available.`);
+          serializedUnits = getSerializedUnits(product).map(unit => requestedUnits.has(unit.id) ? {...unit, status: 'Sold' as const, soldAt: now, saleId} : unit);
+        }
+        const nextStock = serializedUnits
+          ? serializedUnits.filter(unit => unit.status === 'In Stock' || unit.status === 'Returned').length
+          : product.stock - item.quantity;
+        transaction.set(snapshot.ref, omitUndefinedFields({
+          ...product,
+          stock: nextStock,
+          ...(serializedUnits ? {serializedUnits, imeiNumbers: serializedUnits.filter(unit => unit.status !== 'Sold').flatMap(unit => [unit.imei1, unit.imei2].filter(Boolean) as string[])} : {}),
+          updatedAt: now
+        }));
+        const txId = `tx-${saleId}-${index}`;
+        transaction.set(doc(db, 'users', scope, 'inventory_transactions', txId), {
+          id: txId, productId: product.id, productName: product.name, sku: product.sku,
+          type: 'Sale', quantity: item.quantity, previousStock: product.stock, newStock: nextStock,
+          description: `Proposal ${proposal.id} converted to invoice ${saleId}.`, date: now,
+          operatorId: currentUser?.id || 'system-1', operatorName: currentUser?.name || 'Checkout staff'
+        });
+      });
+
+      const newSale = omitUndefinedFields<Sale>({
+        id: saleId,
+        date: now,
+        customerId: proposal.customerId,
+        customerName: proposal.customerName,
+        customerCompanyName: proposal.customerCompanyName,
+        customerPhone: proposal.customerPhone,
+        customerEmail: proposal.customerEmail,
+        customerGstNumber: proposal.customerGstNumber,
+        customerState: proposal.customerState,
+        customerStateCode: proposal.customerStateCode,
+        customerBillingAddress: proposal.customerBillingAddress,
+        customerShippingAddress: proposal.customerShippingAddress,
+        items: proposal.items, subtotal: proposal.subtotal, taxAmount: proposal.taxAmount,
+        discount: proposal.discount, total: proposal.total, paymentMethod: 'Cash', paymentDetails: {},
+        loyaltyPointsEarned: Math.floor(proposal.total * settings.loyaltyPointsPerDollar),
+        authId: currentUser?.id || proposal.authId, employeeName: currentUser?.name || proposal.employeeName,
+        status: 'Completed'
+      });
+      transaction.set(doc(db, 'users', scope, 'sales', saleId), newSale);
+      if (customerRef && customerSnapshot?.exists()) {
+        const customer = customerSnapshot.data() as Customer;
+        transaction.set(customerRef, {
+          ...customer,
+          totalSpent: customer.totalSpent + proposal.total,
+          loyaltyPoints: customer.loyaltyPoints + newSale.loyaltyPointsEarned
+        });
+      }
+      transaction.set(proposalRef, {...proposal, status: 'Converted', convertedSaleId: saleId, updatedAt: now});
+      return newSale;
+    });
+    return sale;
   };
 
   const editSale = (id: string, changes: Partial<Sale>) => {
@@ -1918,6 +2080,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchases,
         transactions,
         onlineOrders,
+        proposals,
         settings: effectiveSettings,
         notifications,
         staff,
@@ -1929,6 +2092,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         editSale,
         settleSale,
         deleteSale,
+        addProposal,
+        updateProposal,
+        deleteProposal,
+        convertProposal,
         addPurchase,
         adjustStock,
 

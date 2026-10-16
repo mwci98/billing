@@ -455,12 +455,49 @@ body:not(.dark) {
   scroll-behavior: smooth;
 }
 
+/* Neospec-inspired QPOS marketing system: engineered dark surfaces, amber signals,
+   and a quiet topographic field. Scoped so the authenticated application is unchanged. */
+.qpos-neospec {
+  --qpos-signal: #fcd34d;
+  --qpos-canvas: #07090c;
+  background:
+    radial-gradient(circle at 78% 8%, rgba(252, 211, 77, 0.07), transparent 28rem),
+    var(--qpos-canvas);
+}
+
+.qpos-neospec .qpos-contours {
+  background-image:
+    repeating-radial-gradient(ellipse at 86% 18%, transparent 0 31px, rgba(252, 211, 77, 0.055) 32px 33px, transparent 34px 48px),
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: auto, 72px 72px, 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+.qpos-neospec h1,
+.qpos-neospec h2 {
+  text-wrap: balance;
+}
+
 html:has(.landing-page) {
   scroll-behavior: smooth;
 }
 
 .landing-page section[id] {
-  scroll-margin-top: 4.75rem;
+  scroll-margin-top: 5.5rem;
+}
+
+/* Marketing facts stay readable on dense product previews and small screens. */
+.landing-page [class*="text-[8px]"],
+.landing-page [class*="text-[9px]"] {
+  font-size: 0.625rem;
+  line-height: 0.925rem;
+}
+
+.landing-page [class*="text-white/30"],
+.landing-page [class*="text-white/32"],
+.landing-page [class*="text-white/35"] {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .landing-page main > section {

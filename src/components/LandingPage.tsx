@@ -1,522 +1,105 @@
-import React, {useState} from 'react';
-import {
-  ArrowRight,
-  BadgeIndianRupee,
-  BarChart3,
-  Boxes,
-  Building2,
-  Check,
-  ChevronRight,
-  Cloud,
-  FileText,
-  LayoutDashboard,
-  Laptop,
-  PackageCheck,
-  ScanBarcode,
-  ShieldCheck,
-  ShoppingCart,
-  Smartphone,
-  Sparkles,
-  Store,
-  Tablet,
-  Users,
-  Wifi,
-  Zap,
-  ChefHat,
-  CreditCard,
-  Printer,
-  Wrench,
-  Menu,
-  X,
-} from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {ArrowRight, BarChart3, Bell, Boxes, Building2, Check, ChefHat, ChevronDown, Cloud, FileDown, FileText, Menu, Moon, Printer, QrCode, ReceiptIndianRupee, ScanBarcode, ShoppingBag, Smartphone, Users, Wrench, X} from 'lucide-react';
+import {HomepageFaqChat} from './HomepageFaqChat';
 
-type LandingPageProps = {
-  onGetStarted: () => void;
+type LandingPageProps = {onGetStarted: () => void};
+
+const modes = [
+  [ShoppingBag, 'Retail', 'Barcode billing, purchases, suppliers, stock and loyalty.', 'amber'],
+  [Wrench, 'Service', 'Service catalogues, editable proposals and professional invoices.', 'blue'],
+  [Boxes, 'Hybrid', 'Sell products and services together from one workspace.', 'amber'],
+  [ChefHat, 'Restaurant', 'Tables, open orders, variants, QR ordering and 80mm receipts.', 'violet'],
+] as const;
+
+const groups = [
+  [ReceiptIndianRupee, 'Billing & payments', 'amber', ['GST billing and discounts', 'Cash, UPI and split payments', 'Customer credit and outstanding dues', 'Branded invoice, print and PDF', 'Optional WhatsApp invoice delivery']],
+  [FileText, 'Proposals & customers', 'amber', ['Editable proposals and quotations', 'Printable and downloadable PDF', 'Convert once to a final invoice', 'No stock deduction until conversion', 'Loyalty, spend and due history']],
+  [Boxes, 'Products & inventory', 'blue', ['Products, services and categories', 'SKU, barcode and camera lookup', 'Purchases, suppliers and transactions', 'Low-stock and expiry alerts', 'IMEI and serial-number tracking']],
+  [BarChart3, 'Reports & operations', 'violet', ['Weekly, monthly and yearly sales', 'GST and estimated-profit reports', 'Month selector and CSV exports', 'Multi-store workspace switching', 'Staff roles and permissions']],
+] as const;
+
+const faqs = [
+  ['Is QPOS suitable for GST billing in India?', 'QPOS creates branded GST invoices and supports tax details, discounts, payment records, printing and PDF downloads. Your business remains responsible for reviewing tax settings and compliance.'],
+  ['Do I get an online store?', 'Restaurant mode includes one public online ordering storefront during the 20-day trial. It supports a public menu, pickup or local delivery, COD or pay-at-store, online order management and table QR ordering. It does not include online card payments.'],
+  ['Is QPOS available for businesses in Kohima?', 'Yes. QPOS provides billing, POS and inventory management tools for retail, service, hybrid and restaurant businesses in Kohima, Nagaland, while continuing to serve businesses across India.'],
+  ['Can retail and service businesses use the same app?', 'Yes. Choose Retail, Service or Hybrid mode. Hybrid workspaces can bill products and services together, and proposals convert without reducing stock early.'],
+  ['Does QPOS work for restaurants?', 'Restaurant mode supports tables, dine-in, takeaway, delivery, variants, kitchen notes, open-order editing, settlement, 80mm receipts, public menus and table QR ordering.'],
+  ['Can I manage more than one store?', 'Yes. Additional workspaces keep store data separated and let authorised users switch locations. The current additional-store price is ₹500 as a one-time add-on.'],
+  ['What reports are available?', 'QPOS includes weekly, monthly and yearly sales, GST reports, estimated-profit visibility, a month selector and CSV exports.'],
+  ['Is there a free trial?', 'Yes. New businesses can try QPOS for 20 days before choosing the ₹6,000 yearly Basic plan. Restaurant mode includes one online ordering storefront during the trial, with COD or pay-at-store workflows.'],
+];
+
+const tone: Record<string, string> = {
+  blue: 'border-white/15 bg-white/[.04] text-amber-200',
+  amber: 'border-amber-400/20 bg-amber-400/[.07] text-amber-300',
+  violet: 'border-amber-300/15 bg-amber-300/[.04] text-amber-200',
 };
 
-const features = [
-  {
-    icon: ShoppingCart,
-    title: 'Billing that fits the business',
-    description: 'Run retail POS, service invoices or restaurant orders from any phone, tablet or computer.',
-  },
-  {
-    icon: Boxes,
-    title: 'Inventory down to each device',
-    description: 'Track stock, purchases, low-stock alerts and every handset separately by IMEI.',
-  },
-  {
-    icon: Users,
-    title: 'Staff permissions',
-    description: 'Give billing and purchasing access without exposing revenue or sensitive reports.',
-  },
-  {
-    icon: Building2,
-    title: 'Isolated multi-store workspaces',
-    description: 'Switch branches from one account while products, sales, staff and store configuration stay separate.',
-  },
-  {
-    icon: FileText,
-    title: 'GST invoices and thermal receipts',
-    description: 'Create branded GST invoices and print compact 80mm receipts after payment settlement.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Business insights',
-    description: 'See sales, revenue, estimated profit and customer activity as it happens.',
-  },
-  {
-    icon: ChefHat,
-    title: 'Restaurant open orders',
-    description: 'Manage tables, guests, variants and kitchen notes. Edit unpaid tickets and settle them later.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Flexible payment settlement',
-    description: 'Record Cash, UPI, Card, Split and credit payments with customer due tracking.',
-  },
-  {
-    icon: Smartphone,
-    title: 'Visual menu and catalog',
-    description: 'Upload compressed dish pictures, organize variants and create touch-friendly menu cards.',
-  },
-];
+export const LandingPage: React.FC<LandingPageProps> = ({onGetStarted}) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const nav = [['Modes', '#modes'], ['Features', '#features'], ['Online Store', '#online-store'], ['Proposals', '#proposals'], ['Restaurant', '#restaurant'], ['Reports', '#reports'], ['Pricing', '#pricing'], ['FAQ', '#faq']];
 
-const businessModes = [
-  {icon: ShoppingCart, title: 'Retail', accent: 'emerald', description: 'Barcode billing, purchasing, suppliers, stock and loyalty.'},
-  {icon: Wrench, title: 'Services', accent: 'blue', description: 'Service catalog, clients, GST invoices and professional billing.'},
-  {icon: Boxes, title: 'Hybrid', accent: 'amber', description: 'Sell products and services together from one workspace.'},
-  {icon: ChefHat, title: 'Restaurant', accent: 'rose', description: 'Tables, open orders, food variants, kitchen notes and thermal print.'},
-];
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
 
-const workflow = [
-  ['01', 'Create your workspace', 'Sign in with Google and add your business, GST and store information.'],
-  ['02', 'Choose how you operate', 'Use Retail, Service, Hybrid or Restaurant mode and add your products, menu or services.'],
-  ['03', 'Bill, settle and grow', 'Collect payments, print receipts and monitor every workspace from anywhere.'],
-];
-
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  return (
-    <div className="landing-page min-h-screen overflow-x-hidden bg-[#09090A] text-white">
-      <div className="pointer-events-none fixed inset-0 opacity-70" aria-hidden="true">
-        <div className="absolute left-1/2 top-[-24rem] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-emerald-500/15 blur-[130px]" />
-        <div className="absolute right-[-18rem] top-[34rem] h-[34rem] w-[34rem] rounded-full bg-teal-400/8 blur-[120px]" />
+  return <div className="landing-page qpos-neospec min-h-screen overflow-x-hidden bg-[#07090c] text-white selection:bg-amber-400 selection:text-[#08090b]">
+    <a href="#main-content" className="fixed left-4 top-3 z-[200] -translate-y-20 rounded-lg bg-white px-4 py-2 text-sm font-bold text-black transition focus:translate-y-0">Skip to content</a>
+    <div aria-hidden="true" className="qpos-contours pointer-events-none fixed inset-0 opacity-60" />
+    <HomepageFaqChat onGetStarted={onGetStarted}/>
+    <header className="fixed inset-x-0 top-0 z-[100] border-b border-amber-300/15 bg-[#07090c]/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
+        <a href="#top" aria-label="QPOS home" className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"><img src="/icons/qpos-marketing-logo.svg" alt="QPOS billing software" className="h-10 w-10"/><span><strong className="block text-sm">QPOS</strong><small className="block text-[8px] font-bold uppercase tracking-[.18em] text-amber-300">Business operating system</small></span></a>
+        <nav aria-label="Primary navigation" className="hidden items-center gap-5 text-[11px] font-bold text-white/55 lg:flex">{nav.map(([l,h]) => <a key={h} href={h} className="border-b border-transparent py-2 hover:border-amber-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">{l}</a>)}</nav>
+        <div className="flex items-center gap-2"><button onClick={onGetStarted} className="hidden px-3 py-2 text-xs font-bold text-white/65 hover:text-white sm:block">Sign in</button><button onClick={onGetStarted} className="hidden items-center gap-2 bg-amber-300 px-4 py-2.5 text-xs font-black text-[#08090b] transition hover:bg-amber-200 sm:flex">Start free trial <ArrowRight className="h-3.5 w-3.5"/></button><button onClick={()=>setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="mobile-nav" aria-label="Toggle navigation" className="grid h-10 w-10 place-items-center border border-white/10 lg:hidden">{menuOpen?<X className="h-5 w-5"/>:<Menu className="h-5 w-5"/>}</button></div>
       </div>
+      {menuOpen && <><button type="button" aria-label="Close navigation" onClick={()=>setMenuOpen(false)} className="fixed inset-0 top-[4.75rem] z-[-1] bg-black/70 backdrop-blur-sm lg:hidden"/><nav id="mobile-nav" aria-label="Mobile navigation" className="absolute inset-x-0 top-full max-h-[calc(100vh-4.75rem)] overflow-y-auto border-t border-amber-300/15 bg-[#090b0f] p-4 shadow-[0_28px_60px_rgba(0,0,0,.65)] lg:hidden"><div className="mx-auto grid max-w-7xl">{nav.map(([l,h])=><a key={h} href={h} onClick={()=>setMenuOpen(false)} className="px-4 py-3 text-sm font-bold text-white/75 hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">{l}</a>)}<button onClick={()=>{setMenuOpen(false);onGetStarted();}} className="mt-2 bg-amber-300 px-4 py-3 text-sm font-black text-[#08090b]">Start free trial</button></div></nav></>}
+    </header>
 
-      <header className="fixed inset-x-0 top-0 z-[100] border-b border-white/[0.06] bg-[#09090A]/95 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <div className="flex items-center gap-3">
-            <a href="#top" className="flex h-10 w-10 items-center justify-center" aria-label="QPOS home">
-              <img src="/icons/qpos-logo.svg" alt="" className="h-full w-full object-contain" />
-            </a>
-            <span className="hidden min-[360px]:block">
-              <a href="#top" className="block text-[15px] font-extrabold tracking-[-0.03em]">QPOS</a>
-              <a href="https://neospec.co.in" className="block text-[8px] font-bold uppercase tracking-[0.16em] text-emerald-400 transition hover:text-emerald-300">A product of Neospec</a>
-            </span>
-          </div>
+    <main id="main-content" className="relative z-10 pt-[4.75rem]">
+      <section id="top" className="mx-auto grid min-h-[calc(100vh-4.75rem)] max-w-[90rem] gap-12 px-5 pb-16 pt-14 sm:px-8 lg:grid-cols-[.82fr_1.18fr] lg:items-center lg:py-20">
+        <div className="relative z-10"><div className="flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.22em] text-amber-300"><span className="h-px w-10 bg-amber-300"/>00 / Built in Kohima · India-wide</div><h1 className="mt-6 text-[2.8rem] font-black uppercase leading-[.95] tracking-[-.065em] sm:text-6xl lg:text-[4.7rem]">Billing that keeps <span className="text-amber-300">business moving.</span></h1><p className="mt-7 max-w-xl text-base leading-8 text-white/60">QPOS is billing software, POS software and inventory management software for GST billing, proposals, customers, restaurant orders and reports—from Kohima, Nagaland to businesses across India.</p><div className="mt-9 flex flex-col gap-3 sm:flex-row"><button onClick={onGetStarted} className="group inline-flex items-center justify-center gap-3 bg-amber-300 px-6 py-4 text-sm font-black uppercase tracking-wide text-[#08090b] transition hover:bg-amber-200">Start free trial <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1"/></button><a href="#online-store" className="inline-flex items-center justify-center border border-white/20 px-6 py-4 text-sm font-bold text-white/80 hover:border-amber-300 hover:text-amber-200">Explore online ordering</a></div><div className="mt-8 grid gap-3 border-l border-amber-300/30 pl-4 text-[11px] font-semibold text-white/58">{['20-day free trial','One restaurant online storefront included','Phone, tablet & desktop'].map(x=><span key={x} className="flex items-center gap-2"><span className="font-mono text-amber-300">↳</span>{x}</span>)}</div></div>
+        <figure className="relative lg:-mr-12"><div className="absolute -left-6 -top-6 hidden h-20 w-20 border-l border-t border-amber-300/50 lg:block"/><div className="relative border border-white/15 bg-[#0c0f13] p-2 shadow-[0_42px_100px_rgba(0,0,0,.55)]"><img src="/images/qpos-restaurant-pos.jpeg" alt="QPOS restaurant billing system with touchscreen point of sale, receipt printer and business dashboard" width="1300" height="867" fetchPriority="high" className="aspect-[3/2] w-full object-cover object-center"/><div className="absolute inset-x-2 bottom-2 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/45 to-transparent px-4 pb-4 pt-16"><div><p className="font-mono text-[10px] font-black uppercase tracking-[.18em] text-amber-300">Restaurant command point</p><p className="mt-1 text-xs font-semibold text-white/75">Billing · orders · inventory · reports</p></div><span className="hidden border border-amber-300/40 bg-black/50 px-3 py-2 font-mono text-[9px] text-amber-200 sm:block">SYSTEM / READY</span></div></div><figcaption className="mt-3 flex items-center gap-3 font-mono text-[9px] uppercase tracking-[.18em] text-white/45"><span className="h-px flex-1 bg-amber-300/25"/>01 / QPOS Restaurant</figcaption></figure>
+      </section>
 
-          <nav className="hidden items-center gap-8 text-xs font-semibold text-white/60 md:flex">
-            <a href="#business-modes" className="transition hover:text-white">Business modes</a>
-            <a href="#features" className="transition hover:text-white">Features</a>
-            <a href="#how-it-works" className="transition hover:text-white">How it works</a>
-            <a href="#pricing" className="transition hover:text-white">Pricing</a>
-          </nav>
+      <section aria-label="QPOS value highlights" className="border-y border-amber-300/15 bg-[#0b0d11]"><div className="mx-auto grid max-w-7xl grid-cols-2 px-5 sm:grid-cols-4 sm:px-8">{[['20 days','Free trial'],['₹6,000','Basic · per year'],['4 modes','One operating system'],['₹500','Extra store · one time']].map(([v,l],index)=><div key={l} className="border-white/10 px-3 py-6 sm:border-r last:border-0"><span className="font-mono text-[9px] text-amber-300">0{index+1}</span><strong className="mt-3 block text-xl sm:text-2xl">{v}</strong><span className="mt-1 block text-[8px] font-bold uppercase tracking-[.16em] text-white/45">{l}</span></div>)}</div></section>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onGetStarted}
-              className="hidden rounded-xl px-4 py-2.5 text-xs font-bold text-white/70 transition hover:bg-white/5 hover:text-white sm:block"
-            >
-              Sign in
-            </button>
-            <button
-              onClick={onGetStarted}
-              className="group hidden items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-[#06130E] shadow-[0_10px_35px_rgba(16,185,129,0.2)] transition hover:bg-emerald-400 sm:flex"
-            >
-              Start free
-              <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-            </button>
-            <button onClick={() => setMobileNavOpen(open => !open)} aria-expanded={mobileNavOpen} aria-label="Toggle navigation" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white md:hidden">{mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
-          </div>
-        </div>
-        {mobileNavOpen && <nav className="absolute inset-x-0 top-full border-b border-white/10 bg-[#09090A]/98 px-5 py-4 shadow-2xl backdrop-blur-xl md:hidden"><div className="mx-auto grid max-w-7xl gap-1">{[['Business modes', '#business-modes'], ['Features', '#features'], ['How it works', '#how-it-works'], ['Pricing', '#pricing']].map(([label, href]) => <a key={href} href={href} onClick={() => setMobileNavOpen(false)} className="rounded-xl px-4 py-3 text-sm font-bold text-white/65 transition hover:bg-white/5 hover:text-white">{label}</a>)}<div className="mt-2 grid grid-cols-2 gap-2"><button onClick={() => {setMobileNavOpen(false); onGetStarted();}} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white">Sign in</button><button onClick={() => {setMobileNavOpen(false); onGetStarted();}} className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-[#06130E]">Start free</button></div></div></nav>}
-      </header>
+      <section id="modes" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><Heading eyebrow="01 / Business modes" title="The workspace adapts to how you sell." copy="Choose a mode without giving up connected billing, customer, reporting or staff tools."/><div className="grid border-l border-t border-white/10 sm:grid-cols-2">{modes.map(([Icon,name,copy,t],i)=><article key={name} className="group relative overflow-hidden border-b border-r border-white/10 bg-[#0b0e12] p-6 transition hover:bg-amber-300 hover:text-[#08090b]"><span className="absolute right-5 top-4 font-mono text-3xl font-black text-white/[.06] group-hover:text-black/10">0{i+1}</span><span className={`grid h-11 w-11 place-items-center border ${tone[t]} group-hover:border-black/20 group-hover:bg-black/10 group-hover:text-black`}><Icon className="h-5 w-5"/></span><h3 className="mt-7 text-xl font-extrabold">{name}</h3><p className="mt-2 text-xs leading-6 text-white/50 group-hover:text-black/65">{copy}</p></article>)}</div></div></section>
 
-      <main id="top" className="relative z-10 flex flex-col pt-[4.75rem]">
-        <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
-          <div className="relative mx-auto max-w-5xl">
-            <div className="absolute -inset-7 rounded-[3rem] bg-emerald-500/[0.06] blur-3xl" />
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111113] p-2 shadow-[0_40px_100px_rgba(0,0,0,0.55)] sm:p-3">
-              <div className="overflow-hidden rounded-[1.25rem] border border-white/[0.06] bg-[#0D0D0F]">
-                <div className="flex h-12 items-center justify-between border-b border-white/[0.06] px-4 sm:px-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-white/15" />
-                      <span className="h-2 w-2 rounded-full bg-white/15" />
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    </div>
-                    <span className="hidden text-[10px] font-bold text-white/35 sm:inline">QPOS · Dashboard</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider">
-                    <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-emerald-400 sm:flex">
-                      <Wifi className="h-3 w-3" /> Cloud synced
-                    </span>
-                    <span className="rounded-full bg-emerald-500 px-2.5 py-1.5 text-[#07110D]">Pro</span>
-                  </div>
-                </div>
+      <section id="features" className="border-y border-white/[.07] bg-[#0a0c10]"><div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28"><Heading eyebrow="02 / Complete feature set" title="From the first scan to the final report."/><div className="mt-12 grid gap-px overflow-hidden border border-white/10 bg-white/10 lg:grid-cols-2">{groups.map(([Icon,label,t,items])=><article key={label} className="bg-[#0e1116] p-6 sm:p-8"><div className="flex items-center gap-4"><span className={`grid h-11 w-11 place-items-center border ${tone[t]}`}><Icon className="h-5 w-5"/></span><h3 className="text-lg font-extrabold">{label}</h3></div><ul className="mt-7 grid gap-3 sm:grid-cols-2">{items.map(x=><li key={x} className="flex gap-2.5 text-xs leading-5 text-white/60"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"/>{x}</li>)}</ul></article>)}</div><div className="mt-px grid gap-px bg-white/10 md:grid-cols-3"><Mini icon={Building2} title="Workspace & staff" copy="Separated store workspaces, switching, staff roles and permissions."/><Mini icon={Bell} title="Daily utility" copy="Dashboard, notifications, dark mode, PWA installation and backup/restore."/><Mini icon={ScanBarcode} title="Catalogue speed" copy="Categories, images, SKU, barcode and camera-assisted lookup."/></div></div></section>
 
-                <div className="grid min-h-[22rem] grid-cols-1 md:grid-cols-[11rem_1fr]">
-                  <aside className="hidden border-r border-white/[0.06] bg-[#101012] p-4 md:block">
-                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.07] p-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-[11px] font-black text-[#07110D]">Q</span>
-                      <span>
-                        <span className="block text-[9px] font-extrabold">QPOS Retail</span>
-                        <span className="block text-[6px] font-bold uppercase text-emerald-400">Dimapur · dashboard</span>
-                      </span>
-                    </div>
-                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-400"><ChefHat className="h-3.5 w-3.5" /></span>
-                      <span><span className="block text-[9px] font-extrabold">QPOS Restaurant</span><span className="block text-[6px] font-bold uppercase text-white/30">Kohima · dashboard</span></span>
-                    </div>
-                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400"><Wrench className="h-3.5 w-3.5" /></span><span><span className="block text-[9px] font-extrabold">QPOS Services</span><span className="block text-[6px] font-bold uppercase text-white/30">Remote · dashboard</span></span></div>
-                    <div className="space-y-1 text-[9px] font-bold text-white/38">
-                      {[
-                        [LayoutDashboard, 'Dashboard', true],
-                        [ShoppingCart, 'POS Billing'],
-                        [ChefHat, 'Restaurant Orders'],
-                        [PackageCheck, 'Products'],
-                        [Boxes, 'Inventory'],
-                        [Users, 'Customers'],
-                        [BarChart3, 'Reports'],
-                      ].map(([Icon, label, active]) => {
-                        const ItemIcon = Icon as React.ComponentType<{ className?: string }>;
-                        return (
-                          <div key={label as string} className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 ${active ? 'bg-emerald-500 text-[#07110D]' : ''}`}>
-                            <ItemIcon className="h-3.5 w-3.5" />
-                            {label as string}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </aside>
+      <Spotlight id="online-store" eyebrow="Online Store · included in the trial" title="Give your restaurant a public ordering site." copy="Restaurant mode includes one online ordering storefront during the 20-day free trial. Publish a customer-facing menu for pickup or local delivery, accept COD or pay-at-store orders, manage incoming online orders, and connect tables with QR ordering. Online card payments are not included." visual={<OnlineStoreCard/>}/>
+      <Spotlight id="proposals" reverse eyebrow="Proposal workflow" title="Win the work before you bill it." copy="Create, edit, print and download quotations for retail or service work. Accepted proposals convert once into an invoice, and product stock changes only at conversion." visual={<ProposalCard/>}/>
+      <Spotlight id="restaurant" dark eyebrow="Restaurant & online orders" title="From table QR to final receipt." copy="Handle dine-in, takeaway and delivery with variants and kitchen notes. Restaurant mode includes one online ordering storefront during the 20-day trial. It supports pickup or local delivery with COD or pay-at-store workflows—not online card payments." visual={<OrderCard/>}/>
+      <Spotlight id="reports" reverse eyebrow="Operational visibility" title="Review the period that matters." copy="Move between weekly, monthly and yearly sales. Use the month selector for GST and estimated-profit views, then export sales or GST records to CSV." visual={<ReportCard/>}/>
 
-                  <div className="p-4 sm:p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">Live business overview</p>
-                        <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">All workspace dashboards</h2>
-                      </div>
-                      <span className="hidden rounded-xl bg-emerald-500 px-4 py-2.5 text-[9px] font-extrabold text-[#07110D] sm:block">3 isolated workspaces</span>
-                    </div>
+      <section id="kohima" className="border-y border-amber-300/15 bg-[linear-gradient(110deg,rgba(252,211,77,.09),transparent_50%)]"><div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[.65fr_1.35fr] lg:items-center lg:py-20"><div><p className="font-mono text-[10px] font-black uppercase tracking-[.2em] text-amber-300">07 / Kohima · Nagaland · India</p><h2 className="mt-4 text-3xl font-extrabold uppercase tracking-[-.04em] sm:text-4xl">Local understanding, India-wide utility.</h2></div><div className="grid gap-px bg-white/10 sm:grid-cols-3"><LocalBenefit title="Billing software in Kohima" copy="GST invoices, proposals, customer dues and flexible settlement workflows."/><LocalBenefit title="POS software in Kohima" copy="Retail, Service, Hybrid and Restaurant modes in one focused QPOS workspace."/><LocalBenefit title="Inventory management in Kohima" copy="Products, purchases, suppliers, alerts, barcode, IMEI and serial tracking."/></div></div></section>
 
-                    <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-                      {[
-                        ['Today’s revenue', '₹38,640', '12 invoices', 'emerald'],
-                        ['Inventory value', '₹2.4L', '486 products', 'blue'],
-                        ['Low stock', '8', 'Needs attention', 'amber'],
-                        ['Open orders', '6', 'Restaurant workspace', 'purple'],
-                      ].map(([label, value, detail, tone]) => (
-                        <div key={label} className="rounded-xl border border-white/[0.07] bg-[#151517] p-3.5 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[8px] font-semibold text-white/45 sm:text-[9px]">{label}</span>
-                            <span className={`h-1.5 w-1.5 rounded-full ${
-                              tone === 'emerald' ? 'bg-emerald-400' : tone === 'blue' ? 'bg-blue-400' : tone === 'amber' ? 'bg-amber-400' : 'bg-purple-400'
-                            }`} />
-                          </div>
-                          <strong className="mt-3 block text-lg tracking-tight text-white sm:text-xl">{value}</strong>
-                          <span className="mt-1 block text-[8px] text-white/30">{detail}</span>
-                        </div>
-                      ))}
-                    </div>
+      <section id="pricing" className="border-y border-white/[.07] bg-[#0a0c10]"><div className="mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:py-28"><div className="text-center"><Heading eyebrow="08 / Simple pricing" title="Start small. Run the complete QPOS."/></div><div className="mx-auto mt-12 max-w-3xl border border-amber-300/35 bg-[#0e1115] p-6 sm:p-9"><div className="grid gap-8 sm:grid-cols-[1fr_auto] sm:items-end"><div><span className="font-mono text-[10px] font-black uppercase tracking-wider text-amber-300">Basic plan / Annual</span><div className="mt-3 flex items-end gap-2"><strong className="text-5xl tracking-[-.06em]">₹6,000</strong><span className="pb-1 text-sm text-white/50">/ year</span></div><p className="mt-3 text-xs leading-6 text-white/55">Try QPOS for 20 days. Restaurant mode includes one online ordering storefront during the trial. Add another store workspace for ₹500 one time.</p></div><button onClick={onGetStarted} className="bg-amber-300 px-6 py-4 text-sm font-black uppercase tracking-wide text-[#08090b] hover:bg-amber-200">Subscribe for free trial</button></div><div className="mt-8 grid gap-3 border-t border-white/[.07] pt-7 text-xs font-bold text-white/65 sm:grid-cols-2">{['Retail, Service & Hybrid','Restaurant operations','One online ordering storefront','Reports, staff & stores'].map(x=><span key={x} className="flex gap-2"><Check className="h-4 w-4 text-amber-300"/>{x}</span>)}</div></div></div></section>
 
-                    <div className="mt-3 grid gap-3 lg:grid-cols-[1.55fr_1fr]">
-                      <div className="rounded-xl border border-white/[0.07] bg-[#151517] p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold">Sales momentum</span>
-                          <span className="text-[8px] font-bold text-emerald-400">THIS WEEK</span>
-                        </div>
-                        <div className="mt-6 flex h-24 items-end gap-2">
-                          {[35, 54, 42, 70, 58, 88, 72, 96, 64, 82, 93, 78].map((height, index) => (
-                            <span
-                              key={index}
-                              className="flex-1 rounded-t-sm bg-gradient-to-t from-emerald-600/25 to-emerald-400"
-                              style={{ height: `${height}%`, opacity: 0.45 + index / 24 }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-white/[0.07] bg-[#151517] p-4">
-                        <div className="flex items-center justify-between"><span className="text-[10px] font-extrabold">Restaurant workspace</span><ChefHat className="h-3.5 w-3.5 text-emerald-400" /></div>
-                        <div className="mt-4 space-y-3">
-                          {['Table 4 · 3 items', 'Table 1 · 2 items', 'Takeaway · 4 items'].map((item, index) => (
-                            <div key={item} className="flex items-center justify-between border-b border-white/[0.05] pb-2.5 last:border-0">
-                              <span className="text-[8px] font-semibold text-white/55">{item}</span>
-                              <span className="text-[8px] font-mono text-emerald-400">{index === 0 ? '₹850' : index === 1 ? '₹450' : '₹720'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-y border-white/[0.06] bg-white/[0.018]">
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px px-5 py-8 sm:grid-cols-4 sm:px-8">
-            {[
-              ['5 days', 'Free trial'],
-              ['₹6,000', 'Per year'],
-              ['₹500', 'Extra store · one time'],
-              ['24/7', 'Cloud access'],
-            ].map(([value, label]) => (
-              <div key={label} className="px-3 py-5 text-center">
-                <strong className="block text-2xl font-extrabold tracking-[-0.04em] text-white sm:text-3xl">{value}</strong>
-                <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-[0.13em] text-white/30">{label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="business-modes" className="border-y border-white/[0.06] bg-[#0D0D0F]">
-          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl"><h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">The workspace changes with your business.</h2></div>
-              <p className="max-w-md text-sm leading-7 text-white/40">QPOS shows the right billing and inventory tools for each operation, without forcing every business into the same POS screen.</p>
-            </div>
-            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {businessModes.map(({icon: Icon, title, description}, index) => <article key={title} className="group relative overflow-hidden rounded-[1.5rem] border border-white/[0.08] bg-[#141416] p-6 transition hover:-translate-y-1 hover:border-emerald-400/25"><span className="absolute right-4 top-3 font-mono text-4xl font-black text-white/[0.025]">0{index + 1}</span><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/[0.08] text-emerald-400"><Icon className="h-5 w-5" /></span><h3 className="mt-8 text-xl font-extrabold">{title}</h3><p className="mt-2 text-xs leading-6 text-white/40">{description}</p></article>)}
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-          <div className="max-w-2xl">
-            <h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">
-              From the first item to the final report.
-            </h2>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-white/45">
-              Billing, stock, customers, staff, payments and reporting stay connected inside the correct workspace.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ icon: Icon, title, description }, index) => (
-              <article
-                key={title}
-                className="group rounded-[1.4rem] border border-white/[0.07] bg-[#121214] p-6 transition hover:-translate-y-1 hover:border-emerald-400/20 hover:bg-[#151517]"
-              >
-                <div className="flex items-start justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-400">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className="font-mono text-[9px] text-white/15">0{index + 1}</span>
-                </div>
-                <h3 className="mt-7 text-lg font-extrabold tracking-tight">{title}</h3>
-                <p className="mt-2.5 text-xs leading-6 text-white/40">{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="how-it-works" className="border-y border-white/[0.06] bg-[#0D0D0F]">
-          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-            <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-              <div>
-                <h2 className="text-4xl font-extrabold leading-tight tracking-[-0.05em]">Your store, live in three steps.</h2>
-                <p className="mt-5 text-sm leading-7 text-white/40">No complicated setup. QPOS guides every new business through its workspace configuration.</p>
-              </div>
-              <div className="space-y-3">
-                {workflow.map(([number, title, description]) => (
-                  <div key={number} className="grid gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 sm:grid-cols-[3.5rem_1fr] sm:items-center sm:p-6">
-                    <span className="font-mono text-xl font-bold text-emerald-400">{number}</span>
-                    <div>
-                      <h3 className="text-base font-extrabold">{title}</h3>
-                      <p className="mt-1.5 text-xs leading-5 text-white/38">{description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="order-first relative mx-auto w-full max-w-5xl px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
-          <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.11),transparent_42%),#121214] shadow-[0_32px_90px_rgba(0,0,0,0.4)]">
-            <div>
-              <div className="flex flex-col items-center justify-center px-5 py-11 text-center sm:px-12 sm:py-16">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  Cloud business operating system
-                </div>
-                <h1 className="mt-5 max-w-3xl text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.055em] min-[420px]:text-[2.65rem] sm:text-5xl lg:text-[3.75rem]">
-                  Billing and inventory,
-                  <span className="block text-emerald-400">made simple.</span>
-                </h1>
-                <p className="mt-5 max-w-xl text-sm leading-7 text-white/45 sm:text-base">
-                  Manage sales, stock, customers and payments from one cloud workspace built for retail, services and restaurants.
-                </p>
-                <div className="hidden">
-                  {[
-                    [ScanBarcode, 'Barcode + IMEI'],
-                    [Printer, 'GST + thermal print'],
-                    [CreditCard, 'Cash · UPI · Card'],
-                    [Building2, 'Multi-workspace'],
-                  ].map(([Icon, label]) => {
-                    const TerminalIcon = Icon as React.ComponentType<{ className?: string }>;
-                    return (
-                      <div key={label as string} className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-2">
-                        <TerminalIcon className="h-4 w-4 text-emerald-400" />
-                        {label as string}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    onClick={onGetStarted}
-                    className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-xs font-extrabold text-[#06130E] shadow-[0_14px_40px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
-                  >
-                    Start QPOS free
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </button>
-                  <a
-                    href="#features"
-                    className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3.5 text-xs font-bold text-white/70 transition hover:border-white/20 hover:text-white"
-                  >
-                    Explore QPOS
-                    <ChevronRight className="h-4 w-4" />
-                  </a>
-                </div>
-                <div className="hidden">
-                  <span className="uppercase tracking-[0.12em] text-white/28">Use QPOS on</span>
-                  <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5 text-emerald-400" /> Mobile</span>
-                  <span className="h-1 w-1 rounded-full bg-white/15" />
-                  <span className="flex items-center gap-1.5"><Tablet className="h-3.5 w-3.5 text-emerald-400" /> Tablet</span>
-                  <span className="h-1 w-1 rounded-full bg-white/15" />
-                  <span className="flex items-center gap-1.5"><Laptop className="h-3.5 w-3.5 text-emerald-400" /> Laptop</span>
-                </div>
-              </div>
-
-              <div className="hidden">
-                <div className="w-full rounded-[1.6rem] border border-white/10 bg-[#0B0D0C]/95 p-4 shadow-[0_30px_90px_rgba(0,0,0,0.5)] sm:p-5">
-                  <div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400">Restaurant workspace</p><h3 className="mt-1 text-xl font-extrabold">Open orders</h3></div><span className="rounded-full bg-emerald-400/10 px-3 py-1.5 text-[9px] font-black text-emerald-400">3 pending</span></div>
-                  <div className="mt-4 space-y-2">{[['Table 04', '3 items', '₹850'], ['Table 01', '2 items', '₹450'], ['Takeaway', '4 items', '₹720']].map(([name, items, total], index) => <div key={name} className={`rounded-2xl border px-4 py-3 ${index === 0 ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-white/[0.07] bg-white/[0.025]'}`}><div className="flex items-center justify-between"><div><p className="text-sm font-extrabold">{name}</p><p className="mt-0.5 text-[9px] uppercase tracking-wide text-white/35">{items} · unpaid</p></div><strong className="font-mono text-sm text-emerald-400">{total}</strong></div>{index === 0 && <div className="mt-2 grid grid-cols-4 gap-1.5 text-[9px] font-black"><span className="rounded-lg border border-white/10 px-2 py-1.5 text-center text-white/55">Edit</span>{['Cash', 'UPI', 'Card'].map(method => <span key={method} className="rounded-lg bg-emerald-500/10 px-2 py-1.5 text-center text-emerald-400">{method}</span>)}</div>}</div>)}</div>
-                  <div className="mt-3 flex items-center justify-between rounded-xl border border-dashed border-white/10 px-4 py-2.5"><span className="flex items-center gap-2 text-[10px] font-bold text-white/45"><Printer className="h-4 w-4 text-emerald-400" />Settle, print, and clear the queue</span><span className="text-[9px] font-black text-emerald-400">80MM</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-4xl font-extrabold tracking-[-0.05em] sm:text-5xl">One plan. The complete QPOS.</h2>
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/40">Start free for five days, then keep your entire business connected for one simple annual price.</p>
-          </div>
-
-          <div className="mx-auto mt-12 max-w-lg rounded-[1.75rem] border border-emerald-400/20 bg-gradient-to-b from-emerald-400/[0.09] to-[#121214] p-2 shadow-[0_30px_100px_rgba(16,185,129,0.09)]">
-            <div className="rounded-[1.35rem] border border-white/[0.07] bg-[#101513]/90 p-6 sm:p-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-400">QPOS Pro</span>
-                  <h3 className="mt-2 text-xl font-extrabold">Everything your store needs</h3>
-                </div>
-                <Zap className="h-6 w-6 text-emerald-400" />
-              </div>
-              <div className="mt-8 flex items-end gap-2">
-                <strong className="text-5xl font-extrabold tracking-[-0.06em]">₹6,000</strong>
-                <span className="pb-1.5 text-xs text-white/40">/ year</span>
-              </div>
-              <p className="mt-2 text-xs text-white/35">Five days free, followed by yearly billing.</p>
-              <div className="my-7 h-px bg-white/[0.07]" />
-              <div className="grid gap-3 text-xs font-semibold text-white/65 sm:grid-cols-2">
-                {[
-                  'Retail & service billing',
-                  'Restaurant open orders',
-                  'GST & thermal receipts',
-                  'Barcode & IMEI inventory',
-                  'Isolated store workspaces',
-                  'Staff controls',
-                  'Business reports',
-                  'Customer loyalty',
-                  'Cash, UPI & Card settlement',
-                  'Menu picture uploads',
-                ].map(item => (
-                  <span key={item} className="flex items-center gap-2">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-400">
-                      <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                    </span>
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <button
-                onClick={onGetStarted}
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-4 text-sm font-extrabold text-[#06130E] transition hover:bg-emerald-400"
-              >
-                Start my free trial
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-white/32">
-                <BadgeIndianRupee className="h-3.5 w-3.5 text-emerald-400" />
-                Add another store anytime for ₹500 one time
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="px-5 pb-20 sm:px-8 lg:pb-24">
-          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-emerald-400/15 bg-emerald-500 px-6 py-14 text-center text-[#06130E] sm:px-12 sm:py-16">
-            <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
-              <div className="absolute -right-16 -top-28 h-64 w-64 rounded-full border-[40px] border-[#06130E]" />
-              <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full border-[46px] border-[#06130E]" />
-            </div>
-            <div className="relative">
-              <ShieldCheck className="mx-auto h-8 w-8" />
-              <h2 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-tight tracking-[-0.05em] sm:text-5xl">Give your business a smarter operating system.</h2>
-              <p className="mx-auto mt-4 max-w-xl text-sm font-medium text-[#06130E]/65">Set up your QPOS workspace today and start billing in minutes.</p>
-              <button
-                onClick={onGetStarted}
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#07110D] px-7 py-4 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-black"
-              >
-                Get started free
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="relative z-10 border-t border-white/[0.06]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-5 py-8 text-center sm:flex-row sm:px-8 sm:text-left">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-emerald-500 text-[#07110D]">
-              <Store className="h-4 w-4" />
-            </span>
-            <span className="text-xs font-extrabold">QPOS</span>
-          </div>
-          <div className="text-[10px] text-white/30">
-            <p>&copy; 2026 QPOS. Smart billing and inventory for modern businesses.</p>
-            <a
-              href="https://neospec.co.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-block font-semibold text-white/50 transition hover:text-emerald-400"
-            >
-              QPOS is a Neospec Services product
-            </a>
-          </div>
-          <div className="flex items-center gap-4 text-[10px] font-semibold text-white/35">
-            <span className="flex items-center gap-1.5"><Cloud className="h-3 w-3 text-emerald-400" /> Cloud connected</span>
-            <span className="flex items-center gap-1.5"><ScanBarcode className="h-3 w-3 text-emerald-400" /> Barcode ready</span>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
+      <section id="faq" className="mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:py-28"><div className="grid gap-10 lg:grid-cols-[.65fr_1.35fr]"><Heading eyebrow="Questions, answered" title="QPOS billing software FAQ."/><div className="divide-y divide-white/[.08] border-y border-white/[.08]">{faqs.map(([q,a])=><details key={q} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-sm font-extrabold"><span>{q}</span><ChevronDown className="h-4 w-4 shrink-0 text-amber-300 transition group-open:rotate-180"/></summary><p className="max-w-2xl pt-4 text-xs leading-6 text-white/45">{a}</p></details>)}</div></div></section>
+      <section className="px-5 pb-20 sm:px-8 lg:pb-28"><div className="relative mx-auto max-w-7xl overflow-hidden border border-amber-200 bg-amber-300 px-6 py-14 text-[#08090b] sm:px-12 sm:py-20"><div className="absolute right-0 top-0 h-full w-1/3 bg-[linear-gradient(135deg,transparent_40%,rgba(0,0,0,.08)_40%,rgba(0,0,0,.08)_42%,transparent_42%)] bg-[length:18px_18px]"/><div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end"><div><p className="font-mono text-[10px] font-black uppercase tracking-[.2em]">10 / Ready to begin?</p><h2 className="mt-4 max-w-3xl text-4xl font-black uppercase leading-[1.02] tracking-[-.055em] sm:text-5xl">Put billing, stock, proposals and orders in one workspace.</h2></div><button onClick={onGetStarted} className="inline-flex items-center justify-center gap-2 bg-[#08090b] px-7 py-4 text-sm font-black uppercase tracking-wide text-white hover:bg-black">Start free trial <ArrowRight className="h-4 w-4"/></button></div></div></section>
+    </main>
+    <footer className="relative z-10 border-t border-white/[.07]"><div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:px-8 md:grid-cols-[1fr_auto_auto]"><div className="flex gap-3"><img src="/icons/qpos-marketing-logo.svg" alt="" className="h-9 w-9"/><div><strong className="text-sm">QPOS</strong><p className="mt-1 max-w-sm text-[10px] leading-5 text-white/35">GST billing, inventory, proposals, restaurant orders and reporting for Indian businesses.</p></div></div><nav aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-2 text-[10px] font-bold text-white/45">{nav.slice(0,6).map(([l,h])=><a key={h} href={h} className="hover:text-white">{l}</a>)}</nav><div className="text-[10px] leading-5 text-white/35"><p>© 2026 QPOS</p><a href="https://neospec.co.in" target="_blank" rel="noopener noreferrer" className="font-bold text-white/50 hover:text-amber-300">A Neospec Services product</a><p className="mt-2 flex items-center gap-1.5"><Cloud className="h-3 w-3 text-amber-300"/>Cloud-connected workspace</p></div></div></footer>
+  </div>;
 };
+
+const Heading=({eyebrow,title,copy}:{eyebrow:string;title:string;copy?:string})=><div><div className="flex items-center gap-3"><span className="h-px w-8 bg-amber-300"/><p className="font-mono text-[10px] font-black uppercase tracking-[.2em] text-amber-300">{eyebrow}</p></div><h2 className="mt-5 text-4xl font-black uppercase leading-[1.02] tracking-[-.05em] sm:text-5xl">{title}</h2>{copy&&<p className="mt-5 max-w-md text-sm leading-7 text-white/55">{copy}</p>}</div>;
+const Preview=({icon:Icon,tone:kind,title,copy}:{icon:React.ComponentType<{className?:string}>;tone:string;title:string;copy:string})=><div className={`rounded-xl border p-4 ${tone[kind]}`}><Icon className="h-5 w-5"/><p className="mt-5 text-[10px] font-bold text-white">{title}</p><p className="mt-1 text-[8px] text-white/40">{copy}</p></div>;
+const Mini=({icon:Icon,title,copy}:{icon:React.ComponentType<{className?:string}>;title:string;copy:string})=><article className="bg-[#0e1116] p-6"><Icon className="h-5 w-5 text-amber-300"/><h3 className="mt-5 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-6 text-white/55">{copy}</p></article>;
+const LocalBenefit=({title,copy}:{title:string;copy:string})=><article className="bg-[#0b0e12] p-5"><span className="mb-4 block h-px w-8 bg-amber-300"/><h3 className="text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-6 text-white/55">{copy}</p></article>;
+const Spotlight=({id,eyebrow,title,copy,visual,reverse,dark}:{id:string;eyebrow:string;title:string;copy:string;visual:React.ReactNode;reverse?:boolean;dark?:boolean})=><section id={id} className={dark?'border-y border-white/[.07] bg-[#0e0d14]':''}><div className={`mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-center lg:py-28 ${reverse?'':''}`}>{reverse?<>{visual}<Heading eyebrow={eyebrow} title={title} copy={copy}/></>:<><Heading eyebrow={eyebrow} title={title} copy={copy}/>{visual}</>}</div></section>;
+const ProposalCard=()=> <div className="border border-amber-400/20 bg-[#13120d] p-6"><div className="flex justify-between border-b border-amber-400/15 pb-5"><div><span className="text-[9px] font-black uppercase tracking-wider text-amber-300">Proposal / quotation</span><h3 className="mt-2 text-xl font-extrabold">Retail fit-out package</h3></div><span className="text-[9px] font-black text-amber-300">OPEN</span></div>{[['POS terminal setup','₹18,000'],['Barcode scanner × 2','₹7,000'],['On-site configuration','₹4,500']].map(x=><div key={x[0]} className="flex justify-between border-b border-white/[.06] py-3 text-xs"><span>{x[0]}</span><span className="font-mono text-white/65">{x[1]}</span></div>)}<div className="mt-5 flex justify-between"><span className="text-[9px] uppercase text-white/30">No stock deducted</span><strong className="text-xl text-amber-300">₹29,500</strong></div><div className="mt-6 grid grid-cols-2 gap-2 text-center text-[10px] font-bold"><span className="border border-white/10 p-3"><FileDown className="mr-2 inline h-3.5 w-3.5"/>Download PDF</span><span className="bg-amber-400 p-3 text-black">Convert to invoice</span></div></div>;
+const OrderCard=()=> <div className="border border-amber-300/20 bg-[#11100c] p-6"><div className="flex justify-between"><h3 className="text-xl font-extrabold">Open orders</h3><span className="text-[9px] font-black text-amber-200">4 ACTIVE</span></div><div className="mt-5 space-y-2">{[['Table 04','3 guests · 5 items','₹1,280'],['Table 01','2 guests · 3 items','₹640'],['Takeaway 018','Ready for pickup','₹520'],['Local delivery 007','Preparing','₹890']].map(([a,b,c],i)=><div key={a} className={`flex items-center justify-between border p-4 ${i===0?'border-amber-300/30 bg-amber-300/[.07]':'border-white/[.07]'}`}><div><strong className="text-sm">{a}</strong><span className="mt-1 block text-[9px] text-white/35">{b}</span></div><strong className="font-mono text-xs text-amber-200">{c}</strong></div>)}</div></div>;
+const ReportCard=()=> <div className="border border-amber-300/20 bg-[#10100c] p-6"><div className="flex justify-between"><div><span className="text-[9px] font-black uppercase text-amber-200">Monthly report · August</span><strong className="mt-2 block text-3xl">₹5,57,300</strong></div><FileDown className="h-5 w-5 text-amber-200"/></div><div className="mt-8 flex h-36 items-end gap-2">{[42,70,58,82,54,92,73,88,62,98,78,90].map((h,i)=><span key={i} style={{height:`${h}%`}} className="flex-1 bg-amber-300/70"/>)}</div><div className="mt-5 grid grid-cols-3 gap-2 text-center">{[['GST','₹68.4K'],['Est. profit','₹1.72L'],['Invoices','486']].map(([a,b])=><div key={a} className="border border-white/[.06] p-3"><strong className="text-sm">{b}</strong><span className="mt-1 block text-[8px] uppercase text-white/30">{a}</span></div>)}</div></div>;
+const OnlineStoreCard=()=> <div className="overflow-hidden border border-amber-300/25 bg-[#11100b]"><div className="flex items-center justify-between border-b border-white/[.08] p-5"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center bg-amber-300 text-[#08090b]"><Smartphone className="h-5 w-5"/></span><div><h3 className="text-sm font-extrabold">Your Restaurant Online Store</h3><p className="text-[9px] text-white/45">Public menu · accepting orders</p></div></div><span className="border border-amber-300/25 bg-amber-300/10 px-2.5 py-1.5 text-[9px] font-black text-amber-200">LIVE</span></div><div className="grid grid-cols-2 gap-3 p-4">{[['Masala tea','₹50'],['Veg chow','₹200'],['Paneer tikka','₹320'],['Family meal','₹780']].map(([name,price],i)=><div key={name} className="border border-white/[.07] bg-white/[.03] p-3"><div className={`mb-3 h-14 ${i%2?'bg-amber-300/10':'bg-white/[.05]'}`}/><strong className="text-xs">{name}</strong><span className="mt-1 block font-mono text-[10px] text-amber-200">{price}</span></div>)}</div><div className="grid grid-cols-3 border-t border-white/[.08] text-center text-[9px] font-bold text-white/55"><span className="p-3">Pickup</span><span className="border-x border-white/[.08] p-3">Local delivery</span><span className="p-3">COD / pay at store</span></div></div>;

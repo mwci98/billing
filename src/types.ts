@@ -149,6 +149,34 @@ export interface Sale {
   onlineOrderId?: string;
 }
 
+export type ProposalStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Expired' | 'Converted';
+
+export interface Proposal {
+  id: string;
+  customerId?: string;
+  customerName: string;
+  customerCompanyName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerGstNumber?: string;
+  customerState?: string;
+  customerStateCode?: string;
+  customerBillingAddress?: string;
+  customerShippingAddress?: string;
+  items: SaleItem[];
+  subtotal: number;
+  taxAmount: number;
+  discount: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+  validUntil: string;
+  status: ProposalStatus;
+  authId: string;
+  employeeName: string;
+  convertedSaleId?: string;
+}
+
 export type OnlineOrderStatus = 'PENDING_CONFIRMATION' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
 
 export interface OnlineOrderItem {

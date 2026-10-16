@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qpos.neospec.co.in/sitemap.xml

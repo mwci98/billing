@@ -1,23 +1,62 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#00BC7D" />
+    <meta name="theme-color" content="#090909" />
     <meta name="application-name" content="QPOS" />
-    <meta name="description" content="QPOS point of sales and inventory management." />
+    <meta name="description" content="QPOS is billing software, POS software and inventory management software for retail, service and restaurant businesses in Kohima, Nagaland and across India." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://qpos.neospec.co.in/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="QPOS" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:url" content="https://qpos.neospec.co.in/" />
+    <meta property="og:title" content="QPOS Billing, POS & Inventory Management Software | Kohima, India" />
+    <meta property="og:description" content="GST billing, inventory management, proposals, online ordering and reports for businesses in Kohima, Nagaland and across India." />
+    <meta property="og:image" content="https://qpos.neospec.co.in/icons/icon-512.png" />
+    <meta property="og:image:alt" content="QPOS billing software logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="QPOS Billing & POS Software in Kohima, India" />
+    <meta name="twitter:description" content="Billing software and inventory management for retail, service and restaurant businesses in Kohima, Nagaland and across India." />
+    <meta name="twitter:image" content="https://qpos.neospec.co.in/icons/icon-512.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="QPOS" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.webmanifest?v=qpos-icon-4" />
-    <link rel="icon" type="image/svg+xml" href="/icons/qpos-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icons/qpos-marketing-logo.svg" />
     <link rel="alternate icon" type="image/png" href="/icons/icon-192.png?v=qpos-icon-4" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=qpos-icon-4" />
-    <title>QPOS – Point of Sales</title>
+    <title>QPOS Billing, POS & Inventory Management Software | Kohima, India</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "QPOS",
+        "url": "https://qpos.neospec.co.in/",
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "Point of Sale Software",
+        "operatingSystem": "Web",
+        "description": "Billing, POS and inventory management software for retail, service, hybrid and restaurant businesses in Kohima, Nagaland and across India.",
+        "keywords": "billing software, POS software, QPOS, inventory management software, billing software in Kohima, POS software in Kohima, inventory management in Kohima",
+        "offers": {
+          "@type": "Offer",
+          "price": "6000",
+          "priceCurrency": "INR",
+          "category": "annual subscription",
+          "areaServed": [
+            {"@type": "City", "name": "Kohima"},
+            {"@type": "AdministrativeArea", "name": "Nagaland"},
+            {"@type": "Country", "name": "India"}
+          ]
+        },
+        "publisher": {"@type": "Organization", "name": "Neospec Services", "url": "https://neospec.co.in/"}
+      }
+    </script>
     <style>
-      #qpos-startup-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #07110D; }
-      #qpos-startup-splash::before { content: ''; position: absolute; width: 28rem; height: 28rem; border-radius: 999px; background: rgba(0,188,125,.16); filter: blur(96px); }
+      #qpos-startup-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #090909; }
+      #qpos-startup-splash::before { content: ''; position: absolute; width: 28rem; height: 28rem; border-radius: 999px; background: rgba(252,211,77,.14); filter: blur(96px); }
       #qpos-startup-splash img { position: relative; width: 6rem; height: 6rem; animation: qpos-startup-pulse 1.3s ease-in-out infinite; }
       @keyframes qpos-startup-pulse { 50% { transform: scale(1.06); } }
     </style>
@@ -40,7 +79,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="qpos-startup-splash" role="status" aria-label="Loading QPOS"><img src="/icons/qpos-logo.svg" alt="QPOS" /></div>
+    <div id="qpos-startup-splash" role="status" aria-label="Loading QPOS"><img src="/icons/qpos-marketing-logo.svg" alt="QPOS" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

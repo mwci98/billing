@@ -12,6 +12,7 @@ const handlers: Record<string, () => Promise<any>> = {
   '/api/table-store': () => import('./api/table-store.js'),
   '/api/whatsapp-wallet': () => import('./api/whatsapp-wallet.js'),
   '/api/barcode/lookup': () => import('./api/barcode/lookup.js'),
+  '/api/faq-assistant': () => import('./api/faq-assistant.js'),
   '/api/communications/send-whatsapp-invoice': () => import('./api/communications/send-whatsapp-invoice.js'),
   '/api/online-orders/action': () => import('./api/online-orders/action.js'),
   '/api/online-orders/create': () => import('./api/online-orders/create.js'),
