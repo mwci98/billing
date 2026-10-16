@@ -81,12 +81,10 @@ export const BusinessOnboarding: React.FC = () => {
     Boolean(currency && receiptHeader.trim() && receiptFooter.trim());
 
   return (
-    <div className="dark min-h-screen bg-[#0A0A0B] px-4 py-8 text-white sm:py-12">
+    <div className="qpos-onboarding dark min-h-screen bg-[#0A0A0B] px-4 py-8 text-white sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
-            <Store className="h-7 w-7" />
-          </div>
+          <img src="/icons/qpos-marketing-logo.svg" alt="QPOS" className="mx-auto h-16 w-16 drop-shadow-[0_12px_30px_rgba(255,185,0,.18)]" />
           <h1 className="mt-4 text-3xl font-black">
             {isPrimaryWorkspace ? 'Set up your business' : `Configure ${activeStore.name}`}
           </h1>
@@ -125,11 +123,11 @@ export const BusinessOnboarding: React.FC = () => {
               <div className="space-y-2.5">
                 {[
                   {mode: 'Retail' as BusinessMode, title: 'Retail', description: 'For shops, grocery, fashion, electronics and more.', icon: ShoppingBasket, accent: 'text-emerald-400 bg-emerald-500/10'},
-                  {mode: 'Restaurant' as BusinessMode, title: 'Restaurant', description: 'Table orders, kitchen tickets, menu management and more.', icon: UtensilsCrossed, accent: 'text-blue-400 bg-blue-500/10'},
+                  {mode: 'Restaurant' as BusinessMode, title: 'Restaurant', description: 'Table orders, kitchen tickets, menu management and more.', icon: UtensilsCrossed, accent: 'text-white bg-[#00B98E] shadow-[0_6px_18px_rgba(0,185,142,.18)]'},
                   {mode: 'Hybrid' as BusinessMode, title: 'Hybrid', description: 'Manage retail products and services in one workspace.', icon: Layers, accent: 'text-violet-400 bg-violet-500/10'},
                   {mode: 'Service' as BusinessMode, title: 'Service', description: 'Bookings, appointments, billing and service management.', icon: Wrench, accent: 'text-amber-400 bg-amber-500/10'},
                 ].map(({mode, title, description, icon: Icon, accent}) => (
-                  <button key={mode} type="button" onClick={() => setBusinessType(mode)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${businessType === mode ? 'border-emerald-500 bg-emerald-500/[0.07] shadow-lg shadow-emerald-500/5' : 'border-white/10 bg-white/[0.025] hover:border-white/20'}`}>
+                  <button key={mode} type="button" onClick={() => setBusinessType(mode)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${businessType === mode ? mode === 'Restaurant' ? 'border-[#00B98E] bg-[#00B98E]/[0.08] shadow-lg shadow-[#00B98E]/10' : 'border-emerald-500 bg-emerald-500/[0.07] shadow-lg shadow-emerald-500/5' : 'border-white/10 bg-white/[0.025] hover:border-white/20'}`}>
                     <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${accent}`}><Icon className="h-6 w-6" /></span>
                     <span className="min-w-0 flex-1"><span className="block text-sm font-black">{title}</span><span className="mt-1 block text-xs leading-5 text-gray-400">{description}</span></span>
                     <ArrowRight className="h-5 w-5 shrink-0 text-gray-500" />

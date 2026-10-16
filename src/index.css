@@ -50,6 +50,19 @@
   --color-gray-800: #141416;
   --color-gray-700: #1B1B1D;
   --color-gray-600: #2C2C2E;
+
+  /* QPOS application brand palette. */
+  --color-emerald-50: #fff9e6;
+  --color-emerald-100: #fff0b8;
+  --color-emerald-200: #ffe17a;
+  --color-emerald-300: #ffd247;
+  --color-emerald-400: #ffc933;
+  --color-emerald-500: #ffb900;
+  --color-emerald-600: #d99d00;
+  --color-emerald-700: #a87900;
+  --color-emerald-800: #755400;
+  --color-emerald-900: #473300;
+  --color-emerald-950: #281d00;
 }
 
 /* Custom base resets and variables */
@@ -58,6 +71,9 @@
   --sidebar-hex: #111112;
   --card-hex: #141416;
   --border-hex: rgba(255, 255, 255, 0.05);
+  --qpos-brand: #ffb900;
+  --qpos-brand-hover: #ffc933;
+  --qpos-brand-ink: #0a0a0b;
 }
 
 html.dark {
@@ -240,7 +256,22 @@ body:not(.dark) {
 
 :root:not(.dark) .text-emerald-500,
 :root:not(.dark) .text-emerald-600 {
-  color: #059669 !important;
+  color: #9a6f00 !important;
+}
+
+/* Dark ink is more legible than white on the QPOS yellow action colour. */
+.bg-emerald-400.text-white,
+.bg-emerald-500.text-white,
+.bg-emerald-600.text-white,
+.bg-emerald-700.text-white {
+  color: var(--qpos-brand-ink) !important;
+}
+
+.app-shell :focus-visible,
+#auth-panel :focus-visible,
+.qpos-onboarding :focus-visible,
+.qpos-subscription :focus-visible {
+  outline-color: var(--qpos-brand);
 }
 
 :root:not(.dark) .text-amber-500,
@@ -458,16 +489,16 @@ body:not(.dark) {
 /* Neospec-inspired QPOS marketing system: engineered dark surfaces, amber signals,
    and a quiet topographic field. Scoped so the authenticated application is unchanged. */
 .qpos-neospec {
-  --qpos-signal: #fcd34d;
+  --qpos-signal: #ffb900;
   --qpos-canvas: #07090c;
   background:
-    radial-gradient(circle at 78% 8%, rgba(252, 211, 77, 0.07), transparent 28rem),
+    radial-gradient(circle at 78% 8%, rgba(255, 185, 0, 0.07), transparent 28rem),
     var(--qpos-canvas);
 }
 
 .qpos-neospec .qpos-contours {
   background-image:
-    repeating-radial-gradient(ellipse at 86% 18%, transparent 0 31px, rgba(252, 211, 77, 0.055) 32px 33px, transparent 34px 48px),
+    repeating-radial-gradient(ellipse at 86% 18%, transparent 0 31px, rgba(255, 185, 0, 0.055) 32px 33px, transparent 34px 48px),
     linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
   background-size: auto, 72px 72px, 72px 72px;

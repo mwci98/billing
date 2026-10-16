@@ -344,7 +344,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanSuccess, onC
             // Custom high-fidelity retro digital mockup scanning visualization
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 flex flex-col items-center justify-center p-6 text-center">
               <div className="relative border border-emerald-500/20 bg-emerald-950/10 rounded-xl px-10 py-5 flex flex-col items-center justify-center backdrop-blur-xs select-none animate-fade-in">
-                <div className="flex items-center gap-1.5 text-[#34d399] animate-pulse font-mono text-[9px] uppercase tracking-widest mb-1.5">
+                <div className="flex items-center gap-1.5 text-emerald-400 animate-pulse font-mono text-[9px] uppercase tracking-widest mb-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   SIMULATION ACTIVE
                 </div>

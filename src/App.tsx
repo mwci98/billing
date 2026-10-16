@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, ShoppingCart, Package, ListChecks, 
   Users, Truck, BarChart3, Settings, LogOut, Sun, Moon, 
-  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store, ShoppingBasket, FileText
+  Menu, X, Bell, UserCheck, ShieldAlert, Building2, Zap, UserCog, ArrowRight, ClipboardList, Store, ShoppingBasket, FileText, UtensilsCrossed
 } from 'lucide-react';
 import { AppProvider, useAppState } from './lib/stateContext';
 import { UserRole } from './types';
@@ -249,9 +249,16 @@ const AppContent: React.FC = () => {
             {/* Sidebar header store Title */}
             <div className="flex items-center justify-between pb-5 mb-4 border-b border-gray-100 dark:border-white/5">
               <div className="flex items-center gap-2.5">
-                <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center font-black text-lg shadow-md shadow-emerald-500/20 shrink-0">
-                  {settings.storeName ? settings.storeName.charAt(0).toUpperCase() : 'E'}
-                </span>
+                {isRestaurantBusiness ? (
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.7rem] bg-[#00B98E] text-white shadow-[0_5px_14px_rgba(0,185,142,.2)]"
+                    aria-label="Restaurant workspace"
+                  >
+                    <UtensilsCrossed className="h-5 w-5" strokeWidth={2.4} aria-hidden="true" />
+                  </span>
+                ) : (
+                  <img src="/icons/qpos-marketing-logo.svg" alt="QPOS" className="h-9 w-9 shrink-0 drop-shadow-[0_5px_14px_rgba(255,185,0,.16)]" />
+                )}
                 <div className="min-w-0">
                   <h1 className="text-xs font-extrabold tracking-wide uppercase text-gray-900 dark:text-[#F2F2F2] truncate max-w-[9.5rem]">
                     {settings.storeName}
@@ -301,11 +308,11 @@ const AppContent: React.FC = () => {
                     }}
                     className={`nav-sidebar-btn w-full gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold cursor-pointer flex items-center transition duration-150 active:scale-98 ${
                       isActive 
-                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' 
+                        ? 'bg-emerald-500 text-gray-950 shadow-md shadow-emerald-500/20'
                         : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-900/50'
                     }`}
                   >
-                    <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? 'text-white' : 'text-emerald-500'}`} />
+                    <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? 'text-gray-950' : 'text-emerald-500'}`} />
                     <span>{item.name}</span>
                   </button>
                 );

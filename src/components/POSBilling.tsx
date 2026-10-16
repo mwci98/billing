@@ -530,7 +530,7 @@ export const POSBilling: React.FC = () => {
         {/* Product Grid catalog */}
         {!hasSearchActive ? (
           <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white px-6 py-12 text-center shadow-sm dark:border-white/5 dark:bg-[#141416]/90 md:py-16">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.09),transparent_48%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,185,0,0.09),transparent_48%)]" />
             <div className="relative mx-auto flex max-w-xl flex-col items-center">
               <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/5">
                 <Barcode className="h-8 w-8" strokeWidth={1.7} />

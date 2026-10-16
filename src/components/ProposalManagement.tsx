@@ -8,7 +8,7 @@ import {proposalStatusLabel} from '../lib/proposalWorkflow';
 
 const statuses: Array<'All' | ProposalStatus> = ['All', 'Draft', 'Sent', 'Accepted', 'Declined', 'Expired', 'Converted'];
 const statusStyle: Record<ProposalStatus, string> = {
-  Draft: 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300', Sent: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300', Accepted: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', Declined: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300', Expired: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300', Converted: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200'
+  Draft: 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300', Sent: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300', Accepted: 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300', Declined: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300', Expired: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300', Converted: 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200'
 };
 export const ProposalManagement: React.FC = () => {
   const {proposals, products, updateProposal, deleteProposal, convertProposal, settings, triggerToast} = useAppState();

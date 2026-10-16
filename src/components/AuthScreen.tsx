@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { 
-  Lock, Mail, BadgeAlert, Store, Loader2, ArrowRight
+  Lock, Mail, BadgeAlert, Loader2, ArrowRight
 } from 'lucide-react';
 import { useAppState } from '../lib/stateContext';
 import { UserRole } from '../types';
@@ -66,14 +66,12 @@ export const AuthScreen: React.FC = () => {
 
   return (
     <div id="auth-panel" className="dark relative flex min-h-screen w-full items-center justify-center bg-[#0A0A0B] px-4 py-12 text-[#E0E0E0] transition-colors duration-150">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/25 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/45 via-transparent to-transparent pointer-events-none" />
 
       <div className="w-full max-w-md space-y-6">
         {/* Header Branding */}
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
-            <Store className="h-7 w-7" />
-          </div>
+          <img src="/icons/qpos-marketing-logo.svg" alt="QPOS" className="mx-auto h-16 w-16 drop-shadow-[0_12px_30px_rgba(255,185,0,.18)]" />
           <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white">
             QPOS
           </h2>
@@ -139,13 +137,13 @@ export const AuthScreen: React.FC = () => {
               id="login-submit-btn"
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 dark:bg-white p-3 text-sm font-semibold text-white dark:text-gray-950 hover:bg-gray-800 dark:hover:bg-gray-100 transition duration-150 cursor-pointer text-center"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 p-3 text-sm font-bold text-gray-950 hover:bg-emerald-400 transition duration-150 cursor-pointer text-center"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <span style={{ color: '#5ee9b5', fontSize: '15px', fontWeight: 'bold' }}>Authenticate Terminal</span>
+                  <span className="text-[15px] font-bold text-gray-950">Authenticate Terminal</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

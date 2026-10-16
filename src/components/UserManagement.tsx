@@ -127,7 +127,7 @@ export const UserManagement: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => updateStaff(member.id, {active: !member.active})}
-                    className={`rounded-full px-3 py-1 text-[10px] font-bold ${member.active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-400'}`}>
+                    className={`rounded-full px-3 py-1 text-[10px] font-bold ${member.active ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>
                     {member.active ? 'ACTIVE' : 'DISABLED'}
                   </button>
                   <button type="button" onClick={() => deleteStaff(member.id)}

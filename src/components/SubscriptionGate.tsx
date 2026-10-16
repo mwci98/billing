@@ -140,20 +140,20 @@ export const SubscriptionGate: React.FC<{children: React.ReactNode}> = ({childre
       {children}
 
       {isBlocked && (
-        <div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-[#0A0A0B]/95 p-0 backdrop-blur-xl sm:items-center sm:p-4">
+        <div className="qpos-subscription fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-[#0A0A0B]/95 p-0 backdrop-blur-xl sm:items-center sm:p-4">
           <div className="min-h-[100dvh] w-full max-w-3xl overflow-hidden bg-[#141416] shadow-2xl sm:min-h-0 sm:rounded-[28px] sm:border sm:border-white/10">
             <div className={`grid ${isOwner ? 'md:grid-cols-[0.9fr_1.1fr]' : ''}`}>
-              <section className="relative overflow-hidden bg-emerald-500 p-6 text-white sm:p-9">
+              <section className="relative overflow-hidden bg-emerald-500 p-6 text-gray-950 sm:p-9">
                 <div className="absolute -right-14 -top-16 h-52 w-52 rounded-full border-[28px] border-white/10" />
                 <div className="relative">
                   <div className="flex items-center gap-3">
-                    <img src="/icons/qpos-logo.svg" alt="QPOS" className="h-11 w-11 rounded-xl bg-white p-1.5 shadow-sm" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/75">QPOS subscription</p>
+                    <img src="/icons/qpos-marketing-logo.svg" alt="QPOS" className="h-11 w-11 shadow-sm" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/65">QPOS subscription</p>
                   </div>
                   <h2 className="mt-6 text-[2rem] font-black leading-tight sm:text-3xl">
                     {isOwner ? 'Keep your store running.' : 'Store subscription required'}
                   </h2>
-                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/85">
+                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-black/75">
                     {isOwner
                       ? 'Restore billing, inventory, reports, and staff access with one yearly plan.'
                       : 'The store owner needs to renew the QPOS subscription before staff can continue working.'}

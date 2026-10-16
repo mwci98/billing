@@ -738,13 +738,13 @@ export const ReportsView: React.FC = () => {
                       return <g key={ratio}><line x1={chartLeft} y1={y} x2={chartWidth - chartRight} y2={y} stroke="currentColor" className="text-gray-200 dark:text-gray-800" strokeWidth="1" /><text x={chartLeft - 6} y={y + 3} textAnchor="end" className="fill-gray-400 text-[8px]">{Math.round(value / 1000)}k</text></g>;
                     })}
                     <line x1={chartLeft} y1={chartY(0)} x2={chartWidth - chartRight} y2={chartY(0)} stroke="#94a3b8" strokeWidth="1.2" />
-                    <polyline points={chartPoints('revenue')} fill="none" stroke="#10b981" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+                    <polyline points={chartPoints('revenue')} fill="none" stroke="var(--qpos-brand)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
                     <polyline points={chartPoints('cost')} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                     <polyline points={chartPoints('profit')} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                     {monthlyProfitData.map((month, index) => (
                       <g key={month.label} onMouseEnter={() => setHoveredProfitMonth(index)} onClick={() => setHoveredProfitMonth(index)} className="cursor-pointer">
                         <rect x={chartX(index) - plotWidth / 12} y={chartTop} width={plotWidth / 6} height={plotHeight + chartBottom} fill="transparent" />
-                        <circle cx={chartX(index)} cy={chartY(month.revenue)} r="3.5" fill="#10b981" />
+                        <circle cx={chartX(index)} cy={chartY(month.revenue)} r="3.5" fill="var(--qpos-brand)" />
                         <circle cx={chartX(index)} cy={chartY(month.cost)} r="3" fill="#f59e0b" />
                         <circle cx={chartX(index)} cy={chartY(month.profit)} r="3" fill="#2563eb" />
                         <text x={chartX(index)} y={chartHeight - 9} textAnchor="middle" className="fill-gray-400 text-[9px] font-bold">{month.label}</text>

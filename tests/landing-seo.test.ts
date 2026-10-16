@@ -51,10 +51,12 @@ test('public marketing surfaces use the dedicated amber QPOS brand treatment', a
   assert.match(splash, /\/icons\/qpos-marketing-logo\.svg/);
   assert.match(index, /name="theme-color" content="#090909"/);
   assert.match(index, /qpos-startup-splash[\s\S]*qpos-marketing-logo\.svg/);
-  assert.match(logo, /#FCD34D/);
-  assert.match(logo, /#08090B/);
+  assert.match(logo, /#ffb900/);
+  assert.match(logo, /#FFFFFF/);
   for (const source of [landing, chat, splash, logo]) {
     assert.doesNotMatch(source, /emerald|green|teal|#00bc7d|16,185,129/i);
+    assert.doesNotMatch(source, /(?:bg|text|border|ring|selection:bg)-amber-/i);
+    assert.doesNotMatch(source, /#fcd34d|#fbbf24|252,\s*211,\s*77|251,\s*191,\s*36/i);
   }
 });
 

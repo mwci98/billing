@@ -210,7 +210,7 @@ export const Dashboard: React.FC = () => {
             <h3 className="whitespace-nowrap text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
               {formatWholeCurrency(todayRevenue)}
             </h3>
-            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-green-600 dark:text-green-400">
               <ArrowUpRight className="h-3.5 w-3.5" />
               <span>Active POS</span>
             </p>
@@ -446,7 +446,7 @@ export const Dashboard: React.FC = () => {
                         {new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="hidden sm:table-cell py-3 text-right">
-                        <span className="inline-flex rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-0.5 font-semibold text-[10px]">
+                        <span className="inline-flex rounded-full bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400 px-2.5 py-0.5 font-semibold text-[10px]">
                           {s.status}
                         </span>
                       </td>
